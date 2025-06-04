@@ -1,4 +1,5 @@
-// api.js
+
+// src/api.js
 export async function loginUser(email, password) {
   const response = await fetch('http://jewels.com/api/users/user_login', {
     method: 'POST',
@@ -11,12 +12,10 @@ export async function loginUser(email, password) {
     }),
   });
 
-const result = await response.json();
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Login failed');
+  }
 
-if (!response.ok) {
-  throw new Error(result.message || 'Login failed');
-}
-
-return result.data;
-
+  return result.data;
 }

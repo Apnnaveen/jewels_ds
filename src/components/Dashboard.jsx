@@ -1,20 +1,14 @@
-// Dashboard.js
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const name = localStorage.getItem('name');
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
+  const user = JSON.parse(localStorage.getItem('user'));
 
   return (
     <div>
-      <h1>Welcome, {name || 'Driver'}!</h1>
-      <button onClick={handleLogout}>Logout</button>
+      <h2>Welcome, {user?.name}!</h2>
+      <p>Email: {user?.email}</p>
+      <p>Device ID: {user?.device_id}</p>
+      <p>Token: {user?.token}</p>
     </div>
   );
 }
