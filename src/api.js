@@ -1,7 +1,7 @@
 
 // src/api.js
 export async function loginUser(email, password) {
-  const response = await fetch('http://jewels.com/api/users/user_login', {
+  const response = await fetch('http://jewels_prod.com/api/users/user_login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
