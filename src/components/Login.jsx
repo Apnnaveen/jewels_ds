@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api';
-import './css/Login.css'; // Assuming you have a CSS file for styling
+import './css/Login.css';
+import logo from '../assets/logo.png'; // Add your logo path
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +23,9 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <h2>Login</h2>
+      <img src={logo} alt="Logo" />
+      <h2>Welcome Back</h2>
+      <h3>Login</h3>
       <form onSubmit={handleLogin}>
         <input
           type="email"
@@ -39,7 +43,7 @@ export default function Login() {
         /><br />
         <button type="submit">Login</button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
     </div>
   );
 }
