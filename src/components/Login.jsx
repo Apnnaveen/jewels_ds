@@ -4,6 +4,8 @@ import { loginUser } from '../api';
 import './css/Login.css';
 import logo from '../assets/logo.png'; // Add your logo path
 
+
+
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +17,7 @@ export default function Login() {
     try {
       const data = await loginUser(email, password);
       localStorage.setItem('user', JSON.stringify(data));
-      navigate('/dashboard');
+      navigate('/dashboard', { state: { user: data } });
     } catch (err) {
       setError(err.message);
     }
@@ -23,9 +25,9 @@ export default function Login() {
 
   return (
     <div className="login-container">
+      <h2>Jewels Airport Transfers</h2>
       <img src={logo} alt="Logo" />
-      <h2>Welcome Back</h2>
-      <h3>Login</h3>
+      <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
           type="email"

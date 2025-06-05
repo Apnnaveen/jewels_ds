@@ -1,0 +1,52 @@
+/* Profile Container - Modern Look */
+.profile-container {
+  width: 500px;
+  max-width: 420px;
+  margin: 60px auto;
+  padding: 40px 30px;
+  border-radius: 16px;
+  background: linear-gradient(to right, #f8f9ff, #e0e7ff);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  font-family: 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Heading */
+.profile-container h2 {
+  text-align: center;
+  font-size: 28px;
+  color: #2d3748;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #c3dafe;
+  padding-bottom: 10px;
+}
+
+/* Profile Info List */
+.profile-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-container li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px dashed #cbd5e0;
+}
+
+.profile-container li:last-child {
+  border-bottom: none;
+}
+
+.profile-container strong {
+  color: #4a5568;
+  min-width: 120px;
+  font-weight: 600;
+}
+
+.profile-container span {
+  color: #2b6cb0;
+  font-weight: 500;
+}

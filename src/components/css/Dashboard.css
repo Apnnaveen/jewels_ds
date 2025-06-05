@@ -1,0 +1,14 @@
+.global-menu-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: #4c6ef5;
+  color: white;
+  border: none;
+  padding: 10px 12px;
+  font-size: 18px;
+  border-radius: 8px;
+  z-index: 1100;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
