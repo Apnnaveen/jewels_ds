@@ -1,52 +1,69 @@
-/* src/css/Login.css */
-body {
+/* Ensure the entire page takes full height and centers content */
+body, html {
+  height: 100%;
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  height: 100vh;
+  background: linear-gradient(135deg, #ffffff);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* Login box styling */
 .login-container {
   background-color: #fff;
   padding: 40px 30px;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 400px;
+  width: 400px;
+  /* max-width: 400px; */
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  box-sizing: border-box;
 }
 
+/* Logo style */
 .login-container img {
   width: 80px;
-  margin-bottom: 20px;
+  height: 50%;
+  width: 50%;
+  /* margin-bottom: 20px; */
 }
 
+/* Heading styles */
 .login-container h2 {
-  margin-bottom: 20px;
+  margin: 10px 0 5px;
   color: #333;
+  font-size: 24px;
 }
 
+.login-container h3 {
+  margin: 5px 0 20px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Input fields */
 .login-container input {
   width: 100%;
-  padding: 12px;
+  padding: 12px 14px;
   margin: 10px 0;
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 16px;
-  transition: 0.3s;
+  transition: border 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
 }
 
+/* Input focus effect */
 .login-container input:focus {
   border-color: #667eea;
   outline: none;
   box-shadow: 0 0 8px rgba(102, 126, 234, 0.5);
 }
 
+/* Button */
 .login-container button {
   width: 100%;
   padding: 12px;
@@ -57,12 +74,22 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-top: 10px;
 }
 
+/* Button hover */
 .login-container button:hover {
   background-color: #5a67d8;
 }
 
+/* Error message */
+.login-container p {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #e53e3e; /* Red color for error messages */
+}
+
+/* Fade-in animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }

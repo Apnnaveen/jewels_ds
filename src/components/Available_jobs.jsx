@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import { fetchAvailableJobs } from '../api';
 import './css/Available.css';
 
-const PAGE_SIZE = 1;
+const PAGE_SIZE = 5;
 
 const AvailableJobs = () => {
     const location = useLocation();
@@ -74,7 +74,7 @@ const AvailableJobs = () => {
     };
 
     return (
-        <div>
+        <div style={{ marginLeft: '220px', padding: '30px', flex: 1 }}>
             <div className="jobs-tabs">
                 <button
                     className="tab-btn active"
@@ -113,6 +113,17 @@ const AvailableJobs = () => {
                     <table className="jobs-table">
                         <thead>
                             <tr>
+                                <th>Booking Ref</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Pickup Date</th>
+                                <th>Passengers</th>
+                                <th>Luggage</th>
+                                <th>Distance</th>
+                                <th>Car Info</th>
+                                <th>Bid Expiry</th>
+                            </tr>
+                            <tr>
                                 <th>
                                     <input
                                         type="text"
@@ -121,8 +132,7 @@ const AvailableJobs = () => {
                                         value={filters.booking_ref_id}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Booking Ref
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -132,8 +142,7 @@ const AvailableJobs = () => {
                                         value={filters.from_address}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    From
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -143,8 +152,7 @@ const AvailableJobs = () => {
                                         value={filters.to_address}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    To
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -154,8 +162,7 @@ const AvailableJobs = () => {
                                         value={filters.pickup_date}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Pickup Date
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -165,8 +172,7 @@ const AvailableJobs = () => {
                                         value={filters.passengers}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Passengers
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -176,8 +182,7 @@ const AvailableJobs = () => {
                                         value={filters.luggage}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Luggage
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -187,8 +192,7 @@ const AvailableJobs = () => {
                                         value={filters.distance}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Distance
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -198,8 +202,7 @@ const AvailableJobs = () => {
                                         value={filters.car_info}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Car Info
+                                    />
                                 </th>
                                 <th>
                                     <input
@@ -209,8 +212,7 @@ const AvailableJobs = () => {
                                         value={filters.bid_expiry}
                                         onChange={handleFilterChange}
                                         className="filter-input"
-                                    /><br />
-                                    Bid Expiry
+                                    />
                                 </th>
                             </tr>
                         </thead>

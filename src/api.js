@@ -1,5 +1,6 @@
 // src/api.js
 
+//user_login
 export async function loginUser(email, password) {
   const response = await fetch('http://jewels_prod.com/api/users/user_login', {
     method: 'POST',
@@ -33,4 +34,81 @@ export async function fetchAvailableJobs(driverId, token) {
   if (!response.ok) throw new Error('Failed to fetch jobs');
   const data = await response.json();
   return Array.isArray(data.data) ? data.data : [];
+}
+//
+// user_profile
+export async function getUserProfile(driverId, token) {
+  const response = await fetch(`http://jewels.com/api/users/show_profile/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch user profile');
+  }
+
+  return result.data;
+}
+//
+// update_password
+export async function updatePassword(driverId, token, oldPassword, newPassword, confirmPassword) {
+  const response = await fetch(`http://jewels.com/api/users/update_password/${driverId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      old_password: oldPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to update password');
+  }
+
+  return result.data;
+}
+//
+// delete_account
+export async function deleteAccount(driverId, token) {
+  const response = await fetch(`http://jewels.com/api/users/delete_account/${driverId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to delete account');
+  }
+
+  return result.data;
+}
+//
+// scheduled jobs
+export async function getScheduledJobs(driverId, token) {
+  const response = await fetch(`http://jewels.com/api/users/scheduled_journey_details/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch scheduled jobs');
+  }
+
+  return result.data;
 }
