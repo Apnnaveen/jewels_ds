@@ -1,5 +1,5 @@
-
 // src/api.js
+
 export async function loginUser(email, password) {
   const response = await fetch('http://jewels_prod.com/api/users/user_login', {
     method: 'POST',
@@ -18,4 +18,19 @@ export async function loginUser(email, password) {
   }
 
   return result.data;
+}
+
+// Available jobs API
+export async function fetchAvailableJobs(driverId, token) {
+  const response = await fetch(
+    `http://jewels_prod.com/api/users/available_jobs/${driverId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) throw new Error('Failed to fetch jobs');
+  const data = await response.json();
+  return Array.isArray(data.data) ? data.data : [];
 }

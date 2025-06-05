@@ -10,11 +10,16 @@ export default function Sidebar() {
     navigate('/');
   };
 
+  const handleDashboard = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    navigate('/dashboard', { state: { user } });
+  };
+
   return (
     <div className="sidebar">
       <div className="sidebar-logo">🌟 JewelApp</div>
       <ul className="sidebar-menu">
-        <li onClick={() => navigate('/dashboard')}>🏠 Dashboard</li>
+        <li onClick={handleDashboard}>🏠 Dashboard</li>
         <li onClick={() => alert('Coming soon')}>📦 Products</li>
         <li onClick={() => alert('Coming soon')}>🧑‍🤝‍🧑 Users</li>
         <li onClick={handleLogout}>🚪 Logout</li>

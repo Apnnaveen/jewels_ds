@@ -1,78 +1,248 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import { fetchAvailableJobs } from '../api';
+import './css/Available.css';
+
+const PAGE_SIZE = 1;
 
 const AvailableJobs = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
-    const user = location.state?.user;
+    const [filters, setFilters] = useState({
+        booking_ref_id: '',
+        from_address: '',
+        to_address: '',
+        pickup_date: '',
+        passengers: '',
+        luggage: '',
+        distance: '',
+        car_info: '',
+        bid_expiry: '',
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Get user from location.state or localStorage as fallback
+    const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
 
     useEffect(() => {
         if (user?.driver_id && user?.token) {
-            const fetchJobs = async () => {
+            const getJobs = async () => {
                 try {
-                    const response = await fetch(
-                        `http://jewels_prod.com/api/users/available_jobs/${user.driver_id}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${user.token}`,
-                            },
-                        }
-                    );
-                    if (!response.ok) throw new Error('Failed to fetch jobs');
-                    const data = await response.json();
-                    // Adjust this based on the actual structure of your API response
-                    const jobsArray = Array.isArray(data.data) ? data.data : [];
+                    const jobsArray = await fetchAvailableJobs(user.driver_id, user.token);
                     setJobs(jobsArray);
                 } catch (error) {
                     console.error(error);
                     setJobs([]);
                 }
             };
-            fetchJobs();
+            getJobs();
         } else {
             setJobs([]);
         }
     }, [user]);
 
-    const [showJobs, setShowJobs] = useState(false);
+    // Filtering logic
+    const filteredJobs = jobs.filter(job =>
+        (filters.booking_ref_id === '' || (job.booking_ref_id || '').toLowerCase().includes(filters.booking_ref_id.toLowerCase())) &&
+        (filters.from_address === '' || (job.from_address || '').toLowerCase().includes(filters.from_address.toLowerCase())) &&
+        (filters.to_address === '' || (job.to_address || '').toLowerCase().includes(filters.to_address.toLowerCase())) &&
+        (filters.pickup_date === '' || (job.pickup_date || '').toLowerCase().includes(filters.pickup_date.toLowerCase())) &&
+        (filters.passengers === '' || String(job.passengers || '').toLowerCase().includes(filters.passengers.toLowerCase())) &&
+        (filters.luggage === '' || String(job.luggage || '').toLowerCase().includes(filters.luggage.toLowerCase())) &&
+        (filters.distance === '' || String(job.distance || '').toLowerCase().includes(filters.distance.toLowerCase())) &&
+        (filters.car_info === '' || (job.car_info || '').toLowerCase().includes(filters.car_info.toLowerCase())) &&
+        (filters.bid_expiry === '' || ((job.bid_expiry_date || '') + ' ' + (job.bid_expiry_time || '')).toLowerCase().includes(filters.bid_expiry.toLowerCase()))
+    );
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
+    const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    // Handle filter change
+    const handleFilterChange = (e) => {
+        setFilters({ ...filters, [e.target.name]: e.target.value });
+        setCurrentPage(1); // Reset to first page on filter change
+    };
+
+    // Handle page change
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     return (
         <div>
-            <button onClick={() => setShowJobs((prev) => !prev)}>
-                {showJobs ? 'Hide Available Jobs' : 'Show Available Jobs'}
-            </button>
-            {showJobs && (
-                <div>
-                    <h1>Available Jobs</h1>
-                    {jobs && jobs.length > 0 ? (
-                        <ul>
-                            {jobs.map((job, idx) => (
-                                <li
-                                    key={job.booking_id || idx}
-                                    style={{
-                                        marginBottom: '1.5em',
-                                        borderBottom: '1px solid #ccc',
-                                        paddingBottom: '1em',
-                                    }}
-                                >
-                                    <strong>Booking Ref:</strong> {job.booking_ref_id}<br />
-                                    <strong>From:</strong> {job.from_address}<br />
-                                    <strong>To:</strong> {job.to_address}<br />
-                                    <strong>Pickup Date:</strong> {job.pickup_date}<br />
-                                    <strong>Passengers:</strong> {job.passengers}<br />
-                                    <strong>Luggage:</strong> {job.luggage}<br />
-                                    <strong>Distance:</strong> {job.distance}<br />
-                                    <strong>Car Info:</strong> {job.car_info}<br />
-                                    <strong>Bid Expiry:</strong> {job.bid_expiry_date} at {job.bid_expiry_time}
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p>No jobs available</p>
-                    )}
+            <div className="jobs-tabs">
+                <button className="tab-btn active">
+                    Available Jobs
+                </button>
+                <button
+                    className="tab-btn"
+                    onClick={() => navigate('/completed-jobs', { state: { user } })}
+                >
+                    Completed Jobs
+                </button>
+            </div>
+            <div className="available-jobs-container">
+                <h1>Available Jobs</h1>
+                <div className="table-responsive">
+                    <table className="jobs-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="booking_ref_id"
+                                        placeholder="Filter"
+                                        value={filters.booking_ref_id}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Booking Ref
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="from_address"
+                                        placeholder="Filter"
+                                        value={filters.from_address}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    From
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="to_address"
+                                        placeholder="Filter"
+                                        value={filters.to_address}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    To
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="pickup_date"
+                                        placeholder="Filter"
+                                        value={filters.pickup_date}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Pickup Date
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="passengers"
+                                        placeholder="Filter"
+                                        value={filters.passengers}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Passengers
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="luggage"
+                                        placeholder="Filter"
+                                        value={filters.luggage}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Luggage
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="distance"
+                                        placeholder="Filter"
+                                        value={filters.distance}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Distance
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="car_info"
+                                        placeholder="Filter"
+                                        value={filters.car_info}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Car Info
+                                </th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="bid_expiry"
+                                        placeholder="Filter"
+                                        value={filters.bid_expiry}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    /><br />
+                                    Bid Expiry
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedJobs.length > 0 ? (
+                                paginatedJobs.map((job, idx) => (
+                                    <tr key={job.booking_id || idx}>
+                                        <td data-label="Booking Ref">{job.booking_ref_id}</td>
+                                        <td data-label="From">{job.from_address}</td>
+                                        <td data-label="To">{job.to_address}</td>
+                                        <td data-label="Pickup Date">{job.pickup_date}</td>
+                                        <td data-label="Passengers">{job.passengers}</td>
+                                        <td data-label="Luggage">{job.luggage}</td>
+                                        <td data-label="Distance">{job.distance}</td>
+                                        <td data-label="Car Info">{job.car_info}</td>
+                                        <td data-label="Bid Expiry">{job.bid_expiry_date} {job.bid_expiry_time}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={9} className="no-jobs-message">No jobs available</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            )}
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="pagination">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            Prev
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => (
+                            <button
+                                key={idx}
+                                className={currentPage === idx + 1 ? 'active' : ''}
+                                onClick={() => handlePageChange(idx + 1)}
+                            >
+                                {idx + 1}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
