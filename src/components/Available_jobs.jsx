@@ -76,8 +76,29 @@ const AvailableJobs = () => {
     return (
         <div>
             <div className="jobs-tabs">
-                <button className="tab-btn active">
+                <button
+                    className="tab-btn active"
+                    onClick={() => navigate('/available-jobs', { state: { user } })}
+                >
                     Available Jobs
+                </button>
+                <button
+                    className="tab-btn"
+                    onClick={() => navigate('/bid-history', { state: { user } })}
+                >
+                    Bid History
+                </button>
+                <button
+                    className="tab-btn"
+                    onClick={() => navigate('/scheduled-jobs', { state: { user } })}
+                >
+                    Scheduled Jobs
+                </button>
+                <button
+                    className="tab-btn"
+                    onClick={() => navigate('/upcoming-journeys', { state: { user } })}
+                >
+                    Upcoming Journeys
                 </button>
                 <button
                     className="tab-btn"
