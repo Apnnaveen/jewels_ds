@@ -38,7 +38,7 @@ export async function fetchAvailableJobs(driverId, token) {
 //
 // user_profile
 export async function getUserProfile(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/show_profile/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/show_profile/${driverId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -56,7 +56,7 @@ export async function getUserProfile(driverId, token) {
 //
 // update_password
 export async function updatePassword(driverId, token, oldPassword, newPassword, confirmPassword) {
-  const response = await fetch(`http://jewels.com/api/users/update_password/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/update_password/${driverId}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export async function updatePassword(driverId, token, oldPassword, newPassword, 
 //
 // delete_account
 export async function deleteAccount(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/delete_account/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/delete_account/${driverId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -97,7 +97,7 @@ export async function deleteAccount(driverId, token) {
 //
 // scheduled jobs
 export async function getScheduledJobs(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/scheduled_journey_details/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/scheduled_journey_details/${driverId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

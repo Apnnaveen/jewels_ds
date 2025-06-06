@@ -1,3 +1,28 @@
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar-open .dashboard-main.with-sidebar {
+  margin-left: 260px;
+  transition: margin-left 0.3s;
+}
+
+.sidebar-closed .dashboard-main.full-width {
+  margin-left: 0;
+  width: 100%;
+  transition: margin-left 0.3s, width 0.3s;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 32px 24px;
+  transition: margin-left 0.3s, width 0.3s;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .global-menu-btn {
   position: fixed;
   top: 20px;
@@ -11,4 +36,43 @@
   z-index: 1100;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive for small screens */
+@media (max-width: 900px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+  .sidebar-open .dashboard-main.with-sidebar {
+    margin-left: 0;
+  }
+  .dashboard-main {
+    padding: 8px 2px;
+    width: 100vw;
+    min-width: 0;
+  }
+  /* Sidebar overlays content */
+  .sidebar-open .Sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    z-index: 1200;
+    width: 80vw;
+    max-width: 300px;
+    height: 100vh;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+    background: #6c63ff;
+    transition: left 0.3s;
+  }
+}
+.page-main {
+  flex: 1;
+  padding: 32px 24px;
+  transition: margin-left 0.3s, width 0.3s;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;              /* Add */
+  justify-content: center;    /* Add */
+  align-items: center;        /* Add */
 }

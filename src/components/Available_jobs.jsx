@@ -74,8 +74,9 @@ const AvailableJobs = () => {
     };
 
     return (
-        <div style={{ marginLeft: '220px', padding: '30px', flex: 1 }}>
-            <div className="jobs-tabs">
+        <div className="available-jobs-main">
+            <div className="available-jobs-container">
+                <div className="jobs-tabs">
                 <button
                     className="tab-btn active"
                     onClick={() => navigate('/available-jobs', { state: { user } })}
@@ -107,7 +108,6 @@ const AvailableJobs = () => {
                     Completed Jobs
                 </button>
             </div>
-            <div className="available-jobs-container">
                 <h1>Available Jobs</h1>
                 <div className="table-responsive">
                     <table className="jobs-table">
