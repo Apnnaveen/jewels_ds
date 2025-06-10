@@ -53,7 +53,7 @@ return (
         setActiveItem={setActiveItem}
       />
 
-      <div className={`dashboard-main ${sidebarOpen ? 'with-sidebar' : ''}`}>
+      <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
         <h2>
           {activeItem.charAt(0).toUpperCase() + activeItem.slice(1).replace('-', ' ')}
         </h2>

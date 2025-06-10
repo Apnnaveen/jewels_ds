@@ -124,3 +124,17 @@
     min-width: 800px;
   }
 }
+/* Add to d:\jewels_ds\src\components\css\Available.css */
+
+.dashboard-main {
+    transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1), max-width 0.3s cubic-bezier(0.4,0,0.2,1);
+    margin-left: 220px;
+    max-width: calc(100% - 220px);
+}
+
+.dashboard-main.centered {
+    margin-left: 0;
+    max-width: 900px;
+    margin-right: auto;
+    margin-left: auto;
+}

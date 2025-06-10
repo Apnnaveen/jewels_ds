@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
+import AvailableJobs from './components/Available_jobs';
+
 import Dashboard from './components/Dashboard';
+import Bidjobs from './components/Bidjobs';
+
 
 function App() {
   return (
@@ -9,6 +13,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+         <Route path="/available-jobs" element={<AvailableJobs />} />
+        <Route path="/bid-history" element={<Bidjobs />} />
       </Routes>
     </Router>
   );
