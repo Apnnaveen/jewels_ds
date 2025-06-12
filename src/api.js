@@ -2,7 +2,7 @@
 
 //user_login
 export async function loginUser(email, password) {
-  const response = await fetch('http://jewels_prod.com/api/users/user_login', {
+  const response = await fetch('http://jewels_prod.com/api/users/driver_login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ export async function loginUser(email, password) {
 
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || 'Login failed');
+    throw new Error(result.error || 'Login failed');
   }
 
   return result.data;
@@ -159,4 +159,25 @@ export async function bidJob({ booking_journey_id, driver_id, email, fare, token
   }
   return result.data;
 }
-// ...existing code...
+
+export async function changePasswordByForceStatus(email, newPassword, confirmPassword) {
+
+  const response = await fetch('http://jewels_prod.com/api/users/change_password_by_force_status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to change password');
+  }
+
+  return result.data;
+}

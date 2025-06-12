@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../api';
 import './css/Login.css';
 import logo from '../assets/logo.png'; // Add your logo path
-
-
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -44,6 +42,14 @@ export default function Login() {
           required
         /><br />
         <button type="submit">Login</button>
+        <div style={{ marginTop: '10px' }}>
+          <Link
+            to="/forgot-password"
+            style={{ color: '#1976d2', textDecoration: 'underline', fontSize: '0.95rem' }}
+          >
+            Forgot Password?
+          </Link>
+        </div>
       </form>
       {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
     </div>

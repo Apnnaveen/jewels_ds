@@ -81,15 +81,18 @@ const AvailableJobs = () => {
     };
 
     // Handle view details button click
-  const handleViewDetails = async (job) => {
+ const handleViewDetails = async (job) => {
     setShowModal(true);
-    setSelectedJob(job); // <-- Store the original job object
+    setSelectedJob(job); // Show basic info immediately
     setLoadingDetails(true);
     setDetailsError('');
     try {
         const details = await fetchJourneyDetails(job.booking_journey_id, user.driver_id, user.token);
-        // You can merge details into selectedJob if needed
-        // setSelectedJob({ ...job, ...details.data });
+        // Merge fetched details into selectedJob
+        setSelectedJob(prev => ({
+            ...prev,
+            ...details.data // adjust if your API returns { data: { ... } }
+        }));
     } catch (err) {
         setDetailsError('Failed to load details.');
     }
@@ -339,7 +342,7 @@ const AvailableJobs = () => {
                             {detailsError && <div style={{ color: 'red' }}>{detailsError}</div>}
                             {selectedJob && (
                                 <>
-                                    <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                                     <div style={{ fontWeight: 600, marginBottom: 8 }}>
                                         Submit Your Quote: <span style={{ color: 'green' }}>Guide Price: £{selectedJob.guidedprice ?? 'N/A'}</span>
                                     </div>
                                     <div style={{ marginBottom: 6 }}>
