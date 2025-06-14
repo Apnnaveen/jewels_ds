@@ -5,12 +5,13 @@ import { fetchAvailableJobs, fetchJourneyDetails, bidJob } from '../api';
 import './css/Available.css';
 import JobsTabs from './JobsTabs';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 2;
 
 const AvailableJobs = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
+    console.log('jobs', jobs);
     const [filters, setFilters] = useState({
         booking_ref_id: '',
         from_address: '',
@@ -20,6 +21,7 @@ const AvailableJobs = () => {
         luggage: '',
         distance: '',
         car_info: '',
+        meet_greet: '',
         bid_expiry: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
@@ -60,6 +62,7 @@ const AvailableJobs = () => {
         (filters.luggage === '' || String(job.luggage || '').toLowerCase().includes(filters.luggage.toLowerCase())) &&
         (filters.distance === '' || String(job.distance || '').toLowerCase().includes(filters.distance.toLowerCase())) &&
         (filters.car_info === '' || (job.car_info || '').toLowerCase().includes(filters.car_info.toLowerCase())) &&
+        (filters.meet_greet === '' || String(job.meet_greet || '').toLowerCase().includes(filters.meet_greet.toLowerCase())) &&
         (filters.bid_expiry === '' || ((job.bid_expiry_date || '') + ' ' + (job.bid_expiry_time || '')).toLowerCase().includes(filters.bid_expiry.toLowerCase()))
     );
 
@@ -81,23 +84,24 @@ const AvailableJobs = () => {
     };
 
     // Handle view details button click
- const handleViewDetails = async (job) => {
+const handleViewDetails = async (job) => {
     setShowModal(true);
-    setSelectedJob(job); // Show basic info immediately
     setLoadingDetails(true);
     setDetailsError('');
     try {
         const details = await fetchJourneyDetails(job.booking_journey_id, user.driver_id, user.token);
-        // Merge fetched details into selectedJob
-        setSelectedJob(prev => ({
-            ...prev,
-            ...details.data // adjust if your API returns { data: { ... } }
-        }));
+        console.log('Fetched details:', details);
+        if (details && details.length > 0) {
+            setSelectedJob(details[0]); // Use the first object in the array
+        } else {
+            setDetailsError('No details found.');
+        }
     } catch (err) {
         setDetailsError('Failed to load details.');
     }
     setLoadingDetails(false);
 };
+ 
 
     const handleCloseModal = () => {
         setShowModal(false);
@@ -151,6 +155,7 @@ const AvailableJobs = () => {
                                 <th>Luggage</th>
                                 <th>Distance</th>
                                 <th>Car Info</th>
+                                <th>Meet & Greet</th>
                                 <th>Action</th>
                             </tr>
                             <tr>
@@ -234,7 +239,16 @@ const AvailableJobs = () => {
                                         className="filter-input"
                                     />
                                 </th>
-                                <th></th>
+                                <th>
+                                    <input
+                                        type="text"
+                                        name="meet_greet"
+                                        placeholder="Filter"
+                                        value={filters.meet_greet}
+                                        onChange={handleFilterChange}
+                                        className="filter-input"
+                                    />
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -249,6 +263,7 @@ const AvailableJobs = () => {
                                         <td data-label="Luggage">{job.luggage}</td>
                                         <td data-label="Distance">{job.distance}</td>
                                         <td data-label="Car Info">{job.car_info}</td>
+                                        <td data-label="Meet & Greet">{job.meet_greet ? 'Yes' : 'No'}</td>
                                         <td>
                                             <button
                                                 className="view-details-btn"

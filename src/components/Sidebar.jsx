@@ -17,12 +17,13 @@ export default function Sidebar({ user, onLogout, open, activeItem, setActiveIte
     }
   }, []);
 
-  const menuItems = [
-    { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
-    { key: '', icon: 'fas fa-lock', label: 'Change Password' },
-    { key: 'delete-account', icon: 'fas fa-user-slash', label: 'Delete Account' },
-    { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
-  ];
+ const menuItems = [
+  { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+  { key: 'change-password', icon: 'fas fa-lock', label: 'Change Password' }, // fixed key
+  { key: 'delete-account', icon: 'fas fa-user-slash', label: 'Delete Account' },
+  { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
+];
+  
 
   const handleDashboard = () => {
     const user = JSON.parse(localStorage.getItem('user'));

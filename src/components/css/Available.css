@@ -101,6 +101,18 @@
     background: #1976d2;
     color: #fff;
 }
+.bid-list {
+  list-style: none;
+  padding: 0;
+}
+
+.bid-item {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
 
 .pagination button:disabled {
     background: #f0f0f0;
