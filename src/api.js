@@ -2,7 +2,7 @@
 
 //user_login
 export async function loginUser(email, password) {
-  const response = await fetch('http://jewels.com/api/users/driver_login', {
+  const response = await fetch('http://jewels_prod.com/api/users/driver_login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ export async function loginUser(email, password) {
 // Available jobs API
 export async function fetchAvailableJobs(driverId, token) {
   const response = await fetch(
-    `http://jewels.com/api/users/available_jobs/${driverId}`,
+    `http://jewels_prod.com/api/users/available_jobs/${driverId}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -33,12 +33,13 @@ export async function fetchAvailableJobs(driverId, token) {
   );
   if (!response.ok) throw new Error('Failed to fetch jobs');
   const data = await response.json();
+  console.log('Available jobs data:', data);
   return Array.isArray(data.data) ? data.data : [];
 }
 //
 // user_profile
 export async function getUserProfile(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/show_profile/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/show_profile/${driverId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -56,7 +57,7 @@ export async function getUserProfile(driverId, token) {
 //
 // update_password
 export async function updatePassword(driverId, token, oldPassword, newPassword, confirmPassword) {
-  const response = await fetch(`http://jewels.com/api/users/update_password/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/update_password/${driverId}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ export async function updatePassword(driverId, token, oldPassword, newPassword, 
 //
 // delete_account
 export async function deleteAccount(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/delete_account/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/delete_account/${driverId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -97,7 +98,7 @@ export async function deleteAccount(driverId, token) {
 //
 // scheduled jobs
 export async function getScheduledJobs(driverId, token) {
-  const response = await fetch(`http://jewels.com/api/users/scheduled_journey_details/${driverId}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/scheduled_journey_details/${driverId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -115,7 +116,7 @@ export async function getScheduledJobs(driverId, token) {
 export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
   console.log('Fetching journey details for bookingId:', booking_journey_id, 'and driverId:', driverId);
   const response = await fetch(
-    `http://jewels.com/api/users/journeyDetails`,
+    `http://jewels_prod.com/api/users/journeyDetails`,
     {
       method: 'POST',
       headers: {
@@ -140,7 +141,7 @@ export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
 
 export async function bidJob({ booking_journey_id, driver_id, email, fare, token }) {
   console.log('Submitting bid for booking_journey_id:', booking_journey_id, 'driver_id:', driver_id, 'email:', email, 'fare:', fare); 
-  const response = await fetch('http://jewels.com/api/users/bid_job', {
+  const response = await fetch('http://jewels_prod.com/api/users/bid_job', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -162,7 +163,7 @@ export async function bidJob({ booking_journey_id, driver_id, email, fare, token
 
 export async function changePasswordByForceStatus(email, newPassword, confirmPassword) {
 
-  const response = await fetch('http://jewels.com/api/users/change_password_by_force_status', {
+  const response = await fetch('http://jewels_prod.com/api/users/change_password_by_force_status', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -183,7 +184,7 @@ export async function changePasswordByForceStatus(email, newPassword, confirmPas
 }
 export async function bid_history(driver_id, token) {
  // NO proxy setup? Then use full API URL
-const response = await fetch(`http://jewels.com/api/users/bid_history/${driver_id}`, {
+const response = await fetch(`http://jewels_prod.com/api/users/bid_history/${driver_id}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -200,7 +201,7 @@ const response = await fetch(`http://jewels.com/api/users/bid_history/${driver_i
   return result.data;
 }
 export async function scheduled_journey_details(driver_id, token) {
-  const response = await fetch(`http://jewels.com/api/users/scheduled_journey_details/${driver_id}`, {
+  const response = await fetch(`http://jewels_prod.com/api/users/scheduled_journey_details/${driver_id}`, {
       method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -216,3 +217,55 @@ export async function scheduled_journey_details(driver_id, token) {
 
   return result.data;
 }
+export async function upcoming_journey_details(driver_id, token) {
+  const response = await fetch(`http://jewels_prod.com/api/users/upcoming_journeys/${driver_id}`, {
+      method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+});
+
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch bid history');
+  }
+
+  return result.data;
+}
+export async function tomorrow_journeys(driver_id, token) {
+  const response = await fetch(`http://jewels_prod.com/api/users/tomorrow_journeys/${driver_id}`, {
+      method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+});
+
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch bid history');
+  }
+
+  return result.data;
+}
+export async function completed_journeys(driver_id, token) {
+  const response = await fetch(`http://jewels_prod.com/api/users/completed_journey_details/${driver_id}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch data');
+  }
+
+  return Array.isArray(result.data) ? result.data : []; // return empty array if not valid
+}
+
