@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { upcoming_journey_details } from '../api';
 import './css/Available.css';
-import './css/Dashboard.css'; // Ensure layout and sidebar styles are applied
+import './css/Dashboard.css'; // Sidebar layout styles
 
 const UpcomingJobs = () => {
   const location = useLocation();
@@ -23,46 +23,30 @@ const UpcomingJobs = () => {
     booking_ref_id: '',
     from_address: '',
     to_address: '',
-    passengers: '',
-    luggage: '',
-    distance: '',
-    car_info: '',
-    meet_greet: '',
     pickup_date_from: '',
     pickup_date_to: ''
   });
 
-  const parsePickupDate = (pickupStr) => {
-    if (!pickupStr) return null;
-    const datePart = pickupStr.split(' at ')[0];
-    return new Date(datePart);
-  };
+  useEffect(() => {
+    const fetchUpcomingJobs = async () => {
+      try {
+        if (!user?.driver_id || !user?.token) {
+          setError('User not authenticated');
+          return;
+        }
 
- useEffect(() => {
-  const fetchData = async () => {
-    try {
-      if (!user?.driver_id || !user?.token) {
-        setError('User not authenticated');
-        return;
+        const data = await upcoming_journey_details(user.driver_id, user.token);
+        setUpcomingJobs(data);
+        setFilteredJobs(data);
+      } catch (err) {
+        setError(err.message || 'Something went wrong');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const response = await upcoming_journey_details(user.driver_id, user.token);
-      console.log("API Response:", response);
-
-      const data = Array.isArray(response?.data) ? response.data : [];
-
-      setUpcomingJobs(data);
-      setFilteredJobs(data);
-    } catch (err) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, [user]);
-
+    fetchUpcomingJobs();
+  }, [user]);
 
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
@@ -70,7 +54,8 @@ const UpcomingJobs = () => {
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
       const withinDateRange = () => {
-        const jobDate = parsePickupDate(job.pickup_date);
+        let jobDateStr = job.pickup_date?.split(' at ')[0]; // Remove time part
+        let jobDate = jobDateStr ? new Date(jobDateStr) : null;
         if (!jobDate) return false;
 
         const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
@@ -86,11 +71,6 @@ const UpcomingJobs = () => {
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
         (!filters.from_address || matchText('from_address')) &&
         (!filters.to_address || matchText('to_address')) &&
-        (!filters.passengers || matchText('passengers')) &&
-        (!filters.luggage || matchText('luggage')) &&
-        (!filters.distance || matchText('distance')) &&
-        (!filters.car_info || matchText('car_info')) &&
-        (!filters.meet_greet || matchText('meet_greet')) &&
         withinDateRange()
       );
     });
@@ -110,7 +90,6 @@ const UpcomingJobs = () => {
 
   return (
     <>
-      {/* Sidebar Toggle Button */}
       <button className="global-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
         <i className="fas fa-bars"></i>
       </button>
@@ -143,11 +122,6 @@ const UpcomingJobs = () => {
                       <th>From Address</th>
                       <th>To Address</th>
                       <th>Pickup Date</th>
-                      <th>Passengers</th>
-                      <th>Luggage</th>
-                      <th>Distance</th>
-                      <th>Car Info</th>
-                      <th>Meet & Greet</th>
                     </tr>
                     <tr>
                       <th>
@@ -197,62 +171,14 @@ const UpcomingJobs = () => {
                           className="filter-input"
                         />
                       </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="passengers"
-                          placeholder="Filter"
-                          value={filters.passengers}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="luggage"
-                          placeholder="Filter"
-                          value={filters.luggage}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="distance"
-                          placeholder="Filter"
-                          value={filters.distance}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="car_info"
-                          placeholder="Filter"
-                          value={filters.car_info}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="meet_greet"
-                          placeholder="Filter"
-                          value={filters.meet_greet}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredJobs.length === 0 ? (
                       <tr>
-                        <td colSpan="9">No matching jobs found.</td>
+                        <td colSpan="4" style={{ textAlign: 'center' }}>
+                          No matching jobs found.
+                        </td>
                       </tr>
                     ) : (
                       filteredJobs.map((job, index) => (
@@ -261,11 +187,6 @@ const UpcomingJobs = () => {
                           <td>{job.from_address}</td>
                           <td>{job.to_address}</td>
                           <td>{job.pickup_date}</td>
-                          <td>{job.passengers}</td>
-                          <td>{job.luggage}</td>
-                          <td>{job.distance}</td>
-                          <td>{job.car_info}</td>
-                          <td>{job.meet_greet}</td>
                         </tr>
                       ))
                     )}

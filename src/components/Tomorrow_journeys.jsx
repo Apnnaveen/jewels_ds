@@ -134,7 +134,6 @@ const TomorrowJourneys = () => {
     <th>Passengers</th>
     <th>Luggage</th>
     <th>Distance</th>
-    <th>Car Info</th>
     <th>Meet & Greet</th>
   </tr>
   <tr>
@@ -218,16 +217,6 @@ const TomorrowJourneys = () => {
     <th>
       <input
         type="text"
-        name="car_info"
-        placeholder="Filter"
-        value={filters.car_info}
-        onChange={handleFilterChange}
-        className="filter-input"
-      />
-    </th>
-    <th>
-      <input
-        type="text"
         name="meet_greet"
         placeholder="Filter"
         value={filters.meet_greet}
@@ -253,7 +242,6 @@ const TomorrowJourneys = () => {
                           <td>{job.passengers}</td>
                           <td>{job.luggage}</td>
                           <td>{job.distance}</td>
-                          <td>{job.car_info}</td>
                           <td>{job.meet_greet}</td>
                         </tr>
                       ))

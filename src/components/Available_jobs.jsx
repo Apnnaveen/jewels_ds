@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Sidebar from './Sidebar'; // ✅ Sidebar added
+import Sidebar from './Sidebar';
+import JobsTabs from './JobsTabs';
 import { fetchAvailableJobs, fetchJourneyDetails, bidJob } from '../api';
 import './css/Available.css';
-import './css/Dashboard.css'; // ✅ for sidebar layout
-import JobsTabs from './JobsTabs';
+import './css/Dashboard.css';
 
 const PAGE_SIZE = 5;
 
@@ -13,23 +13,24 @@ const AvailableJobs = () => {
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
 
-  const [sidebarOpen, setSidebarOpen] = useState(true); // ✅ sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('dashboard');
-
   const [jobs, setJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
   const [filters, setFilters] = useState({
     booking_ref_id: '',
     from_address: '',
     to_address: '',
-    pickup_date: '',
+    pickup_date_from: '',
+    pickup_date_to: '',
     passengers: '',
     luggage: '',
     distance: '',
     car_info: '',
     bid_expiry: '',
   });
-  const [currentPage, setCurrentPage] = useState(1);
 
+  const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -38,41 +39,64 @@ const AvailableJobs = () => {
   const [quote, setQuote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const parsePickupDate = (pickupStr) => {
+    if (!pickupStr) return null;
+    const datePart = pickupStr.split(' at ')[0];
+    return new Date(datePart);
+  };
+
   useEffect(() => {
     if (user?.driver_id && user?.token) {
       const getJobs = async () => {
         try {
           const jobsArray = await fetchAvailableJobs(user.driver_id, user.token);
           setJobs(jobsArray);
+          setFilteredJobs(jobsArray);
         } catch (error) {
           console.error(error);
           setJobs([]);
+          setFilteredJobs([]);
         }
       };
       getJobs();
-    } else {
-      setJobs([]);
     }
   }, [user]);
 
-  const filteredJobs = jobs.filter((job) =>
-    (filters.booking_ref_id === '' || (job.booking_ref_id || '').toLowerCase().includes(filters.booking_ref_id.toLowerCase())) &&
-    (filters.from_address === '' || (job.from_address || '').toLowerCase().includes(filters.from_address.toLowerCase())) &&
-    (filters.to_address === '' || (job.to_address || '').toLowerCase().includes(filters.to_address.toLowerCase())) &&
-    (filters.pickup_date === '' || (job.pickup_date || '').toLowerCase().includes(filters.pickup_date.toLowerCase())) &&
-    (filters.passengers === '' || String(job.passengers || '').toLowerCase().includes(filters.passengers.toLowerCase())) &&
-    (filters.luggage === '' || String(job.luggage || '').toLowerCase().includes(filters.luggage.toLowerCase())) &&
-    (filters.distance === '' || String(job.distance || '').toLowerCase().includes(filters.distance.toLowerCase())) &&
-    (filters.car_info === '' || (job.car_info || '').toLowerCase().includes(filters.car_info.toLowerCase())) &&
-    (filters.bid_expiry === '' || ((job.bid_expiry_date || '') + ' ' + (job.bid_expiry_time || '')).toLowerCase().includes(filters.bid_expiry.toLowerCase()))
-  );
+  useEffect(() => {
+    const filtered = jobs.filter((job) => {
+      const matchText = (key) =>
+        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-  const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
+      const jobDate = parsePickupDate(job.pickup_date);
+      const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
+      const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
+      const dateMatch =
+        (!from || (jobDate && jobDate >= from)) &&
+        (!to || (jobDate && jobDate <= to));
+
+      return (
+        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+        (!filters.from_address || matchText('from_address')) &&
+        (!filters.to_address || matchText('to_address')) &&
+        (!filters.passengers || matchText('passengers')) &&
+        (!filters.luggage || matchText('luggage')) &&
+        (!filters.distance || matchText('distance')) &&
+        (!filters.car_info || matchText('car_info')) &&
+        (!filters.bid_expiry || matchText('bid_expiry')) &&
+        dateMatch
+      );
+    });
+
+    setFilteredJobs(filtered);
+    setCurrentPage(1);
+  }, [filters, jobs]);
+
   const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
 
   const handleFilterChange = (e) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
-    setCurrentPage(1);
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   const handlePageChange = (newPage) => {
@@ -83,7 +107,7 @@ const AvailableJobs = () => {
 
   const handleViewDetails = async (job) => {
     setShowModal(true);
-    setSelectedJob(job); // Show immediately
+    setSelectedJob(job);
     setLoadingDetails(true);
     setDetailsError('');
     try {
@@ -145,12 +169,11 @@ const AvailableJobs = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <div className="jobs-tabs">
-            <JobsTabs activeTab="available" user={user} />
-          </div>
+          <h2>Available Jobs</h2>
+          <JobsTabs activeTab="available" user={user} />
 
-          <div className="available-jobs-container">
-            <div className="table-responsive">
+          <div className="jobs-content">
+            <div style={{ overflowX: 'auto' }}>
               <table className="jobs-table">
                 <thead>
                   <tr>
@@ -165,27 +188,17 @@ const AvailableJobs = () => {
                     <th>Action</th>
                   </tr>
                   <tr>
-                    {[
-                      'booking_ref_id',
-                      'from_address',
-                      'to_address',
-                      'pickup_date',
-                      'passengers',
-                      'luggage',
-                      'distance',
-                      'car_info',
-                    ].map((key, idx) => (
-                      <th key={idx}>
-                        <input
-                          type="text"
-                          name={key}
-                          placeholder="Filter"
-                          value={filters[key]}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                    ))}
+                    <th><input type="text" name="booking_ref_id" value={filters.booking_ref_id} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="from_address" value={filters.from_address} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="to_address" value={filters.to_address} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th>
+                      <input type="date" name="pickup_date_from" value={filters.pickup_date_from} onChange={handleFilterChange} className="filter-input" style={{ marginBottom: 5 }} />
+                      <input type="date" name="pickup_date_to" value={filters.pickup_date_to} onChange={handleFilterChange} className="filter-input" />
+                    </th>
+                    <th><input type="text" name="passengers" value={filters.passengers} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="luggage" value={filters.luggage} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="distance" value={filters.distance} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="car_info" value={filters.car_info} onChange={handleFilterChange} className="filter-input" /></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -202,15 +215,15 @@ const AvailableJobs = () => {
                         <td>{job.distance}</td>
                         <td>{job.car_info}</td>
                         <td>
-                          <button className="view-details-btn" onClick={() => handleViewDetails(job)}>
-                            View Details
-                          </button>
+                          <button onClick={() => handleViewDetails(job)} className="view-details-btn">View</button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="10" className="no-jobs-message">No jobs available</td>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '30px 0', color: '#888' }}>
+                        No available jobs.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -220,13 +233,9 @@ const AvailableJobs = () => {
             {totalPages > 1 && (
               <div className="pagination">
                 <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Prev</button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx}
-                    className={currentPage === idx + 1 ? 'active' : ''}
-                    onClick={() => handlePageChange(idx + 1)}
-                  >
-                    {idx + 1}
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <button key={i} onClick={() => handlePageChange(i + 1)} className={currentPage === i + 1 ? 'active' : ''}>
+                    {i + 1}
                   </button>
                 ))}
                 <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
@@ -283,7 +292,10 @@ const AvailableJobs = () => {
         {selectedJob && (
           <>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>
-              Submit Your Quote: <span style={{ color: 'green' }}>Guide Price: £{selectedJob.guidedprice ?? 'N/A'}</span>
+              Submit Your Quote:{' '}
+              <span style={{ color: 'green' }}>
+                Guide Price: £{selectedJob.guidedprice ?? 'N/A'}
+              </span>
             </div>
             <div style={{ marginBottom: 6 }}>
               📅 <b>Bid Expiry:</b> {selectedJob.bid_expiry_date ?? 'N/A'}

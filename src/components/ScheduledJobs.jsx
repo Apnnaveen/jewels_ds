@@ -62,28 +62,20 @@ const ScheduledJobs = () => {
       const matchText = (key) =>
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-      const withinDateRange = () => {
-        if (!job.pickup_date) return false;
+     const withinDateRange = () => {
+      let jobDateStr = job.pickup_date?.split(' at ')[0]; // Remove time
+      let jobDate = jobDateStr ? new Date(jobDateStr) : null;
+      if (!jobDate) return false;
 
-        let jobDate;
-        try {
-          jobDate = parseDateFromDDMMYYYY(job.pickup_date);
-        } catch {
-          return false;
-        }
+      const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
+      const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
 
-        const from = filters.pickup_date_from
-          ? parseDateFromYYYYMMDD(filters.pickup_date_from)
-          : null;
-        const to = filters.pickup_date_to
-          ? parseDateFromYYYYMMDD(filters.pickup_date_to)
-          : null;
+      if (from && jobDate < from) return false;
+      if (to && jobDate > to) return false;
 
-        if (from && jobDate < from) return false;
-        if (to && jobDate > to) return false;
+      return true;
+    };
 
-        return true;
-      };
 
       return (
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
