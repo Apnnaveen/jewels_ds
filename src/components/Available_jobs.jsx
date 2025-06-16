@@ -21,6 +21,7 @@ const AvailableJobs = () => {
     booking_ref_id: '',
     from_address: '',
     to_address: '',
+    waypoint:'',
     pickup_date_from: '',
     pickup_date_to: '',
     passengers: '',
@@ -78,6 +79,7 @@ const AvailableJobs = () => {
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
         (!filters.from_address || matchText('from_address')) &&
         (!filters.to_address || matchText('to_address')) &&
+        (!filters.waypoint || matchText('waypoint')) &&
         (!filters.passengers || matchText('passengers')) &&
         (!filters.luggage || matchText('luggage')) &&
         (!filters.distance || matchText('distance')) &&
@@ -180,7 +182,8 @@ const AvailableJobs = () => {
                     <th>Booking Ref</th>
                     <th>From</th>
                     <th>To</th>
-                    <th>Pickup Date</th>
+                    <th>Waypoint</th>
+                    <th>Journey Date</th>
                     <th>Passengers</th>
                     <th>Luggage</th>
                     <th>Distance</th>
@@ -191,6 +194,7 @@ const AvailableJobs = () => {
                     <th><input type="text" name="booking_ref_id" value={filters.booking_ref_id} onChange={handleFilterChange} className="filter-input" /></th>
                     <th><input type="text" name="from_address" value={filters.from_address} onChange={handleFilterChange} className="filter-input" /></th>
                     <th><input type="text" name="to_address" value={filters.to_address} onChange={handleFilterChange} className="filter-input" /></th>
+                    <th><input type="text" name="waypoint" value={filters.waypoint} onChange={handleFilterChange} className="filter-input" /></th>
                     <th>
                       <input type="date" name="pickup_date_from" value={filters.pickup_date_from} onChange={handleFilterChange} className="filter-input" style={{ marginBottom: 5 }} />
                       <input type="date" name="pickup_date_to" value={filters.pickup_date_to} onChange={handleFilterChange} className="filter-input" />
@@ -209,6 +213,7 @@ const AvailableJobs = () => {
                         <td>{job.booking_ref_id}</td>
                         <td>{job.from_address}</td>
                         <td>{job.to_address}</td>
+                        <td>{job.waypoint}</td>
                         <td>{job.pickup_date}</td>
                         <td>{job.passengers}</td>
                         <td>{job.luggage}</td>
