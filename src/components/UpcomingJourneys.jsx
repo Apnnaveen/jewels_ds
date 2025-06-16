@@ -13,7 +13,6 @@ const UpcomingJobs = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('upcoming');
-
   const [upcomingJobs, setUpcomingJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +26,7 @@ const UpcomingJobs = () => {
     pickup_date_to: ''
   });
 
+  // Fetch jobs
   useEffect(() => {
     const fetchUpcomingJobs = async () => {
       try {
@@ -36,8 +36,14 @@ const UpcomingJobs = () => {
         }
 
         const data = await upcoming_journey_details(user.driver_id, user.token);
-        setUpcomingJobs(data);
-        setFilteredJobs(data);
+        if (Array.isArray(data)) {
+          setUpcomingJobs(data);
+          setFilteredJobs(data);
+        } else {
+          setUpcomingJobs([]);
+          setFilteredJobs([]);
+          setError('Invalid data format received.');
+        }
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
@@ -48,15 +54,27 @@ const UpcomingJobs = () => {
     fetchUpcomingJobs();
   }, [user]);
 
+  // Filter jobs
   useEffect(() => {
+    if (!Array.isArray(upcomingJobs)) {
+      setFilteredJobs([]);
+      return;
+    }
+
     const filtered = upcomingJobs.filter((job) => {
+      if (!job || typeof job !== 'object') return false;
+
       const matchText = (key) =>
-        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+        filters[key]
+          ? (job[key] || '').toString().toLowerCase().includes(filters[key].toLowerCase())
+          : true;
 
       const withinDateRange = () => {
-        let jobDateStr = job.pickup_date?.split(' at ')[0]; // Remove time part
-        let jobDate = jobDateStr ? new Date(jobDateStr) : null;
-        if (!jobDate) return false;
+        const jobDateStr = job.pickup_date?.split(' at ')[0];
+        if (!jobDateStr) return true;
+
+        const jobDate = new Date(jobDateStr);
+        if (isNaN(jobDate)) return false;
 
         const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
         const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
@@ -68,9 +86,9 @@ const UpcomingJobs = () => {
       };
 
       return (
-        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
+        matchText('booking_ref_id') &&
+        matchText('from_address') &&
+        matchText('to_address') &&
         withinDateRange()
       );
     });

@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { scheduled_journey_details } from '../api';
 import './css/Available.css';
-import './css/Dashboard.css'; // Sidebar layout styles
+import './css/Dashboard.css';
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -13,7 +13,6 @@ const ScheduledJobs = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('scheduled');
-
   const [scheduledJobs, setScheduledJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,15 +26,6 @@ const ScheduledJobs = () => {
     pickup_date_to: ''
   });
 
-  const parseDateFromDDMMYYYY = (dateStr) => {
-    const [day, month, year] = dateStr.split('-');
-    return new Date(`${year}-${month}-${day}`);
-  };
-
-  const parseDateFromYYYYMMDD = (dateStr) => {
-    return new Date(dateStr);
-  };
-
   useEffect(() => {
     const fetchScheduledJobs = async () => {
       try {
@@ -44,9 +34,21 @@ const ScheduledJobs = () => {
           return;
         }
 
-        const data = await scheduled_journey_details(user.driver_id, user.token);
-        setScheduledJobs(data);
-        setFilteredJobs(data);
+        const response = await scheduled_journey_details(user.driver_id, user.token);
+
+        // Defensive handling of response format
+        const jobs = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+
+        if (!Array.isArray(jobs)) {
+          throw new Error('Invalid job data received.');
+        }
+
+        setScheduledJobs(jobs);
+        setFilteredJobs(jobs);
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
@@ -57,25 +59,25 @@ const ScheduledJobs = () => {
     fetchScheduledJobs();
   }, [user]);
 
+  // Filter logic
   useEffect(() => {
     const filtered = scheduledJobs.filter((job) => {
       const matchText = (key) =>
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-     const withinDateRange = () => {
-      let jobDateStr = job.pickup_date?.split(' at ')[0]; // Remove time
-      let jobDate = jobDateStr ? new Date(jobDateStr) : null;
-      if (!jobDate) return false;
+      const withinDateRange = () => {
+        let jobDateStr = job.pickup_date?.split(' at ')[0]; // Strip time if exists
+        let jobDate = jobDateStr ? new Date(jobDateStr) : null;
+        if (!jobDate) return false;
 
-      const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
-      const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
+        const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
+        const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
 
-      if (from && jobDate < from) return false;
-      if (to && jobDate > to) return false;
+        if (from && jobDate < from) return false;
+        if (to && jobDate > to) return false;
 
-      return true;
-    };
-
+        return true;
+      };
 
       return (
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
@@ -100,7 +102,6 @@ const ScheduledJobs = () => {
 
   return (
     <>
-      {/* Toggle Sidebar Button */}
       <button className="global-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
         <i className="fas fa-bars"></i>
       </button>
