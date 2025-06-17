@@ -119,7 +119,7 @@ const CompletedJobs = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2>Completed Jobs</h2>
+          <h2> &nbsp; &nbsp;Completed Jobs</h2>
 
           <JobsTabs activeTab="completed" user={user} />
 

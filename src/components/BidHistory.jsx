@@ -106,12 +106,13 @@ const BidHistory = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
+          <h2> &nbsp; &nbsp;Bid History</h2>
           <JobsTabs activeTab="bid" user={user} />
-          <h2>Bid History</h2>
+          
 
-          {loading ? (
+          {/* {loading ? (
             <div className="loading">Loading...</div>
-          ) : (
+          ) : ( */}
             <div className="jobs-content">
               <div style={{ overflowX: 'auto' }}>
                 <table className="jobs-table">
@@ -183,29 +184,30 @@ const BidHistory = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredBids.length > 0 ? (
-                      filteredBids.map((bid, index) => (
-                        <tr key={bid.id || index}>
-                          <td>{bid.booking_ref_id}</td>
-                          <td>{bid.biding_amount}</td>
-                          <td>{bid.pickup_date}</td>
-                          <td>{bid.from_address}</td>
-                          <td>{bid.to_address}</td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: 'center', padding: '30px 0', color: '#888' }}>
-                          No matching bid history found.
-                        </td>
+                 <tbody>
+                  {filteredBids.length > 0 ? (
+                    filteredBids.map((bid, index) => (
+                      <tr key={bid.id || index}>
+                        <td data-label="Booking Ref ID">{bid.booking_ref_id}</td>
+                        <td data-label="Bid Amount">{bid.biding_amount}</td>
+                        <td data-label="Pickup Date">{bid.pickup_date}</td>
+                        <td data-label="From Address">{bid.from_address}</td>
+                        <td data-label="To Address">{bid.to_address}</td>
                       </tr>
-                    )}
-                  </tbody>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '30px 0', color: '#888' }}>
+                        No matching bid history found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+
                 </table>
               </div>
             </div>
-          )}
+          {/* )} */}
         </div>
       </div>
     </>

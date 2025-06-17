@@ -123,16 +123,16 @@ const TomorrowJourneys = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2>Tomorrow's Jobs</h2>
+         <h2> &nbsp; &nbsp;Tomorrow's Jobs</h2>
 
           <JobsTabs activeTab="tomorrow" user={user} />
 
           <div className="jobs-content">
-            {loading ? (
+            {/* {loading ? (
               <p>Loading tomorrow's jobs...</p>
             ) : error ? (
               <p className="error">{error}</p>
-            ) : (
+            ) : ( */}
               <div style={{ overflowX: 'auto' }}>
                 <table className="jobs-table">
                   <thead>
@@ -205,7 +205,7 @@ const TomorrowJourneys = () => {
                   </tbody>
                 </table>
               </div>
-            )}
+            {/* )} */}
           </div>
         </div>
       </div>

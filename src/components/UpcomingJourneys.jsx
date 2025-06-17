@@ -122,16 +122,16 @@ const UpcomingJobs = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2>Upcoming Jobs</h2>
+          <h2> &nbsp; &nbsp;Upcoming Jobs</h2>
 
           <JobsTabs activeTab="upcoming" user={user} />
 
           <div className="jobs-content">
-            {loading ? (
+            {/* {loading ? (
               <p>Loading upcoming jobs...</p>
             ) : error ? (
               <p className="error">{error}</p>
-            ) : (
+            ) : ( */}
               <div style={{ overflowX: 'auto' }}>
                 <table className="jobs-table">
                   <thead>
@@ -211,7 +211,7 @@ const UpcomingJobs = () => {
                   </tbody>
                 </table>
               </div>
-            )}
+            {/* )} */}
           </div>
         </div>
       </div>

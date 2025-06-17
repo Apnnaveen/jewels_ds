@@ -171,7 +171,7 @@ const AvailableJobs = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2>Available Jobs</h2>
+          <h2> &nbsp; &nbsp;Available Jobs</h2>
           <JobsTabs activeTab="available" user={user} />
 
           <div className="jobs-content">
