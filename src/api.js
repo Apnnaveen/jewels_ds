@@ -33,7 +33,7 @@ export async function fetchAvailableJobs(driverId, token) {
   );
   if (!response.ok) throw new Error('Failed to fetch jobs');
   const data = await response.json();
-  console.log('Available jobs data:', data);
+ 
   return Array.isArray(data.data) ? data.data : [];
 }
 //

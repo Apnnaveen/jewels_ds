@@ -4,9 +4,9 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { fetchAvailableJobs, fetchJourneyDetails, bidJob } from '../api';
 import './css/Available.css';
-import './css/Dashboard.css';
+// import './css/Scheduled.css'
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 const AvailableJobs = () => {
   const location = useLocation();
@@ -21,7 +21,7 @@ const AvailableJobs = () => {
     booking_ref_id: '',
     from_address: '',
     to_address: '',
-    waypoint:'',
+    waypoint: '',
     pickup_date_from: '',
     pickup_date_to: '',
     passengers: '',
@@ -39,12 +39,6 @@ const AvailableJobs = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [quote, setQuote] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const parsePickupDate = (pickupStr) => {
-    if (!pickupStr) return null;
-    const datePart = pickupStr.split(' at ')[0];
-    return new Date(datePart);
-  };
 
   useEffect(() => {
     if (user?.driver_id && user?.token) {
@@ -68,7 +62,7 @@ const AvailableJobs = () => {
       const matchText = (key) =>
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-      const jobDate = parsePickupDate(job.pickup_date);
+      const jobDate = new Date(job.pickup_date?.split(' at ')[0]);
       const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
       const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
       const dateMatch =
@@ -160,209 +154,231 @@ const AvailableJobs = () => {
       <button className="global-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
         <i className="fas fa-bars"></i>
       </button>
+      <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        open={sidebarOpen}
+        activeItem={activeItem}
+        setActiveItem={setActiveItem}
+      />
+
+      <div className='dashboard-header'>
+        <h2 className=''>Available Jobs</h2>
+      </div>
+
+
 
       <div className="dashboard-layout">
-        <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        />
-
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2> &nbsp; &nbsp;Available Jobs</h2>
-      <div className="wrapper">
-
+          <div className="wrapper">
             <div className="tabs-container">
               <JobsTabs activeTab="available" user={user} />
             </div>
 
-          <div className="jobs-content">
-            <div style={{ overflowX: 'auto' }}>
-              <table className="jobs-table">
-                <thead>
-                  <tr>
-                    <th>Booking Ref</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Waypoint</th>
-                    <th>Journey Date</th>
-                    <th>Passengers</th>
-                    <th>Luggage</th>
-                    <th>Distance</th>
-                    <th>Car Info</th>
-                    <th>Action</th>
-                  </tr>
-                  <tr>
-                    <th><input type="text" name="booking_ref_id" value={filters.booking_ref_id} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="from_address" value={filters.from_address} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="to_address" value={filters.to_address} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="waypoint" value={filters.waypoint} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th>
-                      <input type="date" name="pickup_date_from" value={filters.pickup_date_from} onChange={handleFilterChange} className="filter-input" style={{ marginBottom: 5 }} />
-                      <input type="date" name="pickup_date_to" value={filters.pickup_date_to} onChange={handleFilterChange} className="filter-input" />
-                    </th>
-                    <th><input type="text" name="passengers" value={filters.passengers} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="luggage" value={filters.luggage} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="distance" value={filters.distance} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th><input type="text" name="car_info" value={filters.car_info} onChange={handleFilterChange} className="filter-input" /></th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedJobs.length > 0 ? (
-                    paginatedJobs.map((job, idx) => (
-                      <tr key={job.booking_id || idx}>
-                        <td>{job.booking_ref_id}</td>
-                        <td>{job.from_address}</td>
-                        <td>{job.to_address}</td>
-                        <td>{job.waypoint}</td>
-                        <td>{job.pickup_date}</td>
-                        <td>{job.passengers}</td>
-                        <td>{job.luggage}</td>
-                        <td>{job.distance}</td>
-                        <td>{job.car_info}</td>
-                        <td>
-                          <button onClick={() => handleViewDetails(job)} className="view-details-btn">View</button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="9" style={{ textAlign: 'center', padding: '30px 0', color: '#888' }}>
-                        No available jobs.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+
+            <div className="card-filters">
+              <div className="filter-group">
+                <input
+                  type="text"
+                  name="booking_ref_id"
+                  value={filters.booking_ref_id}
+                  onChange={handleFilterChange}
+                  placeholder="Booking Ref"
+                  className="filter-input"
+                />
+              </div>
+              <div className="filter-group">
+                <input
+                  type="text"
+                  name="from_address"
+                  value={filters.from_address}
+                  onChange={handleFilterChange}
+                  placeholder="From Address"
+                  className="filter-input"
+                />
+              </div>
+              <div className="filter-group">
+                <input
+                  type="text"
+                  name="to_address"
+                  value={filters.to_address}
+                  onChange={handleFilterChange}
+                  placeholder="To Address"
+                  className="filter-input"
+                />
+              </div>
+              <div className="filter-group">
+                <input
+                  type="date"
+                  name="pickup_date_from"
+                  value={filters.pickup_date_from}
+                  onChange={handleFilterChange}
+                  placeholder="From Date"
+                  className="filter-input"
+                />
+                <input
+                  type="date"
+                  name="pickup_date_to"
+                  value={filters.pickup_date_to}
+                  onChange={handleFilterChange}
+                  placeholder="To Date"
+                  className="filter-input"
+                />
+              </div>
+            </div>
+
+
+            <div className="jobs-cards-container">
+              {paginatedJobs.length > 0 ? (
+                paginatedJobs.map((job, idx) => (
+                  <div key={job.booking_id || idx} className="job-card">
+                    <div className="job-card-header">
+                      <h3 className="job-title">Jewels Airport Transfers</h3>
+                      <span className="job-status">Available</span>
+                    </div>
+
+                    <div className="job-section">
+                      <h4 className="section-title">
+                        <i className="fas fa-car-side"></i> {job.car_id}
+                      </h4>
+                      <p className="vehicle-description">
+                        <span className="detail-label"><i className="fas fa-info-circle"></i> Car Info:</span> {job.car_info}
+                      </p>
+                      <p className="booking-ref">
+                        <i className="fas fa-receipt"></i> {job.booking_ref_id}
+                      </p>
+                    </div>
+
+                    <div className="job-details">
+                      <div className="detail-row">
+                        <span className="detail-label">
+                          <i className="fas fa-map-marker-alt icon icon-primary"></i>
+                          Pickup:
+                        </span>
+                        <span className="detail-value">{job.from_address}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label"><i className="fas fa-map-pin"></i> DropOff:</span>
+                        <span className="detail-value">{job.to_address}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">
+                          <i className="fas fa-road icon icon-warning"></i>
+                          Distance:
+                        </span>
+                        <span className="detail-value">{job.distance} miles Approx</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">
+                          <i className="fas fa-calendar-alt icon icon-info"></i>
+                          Journey Date:
+                        </span>
+                        <span className="detail-value">{job.pickup_date?.split(' at ')[0]}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label"><i className="fas fa-clock"></i> Journey Time:</span>
+                        <span className="detail-value">{job.pickup_date?.split(' at ')[1]}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleViewDetails(job)}
+                      className="view-details-btn"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="no-jobs-message">
+                  <p>No available jobs matching your criteria.</p>
+                </div>
+              )}
             </div>
 
             {totalPages > 1 && (
               <div className="pagination">
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Prev</button>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Prev
+                </button>
                 {Array.from({ length: totalPages }, (_, i) => (
-                  <button key={i} onClick={() => handlePageChange(i + 1)} className={currentPage === i + 1 ? 'active' : ''}>
+                  <button
+                    key={i}
+                    onClick={() => handlePageChange(i + 1)}
+                    className={currentPage === i + 1 ? 'active' : ''}
+                  >
                     {i + 1}
                   </button>
                 ))}
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
               </div>
             )}
           </div>
-          </div>
+
 
           {showModal && (
-  <div
-    className="modal-overlay"
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.4)',
-      zIndex: 1000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    <div
-      className="modal-content"
-      style={{
-        background: '#fff',
-        borderRadius: '8px',
-        padding: '24px',
-        minWidth: '340px',
-        maxWidth: '95vw',
-        boxShadow: '0 2px 16px rgba(0,0,0,0.2)',
-        position: 'relative',
-      }}
-    >
-      <button
-        onClick={handleCloseModal}
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          background: 'transparent',
-          border: 'none',
-          fontSize: '1.5rem',
-          cursor: 'pointer',
-        }}
-        aria-label="Close"
-      >
-        &times;
-      </button>
-      <div>
-        {loadingDetails && <div>Loading details...</div>}
-        {detailsError && <div style={{ color: 'red' }}>{detailsError}</div>}
-        {selectedJob && (
-          <>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>
-              Submit Your Quote:{' '}
-              <span style={{ color: 'green' }}>
-                Guide Price: £{selectedJob.guidedprice ?? 'N/A'}
-              </span>
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              📅 <b>Bid Expiry:</b> {selectedJob.bid_expiry_date ?? 'N/A'}
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              ⏰ <b>Bid Expire Time:</b> {selectedJob.bid_expiry_time ?? 'N/A'}
-            </div>
-            <input
-              type="number"
-              placeholder="£ Quote Here"
-              value={quote}
-              onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                marginBottom: '12px',
-              }}
-            />
-            <button
-              style={{
-                width: '100%',
-                background: isChecked && quote ? '#1976d2' : '#aaa',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '10px 0',
-                fontWeight: 600,
-                fontSize: '1rem',
-                marginBottom: '10px',
-                cursor: isChecked && quote ? 'pointer' : 'not-allowed',
-              }}
-              disabled={!isChecked || !quote || submitting}
-              onClick={handleSubmitBid}
-            >
-              {submitting ? 'Submitting...' : 'Submit'}
-            </button>
-            <div style={{ fontSize: '0.9rem', color: '#333' }}>
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={(e) => setIsChecked(e.target.checked)}
-                style={{ marginRight: 6 }}
-              />
-              By submitting your quote, you are accepting the Jewels Airport Transfers{' '}
-              <a href="#" target="_blank" rel="noopener noreferrer">
-                terms and conditions
-              </a>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <button onClick={handleCloseModal} aria-label="Close">
+                  &times;
+                </button>
+                <div>
+                  {loadingDetails && <div>Loading details...</div>}
+                  {detailsError && <div style={{ color: 'red' }}>{detailsError}</div>}
+                  {selectedJob && (
+                    <>
+                      <div className="modal-header">
+                        <i className="fas fa-pound-sign"></i> Submit Your Quote:
+                        <span className="guide-price">
+                          Guide Price: £{selectedJob.guidedprice ?? 'N/A'}
+                        </span>
+                      </div>
+                      <div className="bid-expiry">
+                        <i className="fas fa-calendar-alt"></i> <b>Bid Expiry:</b> {selectedJob.bid_expiry_date ?? 'N/A'}
+                      </div>
+                      <div className="bid-expiry">
+                        <i className="fas fa-hourglass-half"></i> <b>Bid Expire Time:</b> {selectedJob.bid_expiry_time ?? 'N/A'}
+                      </div>
 
+                      <input
+                        type="number"
+                        placeholder="£ Quote Here"
+                        value={quote}
+                        onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
+                        className="quote-input"
+                      />
+                      <button
+                        className={`submit-bid-btn ${!isChecked || !quote ? 'disabled' : ''}`}
+                        disabled={!isChecked || !quote || submitting}
+                        onClick={handleSubmitBid}
+                      >
+                        {submitting ? 'Submitting...' : 'Submit'}
+                      </button>
+                      <div className="terms-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => setIsChecked(e.target.checked)}
+                        />
+                        By submitting your quote, you are accepting the Jewels Airport Transfers{' '}
+                        <a href="#" target="_blank" rel="noopener noreferrer">
+                          terms and conditions
+                        </a>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

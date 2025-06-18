@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import Sidebar from './Sidebar';
+// import Sidebar from './Sidebar';
 import Available_jobs from './Available_jobs';
-import ChangePassword from './ChangePassword';
-import DeleteAccount from './DeleteAccount';
 import ProfilePage from './ProfilePage';
-import './css/Dashboard.css';
+// import './css/Dashboard.css';
+import AvailableJob from './AvailableJob';
 
 export default function Dashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('dashboard');
 
   const [user] = useState(() => {
@@ -20,15 +18,11 @@ export default function Dashboard() {
     window.location.href = '/';
   };
 
-  // Renders content based on the selected sidebar item
   const renderContent = () => {
     switch (activeItem) {
       case 'dashboard':
-        return <Available_jobs user={user} setActiveItem={setActiveItem} />;
-      case 'change-password':
-        return <ChangePassword />;
-      case 'delete-account':
-        return <DeleteAccount />;
+        return <AvailableJob/>
+        // return <Available_jobs user={user} setActiveItem={setActiveItem} />;
       case 'profile':
         return <ProfilePage driverId={user.id} />;
       default:
@@ -36,33 +30,17 @@ export default function Dashboard() {
     }
   };
 
-  // Format heading title from kebab-case to Title Case
-  const formatTitle = (key) => {
-    return key
-      .replace(/-/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  };
-
   return (
     <>
-      {/* Toggle Sidebar Button */}
-      <button className="global-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
-        <i className="fas fa-bars"></i>
-      </button>
-
-      {/* Layout */}
-      <div className="dashboard-layout">
-        {/* <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        /> */}
-
-        <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          {renderContent()}
-        </div>
+      {/* <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        open={true}
+        activeItem={activeItem}
+        setActiveItem={setActiveItem}
+      /> */}
+      <div className="">
+        {renderContent()}
       </div>
     </>
   );

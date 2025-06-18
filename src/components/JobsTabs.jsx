@@ -14,17 +14,21 @@ const JobsTabs = ({ activeTab, user }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="jobs-tabs">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          className={`tab-btn${activeTab === tab.key ? ' active' : ''}`}
-          onClick={() => navigate(tab.path, { state: { user } })}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+  {tabs.map((tab) => (
+    <button
+      key={tab.key}
+      onClick={() => navigate(tab.path, { state: { user } })}
+      className={`py-2 px-4 rounded-md text-sm font-medium text-white transition-all duration-200
+        ${activeTab === tab.key
+          ? 'bg-blue-600 hover:bg-blue-700'
+          : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}`}
+    >
+      {tab.label}
+    </button>
+  ))}
+</div>
+
   );
 };
 

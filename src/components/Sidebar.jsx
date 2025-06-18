@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './css/Sidebar.css';
 
-export default function Sidebar({ user, onLogout, open, activeItem, setActiveItem }) {
+export default function Sidebar({ user, onLogout, activeItem, setActiveItem }) {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const id = 'fontawesome-cdn';
     if (!document.getElementById(id)) {
       const link = document.createElement('link');
@@ -17,35 +18,39 @@ export default function Sidebar({ user, onLogout, open, activeItem, setActiveIte
     }
   }, []);
 
- const menuItems = [
-  { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
-  { key: 'change-password', icon: 'fas fa-lock', label: 'Change Password' }, // fixed key
-  { key: 'delete-account', icon: 'fas fa-user-slash', label: 'Delete Account' },
-  { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
-];
-  
+  const menuItems = [
+    { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
+    { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
+  ];
 
-  const handleDashboard = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    navigate('/dashboard', { state: { user } });
+  const handleMenuClick = (key) => {
+    setActiveItem(key);
+    setMenuOpen(false); // close menu on mobile
+    navigate(`/${key}`);
   };
 
   return (
-    <div className={`custom-sidebar ${open ? 'open' : ''}`}>
+    <div className="custom-sidebar">
+      <button className="global-menu-btn" onClick={() => setMenuOpen(!menuOpen)}>
+        <i className="fas fa-bars"></i>
+      </button>
+
       <div className="profile-header">
         <div className="profile-pic">
-          <i className="fas fa-user-circle fa-4x"></i>
+          <i className="fas fa-user-circle fa-2x"></i>
         </div>
-        <h3>{user.name}</h3>
-        <p>{user.email}</p>
+        <div>
+          <h3>{user.name}</h3>
+          <p>{user.email}</p>
+        </div>
       </div>
 
-      <ul className="sidebar-menu">
+      <ul className={`sidebar-menu ${menuOpen ? 'open' : ''}`}>
         {menuItems.map((item) => (
           <li
             key={item.key}
             className={activeItem === item.key ? 'active' : ''}
-            onClick={() => setActiveItem(item.key)}
+            onClick={() => handleMenuClick(item.key)}
           >
             <i className={item.icon}></i> {item.label}
           </li>
@@ -54,10 +59,6 @@ export default function Sidebar({ user, onLogout, open, activeItem, setActiveIte
           <i className="fas fa-sign-out-alt"></i> Sign Out
         </li>
       </ul>
-
-      <div className="sidebar-footer">
-        <p>Version 1.0.0</p>
-      </div>
     </div>
   );
 }

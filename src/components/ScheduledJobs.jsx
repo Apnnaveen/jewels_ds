@@ -140,10 +140,7 @@ const handleDecline = async (job) => {
 
   return (
     <>
-      <button className="global-menu-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
-        <i className="fas fa-bars"></i>
-      </button>
-
+    
       <div className="dashboard-layout">
         <Sidebar
           user={user}
