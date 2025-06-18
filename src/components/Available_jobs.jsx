@@ -172,7 +172,11 @@ const AvailableJobs = () => {
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <h2> &nbsp; &nbsp;Available Jobs</h2>
-          <JobsTabs activeTab="available" user={user} />
+      <div className="wrapper">
+
+            <div className="tabs-container">
+              <JobsTabs activeTab="available" user={user} />
+            </div>
 
           <div className="jobs-content">
             <div style={{ overflowX: 'auto' }}>
@@ -246,6 +250,7 @@ const AvailableJobs = () => {
                 <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
               </div>
             )}
+          </div>
           </div>
 
           {showModal && (

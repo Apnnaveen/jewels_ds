@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { tomorrow_journeys } from '../api';
-import './css/Available.css';
-import './css/Dashboard.css';
+
+import './css/Scheduled.css'; 
+
 
 const TomorrowJourneys = () => {
   const location = useLocation();
@@ -124,9 +125,10 @@ const TomorrowJourneys = () => {
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
          <h2> &nbsp; &nbsp;Tomorrow's Jobs</h2>
-
+      <div className="wrapper">
+        <div className="tabs-container">
           <JobsTabs activeTab="tomorrow" user={user} />
-
+        </div>
           <div className="jobs-content">
             {/* {loading ? (
               <p>Loading tomorrow's jobs...</p>
@@ -206,6 +208,7 @@ const TomorrowJourneys = () => {
                 </table>
               </div>
             {/* )} */}
+          </div>
           </div>
         </div>
       </div>

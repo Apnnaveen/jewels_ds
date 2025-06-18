@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { upcoming_journey_details } from '../api';
-import './css/Available.css';
-import './css/Dashboard.css'; // Sidebar layout styles
+
+import './css/Scheduled.css'; 
+
 
 const UpcomingJobs = () => {
   const location = useLocation();
@@ -123,9 +124,10 @@ const UpcomingJobs = () => {
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <h2> &nbsp; &nbsp;Upcoming Jobs</h2>
-
-          <JobsTabs activeTab="upcoming" user={user} />
-
+      <div className="wrapper">
+            <div className="tabs-container">
+              <JobsTabs activeTab="upcoming" user={user} />
+            </div>
           <div className="jobs-content">
             {/* {loading ? (
               <p>Loading upcoming jobs...</p>
@@ -141,7 +143,7 @@ const UpcomingJobs = () => {
                       <th>To Address</th>
                       <th>Pickup Date</th>
                     </tr>
-                    <tr>
+                    <tr className="filter-row">
                       <th>
                         <input
                           type="text"
@@ -149,7 +151,6 @@ const UpcomingJobs = () => {
                           placeholder="Filter"
                           value={filters.booking_ref_id}
                           onChange={handleFilterChange}
-                          className="filter-input"
                         />
                       </th>
                       <th>
@@ -159,7 +160,6 @@ const UpcomingJobs = () => {
                           placeholder="Filter"
                           value={filters.from_address}
                           onChange={handleFilterChange}
-                          className="filter-input"
                         />
                       </th>
                       <th>
@@ -169,7 +169,6 @@ const UpcomingJobs = () => {
                           placeholder="Filter"
                           value={filters.to_address}
                           onChange={handleFilterChange}
-                          className="filter-input"
                         />
                       </th>
                       <th>
@@ -178,15 +177,13 @@ const UpcomingJobs = () => {
                           name="pickup_date_from"
                           value={filters.pickup_date_from}
                           onChange={handleFilterChange}
-                          className="filter-input"
-                          style={{ marginBottom: '5px' }}
+                          style={{ marginBottom: "4px" }}
                         />
                         <input
                           type="date"
                           name="pickup_date_to"
                           value={filters.pickup_date_to}
                           onChange={handleFilterChange}
-                          className="filter-input"
                         />
                       </th>
                     </tr>
@@ -194,7 +191,7 @@ const UpcomingJobs = () => {
                   <tbody>
                     {filteredJobs.length === 0 ? (
                       <tr>
-                        <td colSpan="4" style={{ textAlign: 'center' }}>
+                        <td colSpan="4" className="no-jobs">
                           No matching jobs found.
                         </td>
                       </tr>
@@ -210,8 +207,10 @@ const UpcomingJobs = () => {
                     )}
                   </tbody>
                 </table>
+
               </div>
             {/* )} */}
+          </div>
           </div>
         </div>
       </div>

@@ -52,16 +52,15 @@ export default function Dashboard() {
 
       {/* Layout */}
       <div className="dashboard-layout">
-        <Sidebar
+        {/* <Sidebar
           user={user}
           onLogout={handleLogout}
           open={sidebarOpen}
           activeItem={activeItem}
           setActiveItem={setActiveItem}
-        />
+        /> */}
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2>{formatTitle(activeItem)}</h2>
           {renderContent()}
         </div>
       </div>

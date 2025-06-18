@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { scheduled_journey_details } from '../api';
-import './css/Available.css';
-import './css/Dashboard.css';
+import { scheduled_journey_details, confirmAvailability, declineJob } from '../api'; 
+// import './css/Available.css';
+// import './css/Dashboard.css';
+import './css/Scheduled.css'; 
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -19,13 +20,53 @@ const ScheduledJobs = () => {
   const [error, setError] = useState('');
 
   const [filters, setFilters] = useState({
+    vehicle_type: '',
     booking_ref_id: '',
     from_address: '',
     to_address: '',
-    pickup_date_from: '',
-    pickup_date_to: ''
+    meet_and_greet: '',
+    distance: '',
+    quoted_price: '',
+    pickup_date: ''
   });
-
+const handleAccept = async (job) => {
+  try {
+    if (!user?.driver_id || !user?.token) {
+      setError('User not authenticated');
+      return;
+    }
+    await confirmAvailability({
+      driver_id: user.driver_id,
+      booking_journey_id: job.booking_journey_id ,
+      status: 1,
+      token: user.token,
+    });
+    // Optionally, update the job list or show a success message
+    alert('Availability confirmed!');
+    // Optionally, refresh jobs:
+    // fetchScheduledJobs();
+  } catch (err) {
+    alert(err.message || 'Failed to confirm availability');
+  }
+};
+const handleDecline = async (job) => {
+  try {
+    if (!user?.driver_id || !user?.token) {
+      setError('User not authenticated');
+      return;
+    }
+    await declineJob({
+      driver_id: user.driver_id,
+      booking_journey_id: job.booking_journey_id,
+      token: user.token,
+    });
+    alert('Job declined!');
+    // Optionally, refresh jobs:
+    // fetchScheduledJobs();
+  } catch (err) {
+    alert(err.message || 'Failed to decline job');
+  }
+};
   useEffect(() => {
     const fetchScheduledJobs = async () => {
       try {
@@ -35,8 +76,6 @@ const ScheduledJobs = () => {
         }
 
         const response = await scheduled_journey_details(user.driver_id, user.token);
-
-        // Defensive handling of response format
         const jobs = Array.isArray(response)
           ? response
           : Array.isArray(response?.data)
@@ -62,28 +101,27 @@ const ScheduledJobs = () => {
   // Filter logic
   useEffect(() => {
     const filtered = scheduledJobs.filter((job) => {
-      const matchText = (key) =>
-        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+      const includes = (key) =>
+        filters[key]
+          ? job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase())
+          : true;
 
-      const withinDateRange = () => {
-        let jobDateStr = job.pickup_date?.split(' at ')[0]; // Strip time if exists
-        let jobDate = jobDateStr ? new Date(jobDateStr) : null;
-        if (!jobDate) return false;
-
-        const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
-        const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
-
-        if (from && jobDate < from) return false;
-        if (to && jobDate > to) return false;
-
-        return true;
+      const isSameDate = () => {
+        if (!filters.pickup_date) return true;
+        const jobDateStr = job.pickup_date?.split(' at ')[0];
+        if (!jobDateStr) return false;
+        return new Date(jobDateStr).toDateString() === new Date(filters.pickup_date).toDateString();
       };
 
       return (
-        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
-        withinDateRange()
+        includes('vehicle_type') &&
+        includes('booking_ref_id') &&
+        includes('from_address') &&
+        includes('to_address') &&
+        includes('meet_and_greet') &&
+        includes('distance') &&
+        includes('quoted_price') &&
+        isSameDate()
       );
     });
 
@@ -116,97 +154,99 @@ const ScheduledJobs = () => {
         />
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2> &nbsp; &nbsp;Scheduled Jobs</h2>
+         <h2>&nbsp; &nbsp;Scheduled Jobs</h2>
 
-          <JobsTabs activeTab="scheduled" user={user} />
+          {/* Static tab bar */}
+    <div className="wrapper">
+
+          <div className="tabs-container">
+            <JobsTabs activeTab="scheduled" user={user} />
+          </div>
 
           <div className="jobs-content">
-            {/* {loading ? (
-              <p>Loading scheduled jobs...</p>
-            ) : error ? (
-              <p className="error">{error}</p>
-            ) : ( */}
-              <div style={{ overflowX: 'auto' }}>
-                <table className="jobs-table">
-                  <thead>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="jobs-table">
+                <thead>
+                  <tr>
+                    <th>Vehicle</th>
+                    <th>Booking Ref</th>
+                    <th>Pickup</th>
+                    <th>Dropoff</th>
+                    <th>Meet & Greet</th>
+                    <th>Distance</th>
+                    <th>Price</th>
+                    <th>Journey Date & Time</th>
+                    <th>Action</th>
+                  </tr>
+                  <tr>
+                    {[
+                      'vehicle_type',
+                      'booking_ref_id',
+                      'from_address',
+                      'to_address',
+                      'meet_and_greet',
+                      'distance',
+                      'quoted_price'
+                    ].map((field) => (
+                      <th key={field}>
+                        <input
+                          type="text"
+                          name={field}
+                          placeholder="Filter"
+                          value={filters[field]}
+                          onChange={handleFilterChange}
+                          className="filter-input"
+                        />
+                      </th>
+                    ))}
+                    <th>
+                      <input
+                        type="date"
+                        name="pickup_date"
+                        value={filters.pickup_date}
+                        onChange={handleFilterChange}
+                        className="filter-input"
+                      />
+                    </th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredJobs.length === 0 ? (
                     <tr>
-                      <th>Booking Ref ID</th>
-                      <th>From Address</th>
-                      <th>To Address</th>
-                      <th>Pickup Date</th>
+                      <td colSpan="9" style={{ textAlign: 'center' }}>No matching jobs found.</td>
                     </tr>
-                    <tr>
-                      <th>
-                        <input
-                          type="text"
-                          name="booking_ref_id"
-                          placeholder="Filter"
-                          value={filters.booking_ref_id}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="from_address"
-                          placeholder="Filter"
-                          value={filters.from_address}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="to_address"
-                          placeholder="Filter"
-                          value={filters.to_address}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="date"
-                          name="pickup_date_from"
-                          value={filters.pickup_date_from}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                          style={{ marginBottom: '5px' }}
-                        />
-                        <input
-                          type="date"
-                          name="pickup_date_to"
-                          value={filters.pickup_date_to}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredJobs.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" style={{ textAlign: 'center' }}>
-                          No matching jobs found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredJobs.map((job, index) => (
+                  ) : (
+                    filteredJobs.map((job, index) => {
+                      return (
                         <tr key={job.id || index}>
+                          <td>{job.vehicle_type || 'Saloon'}</td>
                           <td>{job.booking_ref_id}</td>
                           <td>{job.from_address}</td>
                           <td>{job.to_address}</td>
-                          <td>{job.pickup_date}</td>
+                          <td>{job.meet_and_greet || 'No'}</td>
+                          <td>{job.distance ? `${job.distance} miles` : 'N/A'}</td>
+                          <td>£{job.quoted_price || '10.00'}</td>
+                          <td>{job.pickup_date || 'N/A'}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                              <button
+                                className="accept-btn" onClick={() => handleAccept(job)}
+                              >
+                                Accept
+                              </button>
+                              <button className="reject-btn" onClick={() => handleDecline(job)}>Reject</button>
+                            </div>
+                          </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            {/* )} */}
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+        </div>
         </div>
       </div>
     </>

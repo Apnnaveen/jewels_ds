@@ -268,4 +268,41 @@ export async function completed_journeys(driver_id, token) {
 
   return Array.isArray(result.data) ? result.data : []; // return empty array if not valid
 }
+export async function confirmAvailability({ driver_id, booking_journey_id, status, token }) {
+  const response = await fetch('http://jewels_prod.com/api/users/confirm_availability', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      driver_id,
+      booking_journey_id,
+      status,
+    }),
+  });
 
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to confirm availability');
+  }
+  return result.data;
+}
+// Decline job API
+export async function declineJob({ booking_journey_id, driver_id, token }) {
+  const response = await fetch(`http://jewels_prod.com/api/users/declined/${booking_journey_id}/${driver_id}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to decline job');
+  }
+  return result.data;
+}

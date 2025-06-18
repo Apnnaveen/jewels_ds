@@ -1,0 +1,108 @@
+/* Dashboard.css or ScheduledJobs.css */
+
+.jobs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: white;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  min-width: 1000px;
+}
+
+.jobs-table th,
+.jobs-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.jobs-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.jobs-table input.filter-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.accept-btn, .reject-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.accept-btn {
+  background-color: #4CAF50;
+}
+
+.reject-btn {
+  background-color: #f44336;
+}
+
+.accept-btn:hover {
+  background-color: #45a049;
+}
+
+.reject-btn:hover {
+  background-color: #e53935;
+}
+
+.dashboard-main {
+  padding: 30px;
+  background: #f9f9f9;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.jobs-content {
+  margin-top: 10px;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.tabs-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  background-color: #f0f0f0;
+  padding: 10px 16px;
+  border-radius: 6px;
+}
+
+.jobs-content {
+  margin-top: 0px;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  min-height: 400px;
+}
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  min-height: 500px; /* Ensures layout doesn't collapse */
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+
+.tabs-container {
+  margin-bottom: 10px;
+}
+
+.jobs-content {
+  flex-grow: 1;
+}

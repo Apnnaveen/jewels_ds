@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { bid_history } from '../api';
-import './css/Available.css';
-import './css/Dashboard.css';
+
+import './css/Scheduled.css'; 
+
 
 const BidHistory = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -107,8 +108,10 @@ const BidHistory = () => {
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <h2> &nbsp; &nbsp;Bid History</h2>
+     <div className="wrapper">
+        <div className="tabs-container">
           <JobsTabs activeTab="bid" user={user} />
-          
+          </div>
 
           {/* {loading ? (
             <div className="loading">Loading...</div>
@@ -206,6 +209,7 @@ const BidHistory = () => {
 
                 </table>
               </div>
+            </div>
             </div>
           {/* )} */}
         </div>
