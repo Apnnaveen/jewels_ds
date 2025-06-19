@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // import Sidebar from './Sidebar';
-import Available_jobs from './Available_jobs';
+// import Available_jobs from './Available_jobs';
 import ProfilePage from './ProfilePage';
 // import './css/Dashboard.css';
 import AvailableJob from './AvailableJob';

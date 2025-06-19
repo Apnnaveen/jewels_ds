@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 
 const tabs = [
   { label: 'Quotation', path: '/available-jobs', key: 'available' },
-  { label: 'History', path: '/bid-history', key: 'bid' },
-  { label: 'Scheduled Journeys', path: '/scheduled-jobs', key: 'scheduled' },
+  { label: 'My Quotes', path: '/bid-history', key: 'bid' },
+  { label: 'Availability', path: '/scheduled-jobs', key: 'scheduled' },
   { label: 'Tomorrow Journeys', path: '/tomorrow-journeys', key: 'tomorrow' },
-  { label: 'Upcoming Journeys', path: '/upcoming-journeys', key: 'upcoming' },
+  { label: 'Assigned Journeys', path: '/upcoming-journeys', key: 'upcoming' },
   { label: 'Completed Journeys', path: '/completed-jobs', key: 'completed' },
 ];
 

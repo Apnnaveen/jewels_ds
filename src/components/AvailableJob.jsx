@@ -20,8 +20,7 @@ export default function AvailableJob() {
         from_address: '',
         to_address: '',
         waypoint: '',
-        pickup_date_from: '',
-        pickup_date_to: '',
+        pickup_date: '',
         passengers: '',
         luggage: '',
         distance: '',
@@ -46,6 +45,7 @@ export default function AvailableJob() {
 
                 try {
                     const jobsArray = await fetchAvailableJobs(user.driver_id, user.token);
+                    console.log('Available Jobs Response:', jobsArray);
                     setJobs(jobsArray);
                     setFilteredJobs(jobsArray);
                     setReaction(false);
@@ -66,17 +66,17 @@ export default function AvailableJob() {
         }
     }, [user, reaction]);
 
-    useEffect(() => {
+     useEffect(() => {
         const filtered = jobs.filter((job) => {
             const matchText = (key) =>
                 job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-            const jobDate = new Date(job.pickup_date?.split(' at ')[0]);
-            const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
-            const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
-            const dateMatch =
-                (!from || (jobDate && jobDate >= from)) &&
-                (!to || (jobDate && jobDate <= to));
+            const jobDateStr = job.pickup_date?.split(' at ')[0];
+
+            let dateMatch = true;
+            if (filters.pickup_date) {
+                dateMatch = jobDateStr === filters.pickup_date;
+            }
 
             return (
                 (!filters.booking_ref_id || matchText('booking_ref_id')) &&
@@ -165,21 +165,19 @@ export default function AvailableJob() {
     return (
         <>
             <Header />
-            <div className='mt-20 text-center mb-2'>
-                <h2 className=''>Available Journeys</h2>
-            </div>
+            
             {
                 loading ? (<>
                     <Loading /></>
                 ) : (
-                    <div className="dashboard-layout mx-5">
+                    <div className="dashboard-layout mx-5 mt-5">
                         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
                             <div className="w-full">
                                 <div className="w-full">
                                     <JobsTabs activeTab="available" user={user} />
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 px-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-5 mb-2">
                                     <input
                                         type="text"
                                         name="booking_ref_id"
@@ -204,12 +202,12 @@ export default function AvailableJob() {
                                         placeholder="To Address"
                                         className="p-2 border border-gray-300 rounded-md w-full"
                                     />
-                                    <input
+                                      <input
                                         type="date"
-                                        name="pickup_date_from"
-                                        value={filters.pickup_date_from}
+                                        name="pickup_date"
+                                        value={filters.pickup_date}
                                         onChange={handleFilterChange}
-                                        placeholder="From Date"
+                                        placeholder="Journey Date"
                                         className="p-2 border border-gray-300 rounded-md w-full"
                                     />
                                 </div>
@@ -246,6 +244,12 @@ export default function AvailableJob() {
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                            <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint:
+                                                        </span>
+                                                        <span className="text-right">{job.waypoint}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-map-pin text-red-500"></i> DropOff:
                                                         </span>
                                                         <span className="text-right">{job.to_address}</span>
@@ -254,7 +258,7 @@ export default function AvailableJob() {
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-road text-yellow-500"></i> Distance:
                                                         </span>
-                                                        <span className="text-right">{job.distance} miles Approx</span>
+                                                        <span className="text-right">{job.distance} Approx</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -315,7 +319,7 @@ export default function AvailableJob() {
 
                             {showModal && (
                                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full transform transition-all duration-300 scale-100 opacity-100">
+                                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">
                                         <button
                                             onClick={handleCloseModal}
                                             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
@@ -323,53 +327,53 @@ export default function AvailableJob() {
                                         >
                                             &times;
                                         </button>
-                                        <div>
-                                            {/* {loadingDetails && <div>Loading details...</div>} */}
-                                            {detailsError && <div className="text-red-500">{detailsError}</div>}
-                                            {selectedJob && (
-                                                <>
-                                                    <div className="flex justify-between items-center mb-4">
-                                                        <h2 className="text-xl font-bold"><i className="fas fa-pound-sign"></i> Submit Your Quote</h2>
-                                                        <span className="text-gray-600">
-                                                            Guide Price: £{selectedJob.guidedprice ?? 'N/A'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="mb-2">
-                                                        <i className="fas fa-calendar-alt"></i> <b>Bid Expiry:</b> {selectedJob.bid_expiry_date ?? 'N/A'}
-                                                    </div>
-                                                    <div className="mb-4">
-                                                        <i className="fas fa-hourglass-half"></i> <b>Bid Expire Time:</b> {selectedJob.bid_expiry_time ?? 'N/A'}
-                                                    </div>
-                                                    <input
-                                                        type="number"
-                                                        placeholder="£ Quote Here"
-                                                        value={quote}
-                                                        onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
-                                                        className="w-full p-2 border border-gray-300 rounded mb-4"
-                                                    />
-                                                    <button
-                                                        className={`w-full p-2 rounded ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white`}
-                                                        disabled={!isChecked || !quote || submitting}
-                                                        onClick={handleSubmitBid}
-                                                    >
-                                                        {submitting ? 'Submitting...' : 'Submit'}
-                                                    </button>
-                                                    <div className="mt-4 flex items-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isChecked}
-                                                            onChange={(e) => setIsChecked(e.target.checked)}
-                                                            className="mr-2"
-                                                        />
-                                                        <span>
-                                                            By submitting your quote, you are accepting the Jewels Airport Transfers{' '}
-                                                            <a href="#" target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                                                                terms and conditions
-                                                            </a>
-                                                        </span>
-                                                    </div>
-                                                </>
-                                            )}
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h2 className="text-xl font-bold text-gray-800">Submit Your Quote</h2>
+                                            <span className="text-green-600 font-bold">Guide Price: £123.37</span>
+                                        </div>
+ 
+                                        <div className="mb-4">
+                                            <div className="flex items-center mb-2">
+                                                <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
+                                                <span className="font-medium text-gray-700">Bid Expiry: 04-06-2025</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <i className="fas fa-clock mr-2 text-blue-600"></i>
+                                                <span className="font-medium text-gray-700">Bid Expire Time: 00h 32m 30s</span>
+                                            </div>
+                                        </div>
+ 
+                                        <div className="mb-4">
+                                            <input
+                                                type="number"
+                                                placeholder="£ Quote Here"
+                                                value={quote}
+                                                onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
+                                                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            />
+                                        </div>
+ 
+                                        <button
+                                            className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                            disabled={!isChecked || !quote}
+                                            onClick={handleSubmitBid}
+                                        >
+                                            {submitting ? 'Submitting...' : 'Submit'}
+                                        </button>
+ 
+                                        <div className="mt-4 flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={(e) => setIsChecked(e.target.checked)}
+                                                className="mr-2"
+                                            />
+                                            <span className="text-gray-700">
+                                                By submitting your quote, you are accepting the Jewels Airport Transfers{' '}
+                                                <a href="#" target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                                                    terms and conditions
+                                                </a>
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

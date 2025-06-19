@@ -36,6 +36,7 @@ const BidHistory = () => {
     const fetchBidHistory = async () => {
       try {
         const response = await bid_history(user.driver_id, user.token);
+        console.log('Bid History Response:', response);
         const data = Array.isArray(response) ? response : [];
         setBidHistory(data);
         setFilteredBids(data);
@@ -94,10 +95,8 @@ const BidHistory = () => {
   return (
     <>
       <Header />
-      <div className='mt-20 text-center mb-2'>
-        <h2 className=''>Bid History</h2>
-      </div>
-      <div className="dashboard-layout mx-5">
+      
+      <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
             <div className="w-full">
@@ -157,25 +156,19 @@ const BidHistory = () => {
             </div>
 
             {/* Card Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 items-stretch">
               {filteredBids.length > 0 ? (
                 filteredBids.map((bid, idx) => (
                   <div
                     key={bid.id || idx}
-                    className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
+                    className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full justify-between"
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
                       <span className="text-sm text-green-600 font-medium">Bid</span>
                     </div>
                     <div className="mb-3">
-                      <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                        <i className="fas fa-car-side"></i> {bid.car_id || 'N/A'}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                        <i className="fas fa-info-circle text-gray-500"></i>
-                        <span className="font-medium text-gray-700">Car Info:</span> {bid.car_info || 'N/A'}
-                      </p>
+                     
                       <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                         <i className="fas fa-receipt text-gray-500"></i> {bid.booking_ref_id}
                       </p>
