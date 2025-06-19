@@ -165,14 +165,14 @@ export default function AvailableJob() {
     return (
         <>
             <Header />
-            <div className='mt-20 text-center'>
-                <h2 className=''>Available Jobs</h2>
+            <div className='mt-20 text-center mb-2'>
+                <h2 className=''>Available Journeys</h2>
             </div>
             {
                 loading ? (<>
                     <Loading /></>
                 ) : (
-                    <div className="dashboard-layout">
+                    <div className="dashboard-layout mx-5">
                         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
                             <div className="w-full">
                                 <div className="w-full">

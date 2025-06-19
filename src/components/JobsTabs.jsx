@@ -4,17 +4,17 @@ import { useNavigate } from 'react-router-dom';
 const tabs = [
   { label: 'Quotation', path: '/available-jobs', key: 'available' },
   { label: 'History', path: '/bid-history', key: 'bid' },
-  { label: 'Scheduled Jobs', path: '/scheduled-jobs', key: 'scheduled' },
-  { label: 'Upcoming Journeys', path: '/upcoming-journeys', key: 'upcoming' },
+  { label: 'Scheduled Journeys', path: '/scheduled-jobs', key: 'scheduled' },
   { label: 'Tomorrow Journeys', path: '/tomorrow-journeys', key: 'tomorrow' },
-  { label: 'Completed Jobs', path: '/completed-jobs', key: 'completed' },
+  { label: 'Upcoming Journeys', path: '/upcoming-journeys', key: 'upcoming' },
+  { label: 'Completed Journeys', path: '/completed-jobs', key: 'completed' },
 ];
 
 const JobsTabs = ({ activeTab, user }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
   {tabs.map((tab) => (
     <button
       key={tab.key}

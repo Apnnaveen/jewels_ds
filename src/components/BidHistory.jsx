@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { bid_history } from '../api';
 
-import './css/Scheduled.css'; 
+import Header from './MainHeader/Header';
 
 
 const BidHistory = () => {
@@ -93,123 +93,140 @@ const BidHistory = () => {
 
   return (
     <>
-      
-
-      <div className="dashboard-layout">
-        <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        />
-
+      <Header />
+      <div className='mt-20 text-center mb-2'>
+        <h2 className=''>Bid History</h2>
+      </div>
+      <div className="dashboard-layout mx-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2> &nbsp; &nbsp;Bid History</h2>
-     <div className="wrapper">
-        <div className="tabs-container">
-          <JobsTabs activeTab="bid" user={user} />
+          <div className="w-full">
+            <div className="w-full">
+              <JobsTabs activeTab="bid" user={user} />
+            </div>
+
+            {/* Filter Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 px-5">
+              <input
+                type="text"
+                name="booking_ref_id"
+                value={filters.booking_ref_id}
+                onChange={handleFilterChange}
+                placeholder="Booking Ref"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+              <input
+                type="text"
+                name="biding_amount"
+                value={filters.biding_amount}
+                onChange={handleFilterChange}
+                placeholder="Bid Amount"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+              <input
+                type="date"
+                name="pickup_date_from"
+                value={filters.pickup_date_from}
+                onChange={handleFilterChange}
+                placeholder="From Date"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+              <input
+                type="date"
+                name="pickup_date_to"
+                value={filters.pickup_date_to}
+                onChange={handleFilterChange}
+                placeholder="To Date"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+              <input
+                type="text"
+                name="from_address"
+                value={filters.from_address}
+                onChange={handleFilterChange}
+                placeholder="From Address"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+              <input
+                type="text"
+                name="to_address"
+                value={filters.to_address}
+                onChange={handleFilterChange}
+                placeholder="To Address"
+                className="p-2 border border-gray-300 rounded-md w-full"
+              />
+            </div>
+
+            {/* Card Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+              {filteredBids.length > 0 ? (
+                filteredBids.map((bid, idx) => (
+                  <div
+                    key={bid.id || idx}
+                    className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
+                      <span className="text-sm text-green-600 font-medium">Bid</span>
+                    </div>
+                    <div className="mb-3">
+                      <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                        <i className="fas fa-car-side"></i> {bid.car_id || 'N/A'}
+                      </h4>
+                      <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                        <i className="fas fa-info-circle text-gray-500"></i>
+                        <span className="font-medium text-gray-700">Car Info:</span> {bid.car_info || 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                        <i className="fas fa-receipt text-gray-500"></i> {bid.booking_ref_id}
+                      </p>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-700">
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
+                        </span>
+                        <span className="text-right">{bid.from_address}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-map-pin text-red-500"></i> DropOff:
+                        </span>
+                        <span className="text-right">{bid.to_address}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-road text-yellow-500"></i> Distance:
+                        </span>
+                        <span className="text-right">{bid.distance ? `${bid.distance} miles Approx` : 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                        </span>
+                        <span className="text-right">{bid.pickup_date?.split(' at ')[0]}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                        </span>
+                        <span className="text-right">{bid.pickup_date?.split(' at ')[1]}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                          <i className="fas fa-pound-sign text-green-600"></i> Bid Amount:
+                        </span>
+                        <span className="text-right font-bold text-green-700">£{bid.biding_amount}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-gray-600 p-4 border rounded-md">
+                  <p>No matching bid history found.</p>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* {loading ? (
-            <div className="loading">Loading...</div>
-          ) : ( */}
-            <div className="jobs-content">
-              <div style={{ overflowX: 'auto' }}>
-                <table className="jobs-table">
-                  <thead>
-                    <tr>
-                      <th>Booking Ref ID</th>
-                      <th>Bid Amount</th>
-                      <th>Pickup Date</th>
-                      <th>From Address</th>
-                      <th>To Address</th>
-                    </tr>
-                    <tr>
-                      <th>
-                        <input
-                          type="text"
-                          name="booking_ref_id"
-                          placeholder="Filter"
-                          value={filters.booking_ref_id}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="biding_amount"
-                          placeholder="Filter"
-                          value={filters.biding_amount}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="date"
-                          name="pickup_date_from"
-                          value={filters.pickup_date_from}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                          style={{ marginBottom: '5px' }}
-                        />
-                        <input
-                          type="date"
-                          name="pickup_date_to"
-                          value={filters.pickup_date_to}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="from_address"
-                          placeholder="Filter"
-                          value={filters.from_address}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                      <th>
-                        <input
-                          type="text"
-                          name="to_address"
-                          placeholder="Filter"
-                          value={filters.to_address}
-                          onChange={handleFilterChange}
-                          className="filter-input"
-                        />
-                      </th>
-                    </tr>
-                  </thead>
-                 <tbody>
-                  {filteredBids.length > 0 ? (
-                    filteredBids.map((bid, index) => (
-                      <tr key={bid.id || index}>
-                        <td data-label="Booking Ref ID">{bid.booking_ref_id}</td>
-                        <td data-label="Bid Amount">{bid.biding_amount}</td>
-                        <td data-label="Pickup Date">{bid.pickup_date}</td>
-                        <td data-label="From Address">{bid.from_address}</td>
-                        <td data-label="To Address">{bid.to_address}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '30px 0', color: '#888' }}>
-                        No matching bid history found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-
-                </table>
-              </div>
-            </div>
-            </div>
-          {/* )} */}
         </div>
       </div>
     </>

@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
+import Header from './MainHeader/Header';
+
 import { scheduled_journey_details, confirmAvailability, declineJob } from '../api'; 
 // import './css/Available.css';
 // import './css/Dashboard.css';
-import './css/Scheduled.css'; 
+// import './css/Scheduled.css'; 
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -140,25 +142,19 @@ const handleDecline = async (job) => {
 
   return (
     <>
-    
-      <div className="dashboard-layout">
-        <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        />
+     <Header />
+     <div className='mt-20 text-center mb-2'>
+        <h2 className=''>Scheduled Journeys</h2>
+      </div>
+      <div className="dashboard-layout mx-5">
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-         <h2>&nbsp; &nbsp;Scheduled Jobs</h2>
 
           {/* Static tab bar */}
-    <div className="wrapper">
-
-          <div className="tabs-container">
-            <JobsTabs activeTab="scheduled" user={user} />
-          </div>
+    <div className="w-full">
+            <div className="w-full">
+              <JobsTabs activeTab="scheduled" user={user} />
+            </div>
 
           <div className="jobs-content">
             <div style={{ overflowX: 'auto' }}>

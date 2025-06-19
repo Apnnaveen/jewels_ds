@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { completed_journeys } from '../api'; // your provided API
+import Header from './MainHeader/Header';
 
-import './css/Scheduled.css'; 
+// import './css/Scheduled.css'; 
 
 
 const CompletedJobs = () => {
@@ -108,21 +109,19 @@ const CompletedJobs = () => {
     <>
      
 
-      <div className="dashboard-layout">
-        <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        />
+     <Header />
+     <div className='mt-20 text-center mb-2'>
+        <h2 className=''>Completed Journeys</h2>
+      </div>
+      <div className="dashboard-layout mx-5">
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2> &nbsp; &nbsp;Completed Jobs</h2>
-      <div className="wrapper">  
-        <div className="tabs-container">
-          <JobsTabs activeTab="completed" user={user} />
-        </div>
+
+          {/* Static tab bar */}
+       <div className="w-full">
+            <div className="w-full">
+              <JobsTabs activeTab="completed" user={user} />
+            </div>
 
           <div className="jobs-content">
             {loading ? (

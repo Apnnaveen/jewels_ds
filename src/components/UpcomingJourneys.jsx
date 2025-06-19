@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { upcoming_journey_details } from '../api';
+import Header from './MainHeader/Header';
 
-import './css/Scheduled.css'; 
 
 
 const UpcomingJobs = () => {
@@ -109,21 +109,17 @@ const UpcomingJobs = () => {
 
   return (
     <>
-    
-
-      <div className="dashboard-layout">
-        <Sidebar
-          user={user}
-          onLogout={handleLogout}
-          open={sidebarOpen}
-          activeItem={activeItem}
-          setActiveItem={setActiveItem}
-        />
+     <Header />
+     <div className='mt-20 text-center mb-2'>
+        <h2 className=''>Upcoming Journeys</h2>
+      </div>
+      <div className="dashboard-layout mx-5">
 
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
-          <h2> &nbsp; &nbsp;Upcoming Jobs</h2>
-      <div className="wrapper">
-            <div className="tabs-container">
+
+          {/* Static tab bar */}
+       <div className="w-full">
+            <div className="w-full">
               <JobsTabs activeTab="upcoming" user={user} />
             </div>
           <div className="jobs-content">
