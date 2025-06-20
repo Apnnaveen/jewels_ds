@@ -12,7 +12,7 @@ export default function Dashboard() {
     const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : { name: '', email: '' };
   });
-
+  
   const handleLogout = () => {
     localStorage.removeItem('user');
     window.location.href = '/';

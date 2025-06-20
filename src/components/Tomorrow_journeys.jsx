@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { tomorrow_journeys } from '../api';
+import { tomorrow_journeys, getAllCars, acknowledgeStatus } from '../api';
 import Header from './MainHeader/Header';
+import Loading from './Loading/Loading';
 
 const TomorrowJourneys = () => {
   const location = useLocation();
@@ -13,8 +14,10 @@ const TomorrowJourneys = () => {
   const [tomorrowJobs, setTomorrowJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
-
+  const [cars, setCars] = useState([]);
+  const [ackLoading, setAckLoading] = useState({});
   // Only 4 filters: refid, from, to, date
   const [filters, setFilters] = useState({
     booking_ref_id: '',
@@ -30,7 +33,10 @@ const TomorrowJourneys = () => {
           setError('User not authenticated');
           return;
         }
-        const response = await tomorrow_journeys(user.driver_id, user.token);
+        const [response, carsArray] = await Promise.all([
+                                tomorrow_journeys(user.driver_id, user.token),
+                                getAllCars(user.driver_id, user.token)
+                            ]);
         const jobs = Array.isArray(response)
           ? response
           : Array.isArray(response?.data)
@@ -38,6 +44,7 @@ const TomorrowJourneys = () => {
           : [];
         setTomorrowJobs(jobs);
         setFilteredJobs(jobs);
+        setCars(Array.isArray(carsArray) ? carsArray : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
@@ -47,6 +54,40 @@ const TomorrowJourneys = () => {
     fetchData();
   }, [user]);
 
+  const getCarName = (car_id) => {
+        const car = cars.find((c) => c.car_id === car_id);
+        return car ? car.car_name : car_id;
+    };
+const handleAcknowledge = async (job) => {
+    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
+    try {
+      await acknowledgeStatus({
+        driver_id: user.driver_id,
+        booking_journey_id: job.booking_journey_id,
+        acknowledge_status: 1,
+        token: user.token,
+      });
+      // Update local state to reflect acknowledgment
+      setTomorrowJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1 }
+            : j
+        )
+      );
+      setFilteredJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1 }
+            : j
+        )
+      );
+    } catch (err) {
+      alert(err.message || 'Failed to acknowledge job');
+    } finally {
+      setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+    }
+  };
   useEffect(() => {
     const filtered = tomorrowJobs.filter((job) => {
       const match = (key) =>
@@ -83,7 +124,14 @@ const TomorrowJourneys = () => {
 
   return (
     <>
-      <Header />
+       <Header />
+       {actionLoading && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+            <div className="bg-white p-4 rounded-lg shadow-lg">
+                <Loading />
+            </div>
+            </div>
+        )}
     
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
@@ -134,10 +182,10 @@ const TomorrowJourneys = () => {
 
             {/* Card Grid */}
             <div className="jobs-content">
-              {loading ? (
-                <p>Loading tomorrow's jobs...</p>
-              ) : error ? (
-                <p className="error">{error}</p>
+             {loading ? (
+                <div className="col-span-full flex justify-center items-center h-64">
+                  <Loading />
+                </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {filteredJobs.length > 0 ? (
@@ -148,11 +196,11 @@ const TomorrowJourneys = () => {
                       >
                         <div className="flex justify-between items-center mb-2">
                           <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
-                          <span className="text-sm text-green-600 font-medium">Tomorrow</span>
+                          <span className="text-sm text-blue-600 font-medium">Tomorrow</span>
                         </div>
                         <div className="mb-3">
                           <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                            <i className="fas fa-car-side"></i> {job.car_id}
+                            <i className="fas fa-car-side"></i> {getCarName(job.car_id)}
                           </h4>
                           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                             <i className="fas fa-info-circle text-gray-500"></i>
@@ -169,6 +217,19 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="text-right">{job.from_address}</span>
                           </div>
+                          {/* Waypoint display logic */}
+                          {job.waypoint && job.waypoint.trim() !== '' && (
+                            job.waypoint.split('|').map((wp, i) => (
+                              wp.trim() && (
+                                <div className="flex justify-between" key={i}>
+                                  <span className="flex items-center gap-2 font-medium text-gray-600">
+                                    <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                  </span>
+                                  <span className="text-right">{wp.trim()}</span>
+                                </div>
+                              )
+                            ))
+                          )}
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-map-pin text-red-500"></i> DropOff:
@@ -199,11 +260,20 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="text-right">{job.luggage}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-handshake text-green-500"></i> Meet & Greet:
-                            </span>
-                            <span className="text-right">{job.meet_greet}</span>
+                          <div className="flex justify-end mt-2">
+                            {job.acknowledge_status === 1 || job.acknowledge_status === '1' ? (
+                              <span className="text-green-600 font-semibold px-3 py-1 rounded bg-green-100 text-sm">
+                                Acknowledged
+                              </span>
+                            ) : (
+                              <button
+                                className="text-white px-3 py-1 rounded bg-blue-500 text-sm hover:bg-blue-600 hover:text-white transition-colors"
+                                onClick={() => handleAcknowledge(job)}
+                                disabled={!!ackLoading[job.booking_journey_id]}
+                              >
+                                {ackLoading[job.booking_journey_id] ? 'Acknowledging...' : 'Acknowledge'}
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -214,8 +284,9 @@ const TomorrowJourneys = () => {
                     </div>
                   )}
                 </div>
-              )}
+                )}
             </div>
+            
           </div>
         </div>
       </div>

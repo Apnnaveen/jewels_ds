@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history } from '../api';
+import { bid_history, getAllCars } from '../api';
+import Loading from './Loading/Loading';
 
 import Header from './MainHeader/Header';
 
@@ -13,6 +14,9 @@ const BidHistory = () => {
   const [bidHistory, setBidHistory] = useState([]);
   const [filteredBids, setFilteredBids] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cars, setCars] = useState([]);
+  const [actionLoading, setActionLoading] = useState(false);
+
 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
@@ -35,11 +39,14 @@ const BidHistory = () => {
 
     const fetchBidHistory = async () => {
       try {
-        const response = await bid_history(user.driver_id, user.token);
-        console.log('Bid History Response:', response);
+        const [response, carsArray] = await Promise.all([
+                                bid_history(user.driver_id, user.token),
+                                getAllCars(user.driver_id, user.token)
+                            ]);
         const data = Array.isArray(response) ? response : [];
         setBidHistory(data);
         setFilteredBids(data);
+        setCars(Array.isArray(carsArray) ? carsArray : []);
       } catch (error) {
         console.error('Error fetching bid history:', error);
       } finally {
@@ -49,6 +56,11 @@ const BidHistory = () => {
 
     fetchBidHistory();
   }, [user, navigate]);
+
+const getCarName = (car_id) => {
+        const car = cars.find((c) => c.car_id === car_id);
+        return car ? car.car_name : car_id;
+    };
 
   useEffect(() => {
     const filtered = bidHistory.filter((bid) => {
@@ -94,8 +106,15 @@ const BidHistory = () => {
 
   return (
     <>
-      <Header />
-      
+     <Header />
+       {actionLoading && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50">
+            <div className="bg-white p-4 rounded-lg shadow-lg">
+                <Loading />
+            </div>
+            </div>
+        )}
+  
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
@@ -156,6 +175,11 @@ const BidHistory = () => {
             </div>
 
             {/* Card Grid */}
+             {loading ? (
+                <div className="col-span-full flex justify-center items-center h-64">
+                  <Loading />
+                </div>
+              ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 items-stretch">
               {filteredBids.length > 0 ? (
                 filteredBids.map((bid, idx) => (
@@ -165,10 +189,12 @@ const BidHistory = () => {
                   >
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
-                      <span className="text-sm text-green-600 font-medium">Bid</span>
+                      <span className="text-sm text-blue-600 font-medium">Bid</span>
                     </div>
                     <div className="mb-3">
-                     
+                     <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                         <i className="fas fa-car-side"></i> {getCarName(bid.car_id)}
+                       </h4>
                       <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                         <i className="fas fa-receipt text-gray-500"></i> {bid.booking_ref_id}
                       </p>
@@ -180,6 +206,19 @@ const BidHistory = () => {
                         </span>
                         <span className="text-right">{bid.from_address}</span>
                       </div>
+                      {/* Waypoint display logic */}
+                       {bid.waypoint && bid.waypoint.trim() !== '' && (
+                           bid.waypoint.split('|').map((wp, i) => (
+                               wp.trim() && (
+                                   <div className="flex justify-between" key={i}>
+                                       <span className="flex items-center gap-2 font-medium text-gray-600">
+                                           <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint{bid.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                       </span>
+                                       <span className="text-right">{wp.trim()}</span>
+                                   </div>
+                               )
+                           ))
+                       )}
                       <div className="flex justify-between">
                         <span className="flex items-center gap-2 font-medium text-gray-600">
                           <i className="fas fa-map-pin text-red-500"></i> DropOff:
@@ -219,6 +258,7 @@ const BidHistory = () => {
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       </div>

@@ -252,6 +252,19 @@ const ScheduledJobs = () => {
                             </span>
                             <span className="text-right">{job.from_address}</span>
                           </div>
+                           {/* Waypoint display logic */}
+                             {job.waypoint && job.waypoint.trim() !== '' && (
+                                 job.waypoint.split('|').map((wp, i) => (
+                                     wp.trim() && (
+                                         <div className="flex justify-between" key={i}>
+                                             <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                 <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                             </span>
+                                             <span className="text-right">{wp.trim()}</span>
+                                         </div>
+                                     )
+                                 ))
+                             )}
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-map-pin text-red-500"></i> DropOff:
@@ -280,7 +293,7 @@ const ScheduledJobs = () => {
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-pound-sign text-green-500"></i> Price:
                             </span>
-                            <span className="text-right">£{job.quoted_price || '10.00'}</span>
+                            <span className="text-right">£{job.biding_amount || '10.00'}</span>
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">

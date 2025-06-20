@@ -10,6 +10,8 @@ import Completed_journeys from './components/Completed_journeys';
 import Dashboard from './components/Dashboard';
 import Bidjobs from './components/BidHistory';
 import ForgotPassword from './components/ForgotPassword';
+import ProfilePage from './components/ProfilePage';
+
 
 
 function App() {
@@ -20,8 +22,8 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/available-jobs" element={<AvailableJobs />} />
+        <Route path="/profile" element={<ProfilePage />} />
 
-        
         <Route path="/bid-history" element={<Bidjobs />} />
         <Route path="/scheduled-jobs" element={<ScheduledJobs />} />
         <Route path="/upcoming-journeys" element={<UpcomingJourneys />} />

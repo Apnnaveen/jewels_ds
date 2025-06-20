@@ -8,6 +8,14 @@ export default function Header() {
     const [activeItem, setActiveItem] = useState('dashboard');
     const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
 
+    useEffect(() => {
+            if (location.pathname.includes('profile')) {
+                setActiveItem('profile');
+            } else if (location.pathname.includes('dashboard')) {
+                setActiveItem('dashboard');
+            }
+        }, [location.pathname]);
+
     const handleLogout = () => {
         localStorage.removeItem('user');
         navigate('/');
@@ -33,7 +41,7 @@ export default function Header() {
     const handleMenuClick = (key) => {
         setActiveItem(key);
         setMenuOpen(false);
-        navigate(`/${key}`);
+        navigate(`/${key}`, { state: { user } });
     };
 
     return (

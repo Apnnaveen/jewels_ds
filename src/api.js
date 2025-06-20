@@ -307,7 +307,7 @@ export async function declineJob({ booking_journey_id, driver_id, token }) {
   return result.data;
 }
 export async function updateJobData({ driver_id, booking_journey_id, status_code, token }) {
-  const response = await fetch(`https://jat-uk.com/api/users/update_job_data/${driver_id}/${booking_journey_id}/${status_code}`,
+  const response = await fetch(`https://jat-uk.com/api/users/update_icon_data/${driver_id}/${booking_journey_id}/${status_code}`,
     {
       method: 'GET',
       headers: {
@@ -320,6 +320,43 @@ export async function updateJobData({ driver_id, booking_journey_id, status_code
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.message || 'Failed to update job data');
+  }
+  return result.data;
+}
+export async function getAllCars(driverId, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/get_all_cars/`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch cars');
+  }
+
+  return result.data;
+}
+// acknowledge_status API
+export async function acknowledgeStatus({ driver_id, booking_journey_id, acknowledge_status, token }) {
+  const response = await fetch('https://jat-uk.com/api/users/acknowledge_status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      driver_id,
+      booking_journey_id,
+      acknowledge_status,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to update acknowledged status');
   }
   return result.data;
 }

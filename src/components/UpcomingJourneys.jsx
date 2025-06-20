@@ -1,18 +1,20 @@
+// ...existing imports...
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars } from '../api';
 import Header from './MainHeader/Header';
+import Loading from './Loading/Loading';
 
 const UpcomingJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
-  const [jobStatus, setJobStatus] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [upcomingJobs, setUpcomingJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false); // NEW
   const [error, setError] = useState('');
 
   // Filters
@@ -22,19 +24,23 @@ const UpcomingJobs = () => {
     to_address: '',
     pickup_date: '',
   });
-
+ const [cars, setCars] = useState([]);
   // Fetch jobs
-  useEffect(() => {
+ useEffect(() => {
     const fetchUpcomingJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
           setError('User not authenticated');
           return;
         }
-        const data = await upcoming_journey_details(user.driver_id, user.token);
-        const jobs = Array.isArray(data) ? data : [];
+        const [jobsData, carsData] = await Promise.all([
+          upcoming_journey_details(user.driver_id, user.token),
+          getAllCars(user.driver_id, user.token)
+        ]);
+        const jobs = Array.isArray(jobsData) ? jobsData : [];
         setUpcomingJobs(jobs);
         setFilteredJobs(jobs);
+        setCars(Array.isArray(carsData) ? carsData : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
@@ -43,7 +49,10 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
-
+ const getCarName = (car_id) => {
+    const car = cars.find((c) => c.car_id === car_id);
+    return car ? car.car_name : car_id;
+  };
   // Filter jobs
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
@@ -73,6 +82,7 @@ const UpcomingJobs = () => {
 
   // Handle status update
   const handleStatusUpdate = async (job, status_code) => {
+    setActionLoading(true);
     try {
       await updateJobData({
         driver_id: user.driver_id,
@@ -80,18 +90,25 @@ const UpcomingJobs = () => {
         status_code,
         token: user.token,
       });
-      setJobStatus((prev) => ({
-        ...prev,
-        [job.id || job.booking_journey_id]: status_code,
-      }));
+      alert('Status updated successfully!');
+      window.location.reload();
     } catch (err) {
       alert(err.message || 'Failed to update job status');
+    } finally {
+      setActionLoading(false);
     }
   };
 
   return (
     <>
       <Header />
+      {actionLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <Loading />
+          </div>
+        </div>
+      )}
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
@@ -135,16 +152,18 @@ const UpcomingJobs = () => {
 
             {/* Card Grid */}
             <div className="jobs-content">
-              {loading ? (
-                <p>Loading upcoming jobs...</p>
-              ) : error ? (
-                <p className="error">{error}</p>
-              ) : (
+             {loading ? (
+                <div className="col-span-full flex justify-center items-center h-64">
+                  <Loading />
+                </div>
+              ) :(
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => {
                       const jobKey = job.id || job.booking_journey_id || idx;
-                      const status = jobStatus[jobKey] || job.status_code;
+                      // Use icon_status or status_code as the source of truth
+                      const status = job.icon_status ?? job.status_code;
+                      console.log('Job:', job, 'Status:', status); // Debugging log
                       return (
                         <div
                           key={jobKey}
@@ -156,14 +175,14 @@ const UpcomingJobs = () => {
                           </div>
                           <div className="mb-3">
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                              <i className="fas fa-car-side"></i> {job.car_id}
+                              <i className="fas fa-car-side"></i> {getCarName(job.car_id)}
                             </h4>
                             <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                               <i className="fas fa-info-circle text-gray-500"></i>
                               <span className="font-medium text-gray-700">Car Info:</span> {job.car_info}
                             </p>
                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                              <i className="fas fa-receipt text-gray-500"></i> {job.booking_sub_id}
+                              <i className="fas fa-receipt text-gray-500"></i> {job.booking_ref_id}
                             </p>
                           </div>
                           <div className="space-y-2 text-sm text-gray-700">
@@ -212,30 +231,44 @@ const UpcomingJobs = () => {
                               </span>
                             </div>
                             <div className="flex justify-end gap-2 mt-3">
-                              {/* Active (status 1) */}
+                              {/* Active Button */}
                               <button
                                 type="button"
-                                className={`inline-flex items-center p-2 border border-orange-300 rounded-full bg-orange-100 hover:bg-orange-200 transition relative`}
-                                title="Active"
+                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
+                                  ${status == 1 ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-700' : 'bg-orange-100  text-orange-700 hover:bg-orange-700 hover:text-white border-orange-300'}
+                                `}
                                 onClick={() => handleStatusUpdate(job, 1)}
                               >
-                                <i className="fas fa-running text-orange-500 text-lg"></i>
-                                {status === 1 && (
-                                  <span className="absolute top-0 right-0 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"></span>
+                                Active
+                                {status == 1 && (
+                                  <span className="ml-2 text-xs font-semibold">(Active)</span>
                                 )}
                               </button>
-                              {/* Pop (status 2) */}
+                              {/* POB Button */}
                               <button
                                 type="button"
-                                className={`inline-flex items-center p-2 border border-blue-300 rounded-full bg-blue-100 hover:bg-blue-200 transition relative`}
-                                title="Passenger On Board"
+                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
+                                  ${status == 2 ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-700' : 'bg-blue-100 text-blue-700 hover:bg-blue-700 hover:text-white border-blue-300'}
+                                `}
                                 onClick={() => handleStatusUpdate(job, 2)}
                               >
-                                <i className="fas fa-wheelchair text-blue-500 text-lg"></i>
-                                {status === 2 && (
-                                  <span className="absolute top-0 right-0 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>
+                                POB
+                                {status == 2 && (
+                                  <span className="ml-2 text-xs font-semibold">(POB)</span>
                                 )}
                               </button>
+                              {/* Completed Button */}
+                              <button
+                                type="button"
+                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
+                                  ${status == 3 ? 'bg-green-500 text-white border-green-600 hover:bg-green-700' : 'bg-green-100 text-green-700 hover:bg-green-700 hover:text-white border-green-300'}
+                                `}
+                                onClick={() => handleStatusUpdate(job, 3)}>
+                                Completed
+                                {status == 3 && (
+                                  <span className="ml-2 text-xs font-semibold">(Completed)</span>
+                                )}
+                                </button>
                             </div>
                           </div>
                         </div>
@@ -247,7 +280,7 @@ const UpcomingJobs = () => {
                     </div>
                   )}
                 </div>
-              )}
+                )}
             </div>
           </div>
         </div>
@@ -257,3 +290,4 @@ const UpcomingJobs = () => {
 };
 
 export default UpcomingJobs;
+// ...existing code...
