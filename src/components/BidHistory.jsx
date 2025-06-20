@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history, getAllCars } from '../api';
+import { bid_history, getAllCars, bidJob, withdrawJob } from '../api';
 import Loading from './Loading/Loading';
 
 import Header from './MainHeader/Header';
@@ -16,7 +16,12 @@ const BidHistory = () => {
   const [loading, setLoading] = useState(true);
   const [cars, setCars] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [quote, setQuote] = useState('');
+  const [isChecked, setIsChecked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [reaction, setReaction] = useState(false); // <-- add this if setReaction is used
 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
@@ -26,11 +31,80 @@ const BidHistory = () => {
     pickup_date_from: '',
     pickup_date_to: ''
   });
-
+  
+  const handleUpdateBid = (bid) => {
+    setSelectedBid(bid);
+    setQuote(bid.biding_amount || '');
+    setShowModal(true);
+    setIsChecked(false);
+  };
+   const handleSubmitUpdateBid = async () => {
+    setActionLoading(true);
+    if (!selectedBid || !quote || !isChecked) return;
+    setSubmitting(true);
+    try {
+      await bidJob({
+        booking_journey_id: selectedBid.booking_journey_id,
+        driver_id: user.driver_id,
+        email: user.email,
+        fare: quote,
+        token: user.token,
+      });
+      alert('Bid submitted successfully!');
+      setShowModal(false);
+      setQuote('');
+      setIsChecked(false);
+      setReaction(true);
+      
+    } catch (err) {
+      setLoading(false);
+      alert('Failed to submit bid: ' + err.message);
+    }finally {
+      setActionLoading(false);
+    }
+    setSubmitting(false);
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
+  const handleWithdrawJob = async (bid) => {
+    if (!window.confirm('Are you sure you want to withdraw this job?')) return;
+    setActionLoading(true);
+    try {
+      await withdrawJob({
+        driver_id: user.driver_id,
+        booking_journey_id: bid.booking_journey_id,
+        token: user.token,
+      });
+      alert('Job withdrawn successfully!');
+      // Optionally refresh bid history
+      setBidHistory((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
+      setFilteredBids((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
+    } catch (err) {
+      alert('Failed to withdraw job: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  useEffect(() => {
+  if (reaction) {
+    const fetchUpdatedBids = async () => {
+      setActionLoading(true);
+      try {
+        const updatedBids = await bid_history(user.driver_id, user.token);
+        setBidHistory(updatedBids);
+        setFilteredBids(updatedBids);
+      } catch (error) {
+        console.error("Error refreshing bid history after update:", error);
+      } finally {
+        setActionLoading(false);
+        setReaction(false); // reset the flag
+      }
+    };
 
+    fetchUpdatedBids();
+  }
+}, [reaction, user]);
   useEffect(() => {
     if (!user?.driver_id || !user?.token) {
       navigate('/login');
@@ -39,10 +113,12 @@ const BidHistory = () => {
 
     const fetchBidHistory = async () => {
       try {
+        
         const [response, carsArray] = await Promise.all([
                                 bid_history(user.driver_id, user.token),
                                 getAllCars(user.driver_id, user.token)
                             ]);
+                            console.log('Bid History Response:', response);
         const data = Array.isArray(response) ? response : [];
         setBidHistory(data);
         setFilteredBids(data);
@@ -188,8 +264,8 @@ const getCarName = (car_id) => {
                     className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full justify-between"
                   >
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
-                      <span className="text-sm text-blue-600 font-medium">Bid</span>
+                        {/* Removed h3 and kept Bid text right-aligned */}
+                        <span className="text-sm text-blue-600 font-medium ml-auto">Bid</span>
                     </div>
                     <div className="mb-3">
                      <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
@@ -200,37 +276,36 @@ const getCarName = (car_id) => {
                       </p>
                     </div>
                     <div className="space-y-2 text-sm text-gray-700">
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
-                        </span>
-                        <span className="text-right">{bid.from_address}</span>
-                      </div>
-                      {/* Waypoint display logic */}
-                       {bid.waypoint && bid.waypoint.trim() !== '' && (
-                           bid.waypoint.split('|').map((wp, i) => (
-                               wp.trim() && (
-                                   <div className="flex justify-between" key={i}>
-                                       <span className="flex items-center gap-2 font-medium text-gray-600">
-                                           <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint{bid.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
-                                       </span>
-                                       <span className="text-right">{wp.trim()}</span>
-                                   </div>
-                               )
-                           ))
-                       )}
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-map-pin text-red-500"></i> DropOff:
-                        </span>
-                        <span className="text-right">{bid.to_address}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-road text-yellow-500"></i> Distance:
-                        </span>
-                        <span className="text-right">{bid.distance ? `${bid.distance} miles Approx` : 'N/A'}</span>
-                      </div>
+                      {/* Pickup */}
+                        <div>
+                          <span className="flex items-center gap-2 font-medium text-gray-600">
+                            <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
+                          </span>
+                          <span className="block ml-6">{bid.from_address}</span>
+                        </div>
+                        {/* Waypoints */}
+                        {bid.waypoint && bid.waypoint.trim() !== '' && (
+                          bid.waypoint.split('|').map((wp, i) =>
+                            wp.trim() && (
+                              <div key={i}>
+                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                  <i className="fas fa-map-marker-alt text-blue-500"></i>
+                                  Waypoint{bid.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                </span>
+                                <span className="block ml-6">{wp.trim()}</span>
+                              </div>
+                            )
+                          )
+                        )}
+                        {/* DropOff */}
+                        <div>
+                          <span className="flex items-center gap-2 font-medium text-gray-600">
+                            <i className="fas fa-map-pin text-red-500"></i> DropOff:
+                          </span>
+                          <span className="block ml-6">{bid.to_address}</span>
+                        </div>
+                       
+                      
                       <div className="flex justify-between">
                         <span className="flex items-center gap-2 font-medium text-gray-600">
                           <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
@@ -249,6 +324,20 @@ const getCarName = (car_id) => {
                         </span>
                         <span className="text-right font-bold text-green-700">£{bid.biding_amount}</span>
                       </div>
+                       <div className="flex gap-2 mt-4">
+                          {/* <button
+                            className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
+                            onClick={() => handleWithdrawJob(bid)}
+                          >
+                            Withdraw Job
+                          </button> */}
+                          <button
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
+                              onClick={() => handleUpdateBid(bid)}
+                            >
+                              Update Bid
+                            </button>
+                        </div>
                     </div>
                   </div>
                 ))
@@ -260,6 +349,63 @@ const getCarName = (car_id) => {
             </div>
             )}
           </div>
+          {showModal && selectedBid && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                  aria-label="Close"
+                >
+                  &times;
+                </button>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-gray-800">Update Your Bid</h2>
+                  <span className="text-green-600 font-bold">Guide Price: £{selectedBid.guided_price ?? 'N/A'}</span>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
+                    <span className="font-medium text-gray-700">Journey Date: {selectedBid.pickup_date?.split(' at ')[0]}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <i className="fas fa-clock mr-2 text-blue-600"></i>
+                    <span className="font-medium text-gray-700">Journey Time: {selectedBid.pickup_date?.split(' at ')[1]}</span>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <input
+                    type="number"
+                    placeholder="£ New Quote"
+                    value={quote}
+                    onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
+                    className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="mt-4 mb-2 flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => setIsChecked(e.target.checked)}
+                    className="mr-2"
+                  />
+                  <span className="text-gray-700">
+                    By updating your bid, you accept the Jewels Airport Transfers{' '}
+                    <a href="#" target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                      terms and conditions
+                    </a>
+                  </span>
+                </div>
+                <button
+                  className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  disabled={!isChecked || !quote}
+                  onClick={handleSubmitUpdateBid}
+                >
+                  {submitting ? 'Updating...' : 'Update Bid'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

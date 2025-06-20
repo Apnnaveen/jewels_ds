@@ -360,3 +360,21 @@ export async function acknowledgeStatus({ driver_id, booking_journey_id, acknowl
   }
   return result.data;
 }
+export async function withdrawJob({ driver_id, booking_journey_id, token }) {
+  const response = await fetch(
+    `https://jat-uk.com/api/users/withdraw_job/${driver_id}/${booking_journey_id}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to withdraw job');
+  }
+  return result.data;
+}

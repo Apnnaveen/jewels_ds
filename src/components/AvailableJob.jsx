@@ -233,48 +233,47 @@ export default function AvailableJob() {
                                                 key={job.booking_id || idx}
                                                 className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                                             >
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <h3 className="text-lg font-semibold text-gray-800">Jewels Airport Transfers</h3>
-                                                    <span className="text-sm text-blue-600 font-medium">Available</span>
-                                                </div>
-                                                <div className="mb-3">
+                                                 <div className="flex justify-between items-center mb-2">
+                                                        {/* Removed h3 and kept Bid text right-aligned */}
+                                                        <span className="text-sm text-blue-600 font-medium ml-auto">Available</span>
+                                                    </div>
+                                                    <div className="mb-3">
                                                     <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                                                         <i className="fas fa-car-side"></i> {getCarName(job.car_id)}
                                                     </h4>
-                                                    <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                                                        <i className="fas fa-info-circle text-gray-500"></i>
-                                                        <span className="font-medium text-gray-700">Car Info:</span><span  className="text-right">{job.car_info}</span> 
-                                                    </p>
                                                     <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                                                         <i className="fas fa-receipt text-gray-500"></i> {job.booking_ref_id}
                                                     </p>
-                                                </div>
-                                                <div className="space-y-2 text-sm text-gray-700">
-                                                    <div className="flex justify-between">
+                                                    </div>
+                                                    <div className="space-y-2 text-sm text-gray-700">
+                                                    {/* Pickup */}
+                                                        <div>
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
                                                         </span>
-                                                        <span className="text-right">{job.from_address}</span>
-                                                    </div>
-                                                    {/* Waypoint display logic */}
-                                                    {job.waypoint && job.waypoint.trim() !== '' && (
-                                                        job.waypoint.split('|').map((wp, i) => (
+                                                        <span className="block ml-6">{job.from_address}</span>
+                                                        </div>
+                                                        {/* Waypoints */}
+                                                        {job.waypoint && job.waypoint.trim() !== '' && (
+                                                        job.waypoint.split('|').map((wp, i) =>
                                                             wp.trim() && (
-                                                                <div className="flex justify-between" key={i}>
-                                                                    <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                                        <i className="fas fa-map-marker-alt text-blue-500"></i> Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
-                                                                    </span>
-                                                                    <span className="text-right">{wp.trim()}</span>
-                                                                </div>
+                                                            <div key={i}>
+                                                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-map-marker-alt text-blue-500"></i>
+                                                                Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                                                </span>
+                                                                <span className="block ml-6">{wp.trim()}</span>
+                                                            </div>
                                                             )
-                                                        ))
-                                                    )}
-                                                    <div className="flex justify-between">
+                                                        )
+                                                        )}
+                                                        {/* DropOff */}
+                                                        <div>
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-map-pin text-red-500"></i> DropOff:
                                                         </span>
-                                                        <span className="text-right">{job.to_address}</span>
-                                                    </div>
+                                                        <span className="block ml-6">{job.to_address}</span>
+                                                        </div>
                                                     <div className="flex justify-between">
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-road text-yellow-500"></i> Distance:
