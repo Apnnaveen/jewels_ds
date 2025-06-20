@@ -13,26 +13,29 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!user || !user.driver_id || !user.token) {
-      setError('User not authenticated. Please log in again.');
-      setLoading(false);
-      return;
-    }
-
-    const fetchProfile = async () => {
-      try {
-        const data = await getUserProfile(user.driver_id, user.token);
-        setProfile(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
+  // Fetch profile function for reuse
+  const fetchProfile = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      if (!user || !user.driver_id || !user.token) {
+        setError('User not authenticated. Please log in again.');
         setLoading(false);
+        return;
       }
-    };
+      const data = await getUserProfile(user.driver_id, user.token);
+      setProfile(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfile();
-  }, [user]);
+    // eslint-disable-next-line
+  }, []);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
@@ -54,7 +57,7 @@ export default function ProfilePage() {
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Error</h2>
         <p className="text-gray-600">{error}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={fetchProfile}
           className="mt-6 px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200"
         >
           Try Again
@@ -77,7 +80,7 @@ export default function ProfilePage() {
     </div>
   );
 
-   return (
+  return (
     <>
       <Header />
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
