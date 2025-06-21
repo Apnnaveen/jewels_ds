@@ -5,7 +5,7 @@ import JobsTabs from './JobsTabs';
 import { upcoming_journey_details, updateJobData, getAllCars } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
-
+import { DateTime } from 'luxon';
 const UpcomingJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -226,6 +226,18 @@ const UpcomingJobs = () => {
                               <span className="text-right">{job.pickup_date?.split(' at ')[0] || job.pickup_date}</span>
                             </div>
                             <div className="flex justify-between">
+                                 <span className="flex items-center gap-2 font-medium text-gray-600">
+                                     <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                                 </span>
+                                 <span className="text-right">
+                                     {job.pickup_date
+                                     ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                         zone: 'Europe/London'
+                                         }).toFormat("hh:mm a")
+                                     : ''}
+                                 </span>
+                             </div>
+                            <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> Passengers:
                               </span>
@@ -249,41 +261,50 @@ const UpcomingJobs = () => {
                               {/* Active Button */}
                               <button
                                 type="button"
+                                disabled={status != 0}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 1 ? 'bg-orange-500 text-white border-orange-600 hover:bg-orange-700' : 'bg-orange-100  text-orange-700 hover:bg-orange-700 hover:text-white border-orange-300'}
-                                `}
+                                  ${
+                                    status == 1
+                                      ? 'bg-orange-500 text-white border-orange-600'
+                                      : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-700 hover:text-white'
+                                  } ${status != 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => handleStatusUpdate(job, 1)}
                               >
                                 Active
-                                {status == 1 && (
-                                  <span className="ml-2 text-xs font-semibold">(Active)</span>
-                                )}
+                                
                               </button>
+
                               {/* POB Button */}
                               <button
                                 type="button"
+                                disabled={status != 1}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 2 ? 'bg-blue-500 text-white border-blue-600 hover:bg-blue-700' : 'bg-blue-100 text-blue-700 hover:bg-blue-700 hover:text-white border-blue-300'}
-                                `}
+                                  ${
+                                    status == 2
+                                      ? 'bg-blue-500 text-white border-blue-600'
+                                      : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white'
+                                  } ${status != 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => handleStatusUpdate(job, 2)}
                               >
                                 POB
-                                {status == 2 && (
-                                  <span className="ml-2 text-xs font-semibold">(POB)</span>
-                                )}
+                               
                               </button>
+
                               {/* Completed Button */}
                               <button
                                 type="button"
+                                disabled={status != 2}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 3 ? 'bg-green-500 text-white border-green-600 hover:bg-green-700' : 'bg-green-100 text-green-700 hover:bg-green-700 hover:text-white border-green-300'}
-                                `}
-                                onClick={() => handleStatusUpdate(job, 3)}>
+                                  ${
+                                    status == 3
+                                      ? 'bg-green-500 text-white border-green-600'
+                                      : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
+                                  } ${status != 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                onClick={() => handleStatusUpdate(job, 3)}
+                              >
                                 Completed
-                                {status == 3 && (
-                                  <span className="ml-2 text-xs font-semibold">(Completed)</span>
-                                )}
-                                </button>
+                               
+                              </button>
                             </div>
                           </div>
                         </div>

@@ -4,6 +4,7 @@ import JobsTabs from './JobsTabs';
 import { completed_journeys, getAllCars } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
+import { DateTime } from 'luxon';
 
 const CompletedJobs = () => {
   const location = useLocation();
@@ -220,6 +221,18 @@ const getCarName = (car_id) => {
                             </span>
                             <span className="text-right">{job.pickup_date?.split(' at ')[0] || job.pickup_date}</span>
                           </div>
+                          <div className="flex justify-between">
+                             <span className="flex items-center gap-2 font-medium text-gray-600">
+                                 <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                             </span>
+                             <span className="text-right">
+                                 {job.pickup_date
+                                 ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                     zone: 'Europe/London'
+                                     }).toFormat("hh:mm a")
+                                 : ''}
+                             </span>
+                         </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-users text-purple-500"></i> Passengers:

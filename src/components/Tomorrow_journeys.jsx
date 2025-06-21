@@ -4,6 +4,8 @@ import JobsTabs from './JobsTabs';
 import { tomorrow_journeys, getAllCars, acknowledgeStatus } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
+import { DateTime } from 'luxon';
+
 
 const TomorrowJourneys = () => {
   const location = useLocation();
@@ -245,11 +247,29 @@ const handleAcknowledge = async (job) => {
                             <span className="text-right">{job.distance} miles Approx</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
-                            </span>
-                            <span className="text-right">{job.pickup_date?.split(' at ')[0] || job.pickup_date}</span>
-                          </div>
+                           <span className="flex items-center gap-2 font-medium text-gray-600">
+                               <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                             </span>
+                                <span className="text-right">
+                                  {job.pickup_date
+                                    ? DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", {
+                                        zone: 'Europe/London'
+                                      }).toFormat("cccc, dd LLL yyyy")
+                                    : ''}
+                                </span>
+                           </div>
+                            <div className="flex justify-between">
+                               <span className="flex items-center gap-2 font-medium text-gray-600">
+                                   <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                               </span>
+                              <span className="text-right">
+                                {job.pickup_date
+                                  ? DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", {
+                                      zone: 'Europe/London'
+                                    }).toFormat("hh:mm a")
+                                  : ''}
+                              </span>
+                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-users text-purple-500"></i> Passengers:

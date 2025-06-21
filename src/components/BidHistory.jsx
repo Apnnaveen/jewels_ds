@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { bid_history, getAllCars, bidJob, withdrawJob } from '../api';
 import Loading from './Loading/Loading';
+import { DateTime } from 'luxon';
 
 import Header from './MainHeader/Header';
 
@@ -312,11 +313,17 @@ const getCarName = (car_id) => {
                         </span>
                         <span className="text-right">{bid.pickup_date?.split(' at ')[0]}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-clock text-purple-500"></i> Journey Time:
-                        </span>
-                        <span className="text-right">{bid.pickup_date?.split(' at ')[1]}</span>
+                       <div className="flex justify-between">
+                          <span className="flex items-center gap-2 font-medium text-gray-600">
+                              <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                          </span>
+                          <span className="text-right">
+                              {bid.pickup_date
+                              ? DateTime.fromFormat(bid.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                  zone: 'Europe/London'
+                                  }).toFormat("hh:mm a")
+                              : ''}
+                          </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -325,12 +332,12 @@ const getCarName = (car_id) => {
                         <span className="text-right font-bold text-green-700">£{bid.biding_amount}</span>
                       </div>
                        <div className="flex gap-2 mt-4">
-                          {/* <button
+                          <button
                             className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
                             onClick={() => handleWithdrawJob(bid)}
                           >
                             Withdraw Job
-                          </button> */}
+                          </button>
                           <button
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
                               onClick={() => handleUpdateBid(bid)}

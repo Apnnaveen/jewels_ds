@@ -4,6 +4,8 @@ import Header from './MainHeader/Header';
 import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars } from '../api';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
+import { DateTime } from 'luxon';
+
 
 const PAGE_SIZE = 6;
 
@@ -281,17 +283,26 @@ export default function AvailableJob() {
                                                         <span className="text-right">{job.distance} Approx</span>
                                                     </div>
                                                     <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
-                                                        </span>
-                                                        <span className="text-right">{job.pickup_date?.split(' at ')[0]}</span>
+                                                    <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                        <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                                                    </span>
+                                                    <span className="text-right">{job.pickup_date?.split(' at ')[0]}</span>
                                                     </div>
+
                                                     <div className="flex justify-between">
                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                             <i className="fas fa-clock text-purple-500"></i> Journey Time:
                                                         </span>
-                                                        <span className="text-right">{job.pickup_date?.split(' at ')[1]}</span>
+                                                        <span className="text-right">
+                                                            {job.pickup_date
+                                                            ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                                                zone: 'Europe/London'
+                                                                }).toFormat("hh:mm a")
+                                                            : ''}
+                                                        </span>
                                                     </div>
+
+
                                                 </div>
                                                 <button
                                                     onClick={() => handleViewDetails(job)}

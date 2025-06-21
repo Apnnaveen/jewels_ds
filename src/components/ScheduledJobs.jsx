@@ -5,6 +5,7 @@ import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import Header from './MainHeader/Header';
 import { scheduled_journey_details, confirmAvailability, declineJob } from '../api';
+import { DateTime } from 'luxon';
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -285,11 +286,17 @@ const ScheduledJobs = () => {
                             </span>
                             <span className="text-right">{job.pickup_date?.split(' at ')[0]}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-clock text-purple-500"></i> Journey Time:
-                            </span>
-                            <span className="text-right">{job.pickup_date?.split(' at ')[1]}</span>
+                           <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                  <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                              </span>
+                              <span className="text-right">
+                                  {job.pickup_date
+                                  ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                      zone: 'Europe/London'
+                                      }).toFormat("hh:mm a")
+                                  : ''}
+                              </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
