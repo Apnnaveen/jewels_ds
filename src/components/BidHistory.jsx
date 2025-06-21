@@ -335,7 +335,7 @@ const getCarName = (car_id) => {
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
                               onClick={() => handleUpdateBid(bid)}
                             >
-                              Update Bid
+                              Re-quote
                             </button>
                         </div>
                     </div>
