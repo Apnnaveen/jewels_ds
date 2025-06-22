@@ -266,23 +266,23 @@ const getCarName = (car_id) => {
                   >
                     <div className="flex justify-between items-center mb-2">
                         {/* Removed h3 and kept Bid text right-aligned */}
-                        <span className="text-sm text-blue-600 font-medium ml-auto">Bid</span>
+                        <span className="text-sm text-blue-600 font-medium ml-auto"><b>Bid</b></span>
                     </div>
                     <div className="mb-3">
                      <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                         <i className="fas fa-car-side"></i> {getCarName(bid.car_id)}
+                         <i className="fas fa-car-side"></i> <b>{getCarName(bid.car_id)}</b>
                        </h4>
                       <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                        <i className="fas fa-receipt text-gray-500"></i> {bid.booking_ref_id}
+                        <i className="fas fa-receipt text-gray-500"></i> <b>{bid.booking_ref_id}</b>
                       </p>
                     </div>
                     <div className="space-y-2 text-sm text-gray-700">
                       {/* Pickup */}
                         <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                            <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
+                            <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
                           </span>
-                          <span className="block ml-6">{bid.from_address}</span>
+                          <span className="block ml-6"><b>{bid.from_address}</b></span>
                         </div>
                         {/* Waypoints */}
                         {bid.waypoint && bid.waypoint.trim() !== '' && (
@@ -291,9 +291,9 @@ const getCarName = (car_id) => {
                               <div key={i}>
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                  Waypoint{bid.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                  <b>Waypoint{bid.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
                                 </span>
-                                <span className="block ml-6">{wp.trim()}</span>
+                                <span className="block ml-6"><b>{wp.trim()}</b></span>
                               </div>
                             )
                           )
@@ -301,35 +301,35 @@ const getCarName = (car_id) => {
                         {/* DropOff */}
                         <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                            <i className="fas fa-map-pin text-red-500"></i> DropOff:
+                            <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
                           </span>
-                          <span className="block ml-6">{bid.to_address}</span>
+                          <span className="block ml-6"><b>{bid.to_address}</b></span>
                         </div>
                        
                       
                       <div className="flex justify-between">
                         <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                          <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                         </span>
-                        <span className="text-right">{bid.pickup_date?.split(' at ')[0]}</span>
+                        <span className="text-right"><b>{bid.pickup_date?.split(' at ')[0]}</b></span>
                       </div>
                        <div className="flex justify-between">
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                              <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
                           </span>
                           <span className="text-right">
-                              {bid.pickup_date
+                              <b>{bid.pickup_date
                               ? DateTime.fromFormat(bid.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
                                   zone: 'Europe/London'
                                   }).toFormat("hh:mm a")
-                              : ''}
+                              : ''}</b>
                           </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="flex items-center gap-2 font-medium text-gray-600">
-                          <i className="fas fa-pound-sign text-green-600"></i> Bid Amount:
+                          <i className="fas fa-pound-sign text-green-600"></i> <b>Bid Amount:</b>
                         </span>
-                        <span className="text-right font-bold text-green-700">£{bid.biding_amount}</span>
+                        <span className="text-right font-bold text-green-700"><b>£{bid.biding_amount}</b></span>
                       </div>
                        <div className="flex gap-2 mt-4">
                           <button

@@ -37,6 +37,7 @@ const UpcomingJobs = () => {
           upcoming_journey_details(user.driver_id, user.token),
           getAllCars(user.driver_id, user.token)
         ]);
+        console.log('Jobs Data:', jobsData);
         const jobs = Array.isArray(jobsData) ? jobsData : [];
         setUpcomingJobs(jobs);
         setFilteredJobs(jobs);
@@ -170,27 +171,30 @@ const UpcomingJobs = () => {
                           className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                         >
                           <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-blue-600 font-medium ml-auto">Upcoming</span>
+                             {/* Show Acknowledged if acknowledge_status == 1 */}
+                              {job.acknowledge_status == 1 && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold mr-2">
+                                  Acknowledged
+                                </span>
+                              )}
+                          <span className="text-sm text-blue-600 font-medium ml-auto"><b>Upcoming</b></span>
                          </div>
                           <div className="mb-3">
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                              <i className="fas fa-car-side"></i> {getCarName(job.car_id)}
+                              <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                             </h4>
-                            <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                              <i className="fas fa-info-circle text-gray-500"></i>
-                              <span className="font-medium text-gray-700">Car Info:</span> {job.car_info}
-                            </p>
+                            
                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                              <i className="fas fa-receipt text-gray-500"></i> {job.booking_ref_id}
+                              <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
                             </p>
                           </div>
                           <div className="space-y-2 text-sm text-gray-700">
                             {/* Pickup */}
                           <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
+                              <i className="fas fa-map-marker-alt text-blue-500"></i><b> Pickup:</b>
                           </span>
-                          <span className="block ml-6">{job.from_address}</span>
+                          <span className="block ml-6"><b>{job.from_address}</b></span>
                           </div>
                           {/* Waypoints */}
                           {job.waypoint && job.waypoint.trim() !== '' && (
@@ -199,9 +203,9 @@ const UpcomingJobs = () => {
                               <div key={i}>
                                   <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                  Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                  <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
                                   </span>
-                                  <span className="block ml-6">{wp.trim()}</span>
+                                  <span className="block ml-6"><b>{wp.trim()}</b></span>
                               </div>
                               )
                           )
@@ -209,53 +213,65 @@ const UpcomingJobs = () => {
                           {/* DropOff */}
                           <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-pin text-red-500"></i> DropOff:
+                              <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
                           </span>
-                          <span className="block ml-6">{job.to_address}</span>
+                          <span className="block ml-6"><b>{job.to_address}</b></span>
                           </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-road text-yellow-500"></i> Distance:
+                                <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                               </span>
-                              <span className="text-right">{job.distance} miles Approx</span>
+                              <span className="text-right"><b>{job.distance} miles Approx</b></span>
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                                <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                               </span>
-                              <span className="text-right">{job.pickup_date?.split(' at ')[0] || job.pickup_date}</span>
+                              <span className="text-right"><b>{job.pickup_date?.split(' at ')[0] || job.pickup_date}</b></span>
                             </div>
                             <div className="flex justify-between">
                                  <span className="flex items-center gap-2 font-medium text-gray-600">
-                                     <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                                     <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
                                  </span>
                                  <span className="text-right">
-                                     {job.pickup_date
+                                    <b>{job.pickup_date
                                      ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
                                          zone: 'Europe/London'
                                          }).toFormat("hh:mm a")
-                                     : ''}
+                                     : ''}</b>
                                  </span>
                              </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-users text-purple-500"></i> Passengers:
+                                <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                               </span>
-                              <span className="text-right">{job.passengers}</span>
+                              <span className="text-right"><b>{job.passengers}</b></span>
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-suitcase text-pink-500"></i> Luggage:
+                                <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
                               </span>
-                              <span className="text-right">{job.luggage}</span>
+                              <span className="text-right"><b>{job.luggage}</b></span>
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-handshake text-green-500"></i> Meet & Greet:
+                                <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
                               </span>
                               <span className="text-right">
-                                {job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}
+                                <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
                               </span>
+                            </div>
+                              <div className="flex justify-start mt-2">
+                              <div
+                                className="
+                                  border border-gray-300 rounded-lg px-3 py-1 text-xs text-gray-700 bg-gray-50
+                                  shadow-sm max-w-full sm:max-w-[70%] truncate
+                                "
+                                title={job.car_info}
+                              >
+                                <i className="fas fa-info-circle text-blue-400 mr-1"></i>
+                                {job.car_info || 'No car info'}
+                              </div>
                             </div>
                             <div className="flex justify-end gap-2 mt-3">
                               {/* Active Button */}
@@ -306,6 +322,7 @@ const UpcomingJobs = () => {
                                
                               </button>
                             </div>
+                          
                           </div>
                         </div>
                       );

@@ -61,6 +61,7 @@ const TomorrowJourneys = () => {
         return car ? car.car_name : car_id;
     };
 const handleAcknowledge = async (job) => {
+    setActionLoading(true); // Show global loading
     setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
     try {
       await acknowledgeStatus({
@@ -88,10 +89,13 @@ const handleAcknowledge = async (job) => {
       alert(err.message || 'Failed to acknowledge job');
     } finally {
       setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+      setActionLoading(false); // Hide global loading
     }
-  };
+};
   useEffect(() => {
-    const filtered = tomorrowJobs.filter((job) => {
+  const filtered = tomorrowJobs
+    .filter((job) => job.acknowledge_status !== 1 && job.acknowledge_status !== '1') // Hide acknowledged jobs
+    .filter((job) => {
       const match = (key) =>
         filters[key]
           ? job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase())
@@ -107,8 +111,8 @@ const handleAcknowledge = async (job) => {
         matchDate()
       );
     });
-    setFilteredJobs(filtered);
-  }, [filters, tomorrowJobs]);
+  setFilteredJobs(filtered);
+}, [filters, tomorrowJobs]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -197,27 +201,27 @@ const handleAcknowledge = async (job) => {
                         className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-blue-600 font-medium ml-auto">Tomorrow</span>
+                          <span className="text-sm text-blue-600 font-medium ml-auto"><b>Tomorrow</b></span>
                          </div>
                         <div className="mb-3">
                           <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                            <i className="fas fa-car-side"></i> {getCarName(job.car_id)}
+                            <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                           </h4>
                           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                             <i className="fas fa-info-circle text-gray-500"></i>
-                            <span className="font-medium text-gray-700">Car Info:</span> {job.car_info}
+                            <span className="font-medium text-gray-700"><b>Car Info:</b></span> <b>{job.car_info}</b>
                           </p>
                           <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                            <i className="fas fa-receipt text-gray-500"></i> {job.booking_sub_id}
+                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_sub_id}</b>
                           </p>
                         </div>
                         <div className="space-y-2 text-sm text-gray-700">
                           {/* Pickup */}
                           <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-marker-alt text-blue-500"></i> Pickup:
+                              <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
                           </span>
-                          <span className="block ml-6">{job.from_address}</span>
+                          <span className="block ml-6"><b>{job.from_address}</b></span>
                           </div>
                           {/* Waypoints */}
                           {job.waypoint && job.waypoint.trim() !== '' && (
@@ -226,9 +230,9 @@ const handleAcknowledge = async (job) => {
                               <div key={i}>
                                   <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                  Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:
+                                  <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
                                   </span>
-                                  <span className="block ml-6">{wp.trim()}</span>
+                                  <span className="block ml-6"><b>{wp.trim()}</b></span>
                               </div>
                               )
                           )
@@ -236,56 +240,60 @@ const handleAcknowledge = async (job) => {
                           {/* DropOff */}
                           <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-pin text-red-500"></i> DropOff:
+                              <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
                           </span>
-                          <span className="block ml-6">{job.to_address}</span>
+                          <span className="block ml-6"><b>{job.to_address}</b></span>
                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-road text-yellow-500"></i> Distance:
+                              <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                             </span>
-                            <span className="text-right">{job.distance} miles Approx</span>
+                            <span className="text-right"><b>{job.distance} miles Approx</b></span>
                           </div>
                           <div className="flex justify-between">
                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                               <i className="fas fa-calendar-alt text-blue-400"></i> Journey Date:
+                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                              </span>
                                 <span className="text-right">
+                                  <b>
                                   {job.pickup_date
                                     ? DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", {
                                         zone: 'Europe/London'
                                       }).toFormat("cccc, dd LLL yyyy")
                                     : ''}
+                                  </b>
                                 </span>
                            </div>
                             <div className="flex justify-between">
                                <span className="flex items-center gap-2 font-medium text-gray-600">
-                                   <i className="fas fa-clock text-purple-500"></i> Journey Time:
+                                   <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
                                </span>
                               <span className="text-right">
+                                <b>
                                 {job.pickup_date
                                   ? DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", {
                                       zone: 'Europe/London'
                                     }).toFormat("hh:mm a")
                                   : ''}
+                                </b>
                               </span>
                            </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-users text-purple-500"></i> Passengers:
+                              <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                             </span>
-                            <span className="text-right">{job.passengers}</span>
+                            <span className="text-right"><b>{job.passengers}</b></span>
                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-suitcase text-pink-500"></i> Luggage:
+                              <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
                             </span>
-                            <span className="text-right">{job.luggage}</span>
+                            <span className="text-right"><b>{job.luggage}</b></span>
                           </div>
                           <div className="flex justify-end mt-2">
                             {job.acknowledge_status === 1 || job.acknowledge_status === '1' ? (
                               <span className="text-green-600 font-semibold px-3 py-1 rounded bg-green-100 text-sm">
-                                Acknowledged
+                                <b>Acknowledged</b>
                               </span>
                             ) : (
                               <button
@@ -293,7 +301,7 @@ const handleAcknowledge = async (job) => {
                                 onClick={() => handleAcknowledge(job)}
                                 disabled={!!ackLoading[job.booking_journey_id]}
                               >
-                                {ackLoading[job.booking_journey_id] ? 'Acknowledging...' : 'Acknowledge'}
+                                <b>{ackLoading[job.booking_journey_id] ? 'Acknowledging...' : 'Acknowledge'}</b>
                               </button>
                             )}
                           </div>
@@ -302,7 +310,7 @@ const handleAcknowledge = async (job) => {
                     ))
                   ) : (
                     <div className="col-span-full text-center text-gray-600 p-4 border rounded-md">
-                      <p>No matching jobs found for tomorrow.</p>
+                      <p><b>No matching jobs found for tomorrow.</b></p>
                     </div>
                   )}
                 </div>
