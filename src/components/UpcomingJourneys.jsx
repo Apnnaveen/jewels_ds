@@ -276,6 +276,22 @@ const UpcomingJobs = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-users text-purple-500"></i> <b>Passenger Name:</b>
+                              </span>
+                              <span className="text-right"><b>{job.name}</b></span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-users text-purple-500"></i>
+                                <b>Mobile:</b>
+                              </span>
+                              <span className="text-right">
+                                <b>{`+(${job.mobile_code}) ${job.mobile}`}</b>
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                               </span>
                               <span className="text-right"><b>{job.passengers}</b></span>

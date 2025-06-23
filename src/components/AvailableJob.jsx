@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './MainHeader/Header';
-import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars } from '../api';
-import JobsTabs from './JobsTabs';
+import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, getSupplierMappedDrivers, assignDriverToJourney, unassignDriverFromJourney } from '../api'; import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 
@@ -16,6 +15,9 @@ export default function AvailableJob() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeItem, setActiveItem] = useState('dashboard');
     const [jobs, setJobs] = useState([]);
+    const [showDriverModal, setShowDriverModal] = useState(false);
+    const [driverList, setDriverList] = useState([]);
+    const [driverModalLoading, setDriverModalLoading] = useState(false);
     const [filteredJobs, setFilteredJobs] = useState([]);
     const [actionLoading, setActionLoading] = useState(false);
     const [filters, setFilters] = useState({
@@ -77,44 +79,44 @@ export default function AvailableJob() {
     };
 
     useEffect(() => {
-    const filtered = jobs.filter((job) => {
-        const matchText = (key) =>
-            job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+        const filtered = jobs.filter((job) => {
+            const matchText = (key) =>
+                job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-        // Convert pickup_date to 'YYYY-MM-DD' for comparison
-        let jobDateISO = '';
-        if (job.pickup_date) {
-            const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-            jobDateISO = dt.isValid ? dt.toISODate() : '';
-        }
+            // Convert pickup_date to 'YYYY-MM-DD' for comparison
+            let jobDateISO = '';
+            if (job.pickup_date) {
+                const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+                jobDateISO = dt.isValid ? dt.toISODate() : '';
+            }
 
-        let dateMatch = true;
-        if (filters.pickup_date) {
-            dateMatch = jobDateISO === filters.pickup_date;
-        }
+            let dateMatch = true;
+            if (filters.pickup_date) {
+                dateMatch = jobDateISO === filters.pickup_date;
+            }
 
-        let carMatch = true;
-        if (filters.car_id) {
-            carMatch = job.car_id === filters.car_id;
-        }
+            let carMatch = true;
+            if (filters.car_id) {
+                carMatch = job.car_id === filters.car_id;
+            }
 
-        return (
-            (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-            (!filters.from_address || matchText('from_address')) &&
-            (!filters.to_address || matchText('to_address')) &&
-            (!filters.waypoint || matchText('waypoint')) &&
-            (!filters.passengers || matchText('passengers')) &&
-            (!filters.luggage || matchText('luggage')) &&
-            (!filters.distance || matchText('distance')) &&
-            (!filters.bid_expiry || matchText('bid_expiry')) &&
-            dateMatch &&
-            carMatch
-        );
-    });
+            return (
+                (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+                (!filters.from_address || matchText('from_address')) &&
+                (!filters.to_address || matchText('to_address')) &&
+                (!filters.waypoint || matchText('waypoint')) &&
+                (!filters.passengers || matchText('passengers')) &&
+                (!filters.luggage || matchText('luggage')) &&
+                (!filters.distance || matchText('distance')) &&
+                (!filters.bid_expiry || matchText('bid_expiry')) &&
+                dateMatch &&
+                carMatch
+            );
+        });
 
-    setFilteredJobs(filtered);
-    setCurrentPage(1);
-}, [filters, jobs]);
+        setFilteredJobs(filtered);
+        setCurrentPage(1);
+    }, [filters, jobs]);
 
     const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
@@ -181,7 +183,96 @@ export default function AvailableJob() {
         localStorage.removeItem('user');
         navigate('/');
     };
+    const handleShowDriverList = async (job) => {
+        setSelectedJob(job);
+        setShowDriverModal(true);
+        await fetchMappedDrivers(job);
+    };
 
+    const fetchMappedDrivers = async (job) => {
+        try {
+            const supplier_id = user?.driver_id;
+            const booking_journey_id = job?.booking_journey_id;
+
+            if (!supplier_id || !booking_journey_id) {
+                alert("Missing supplier ID or booking journey ID");
+                return;
+            }
+
+            setDriverModalLoading(true);
+
+            const data = await getSupplierMappedDrivers({
+                supplier_id,
+                booking_jou_id: booking_journey_id,
+                token: user?.token,
+            });
+
+            setDriverList(data);
+        } catch (err) {
+            alert("Failed to fetch driver list: " + err.message);
+            setDriverList([]);
+        } finally {
+            setDriverModalLoading(false);
+        }
+    };
+
+    const handleAssign = async (driver_id) => {
+        const booking_journey_id = selectedJob?.booking_journey_id;
+        const token = user?.token;
+
+        if (!booking_journey_id || !token) {
+            alert('Missing booking or token');
+            console.log("Debug:", { booking_journey_id, token });
+            return;
+        }
+
+        const fareInput = document.querySelector(`#fare_${driver_id}`);
+        const fare = fareInput?.value;
+
+        if (!fare) {
+            alert('Please enter fare');
+            return;
+        }
+
+        try {
+            await assignDriverToJourney({
+                booking_jou_id: booking_journey_id,
+                driver_id,
+                fare,
+                token,
+            });
+
+            alert('Driver assigned successfully');
+            await fetchMappedDrivers(selectedJob);
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Assign failed');
+        }
+    };
+
+    const handleUnassign = async (driver_id) => {
+        try {
+            const booking_jou_id = selectedJob?.booking_journey_id;
+            const token = user?.token;
+
+            if (!booking_jou_id || !token) {
+                alert('Missing booking or token');
+                return;
+            }
+
+            await unassignDriverFromJourney({
+                booking_jou_id,
+                driver_id,
+                token,
+            });
+
+            alert('Driver unassigned successfully');
+            await fetchMappedDrivers(selectedJob);
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Unassign failed');
+        }
+    };
     return (
         <>
             <Header />
@@ -248,7 +339,7 @@ export default function AvailableJob() {
                             </select>
                         </div>
 
-                       
+
                         {loading ? (
                             <div className="col-span-full flex justify-center items-center h-64">
                                 <Loading />
@@ -348,12 +439,21 @@ export default function AvailableJob() {
                                                     </p>
                                                 </div>
                                             )}
-                                            <button
-                                                onClick={() => handleViewDetails(job)}
-                                                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
-                                            >
-                                                View Details
-                                            </button>
+                                            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                                                <button
+                                                    onClick={() => handleViewDetails(job)}
+                                                    className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded w-full"
+                                                >
+                                                    View Details
+                                                </button>
+                                                <button
+                                                    onClick={() => handleShowDriverList(job)}
+                                                    className="sm:flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 rounded w-full"
+                                                >
+                                                    Driver List
+                                                </button>
+                                            </div>
+
                                         </div>
                                     ))
                                 ) : (
@@ -463,6 +563,89 @@ export default function AvailableJob() {
                                             {submitting ? 'Submitting...' : 'Submit'}
                                         </button>
                                     </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {showDriverModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                            <div className="bg-white w-full max-w-4xl p-6 rounded-lg shadow-lg relative">
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => setShowDriverModal(false)}
+                                    className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
+                                    aria-label="Close modal"
+                                >
+                                    &times;
+                                </button>
+
+                                {/* Header */}
+                                <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
+                                    Mapped Drivers
+                                </h2>
+
+                                {/* Table Content */}
+                                {driverModalLoading ? (
+                                    <Loading />
+                                ) : driverList.length > 0 ? (
+                                    <div className="overflow-x-auto max-h-[400px] border rounded-lg">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <thead className="bg-gray-100 text-gray-700 uppercase">
+                                                <tr>
+                                                    <th className="px-4 py-2 border">#</th>
+                                                    <th className="px-4 py-2 border">Name</th>
+                                                    <th className="px-4 py-2 border">Email</th>
+                                                    <th className="px-4 py-2 border">Mobile</th>
+                                                    <th className="px-4 py-2 border">Fare</th>
+                                                    <th className="px-4 py-2 border">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {driverList.map((driver, idx) => (
+                                                    <tr key={driver.driver_id || idx} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-2 border text-center">{idx + 1}</td>
+                                                        <td className="px-4 py-2 border">{driver.name}</td>
+                                                        <td className="px-4 py-2 border">{driver.email}</td>
+                                                        <td className="px-4 py-2 border">{driver.mobile}</td>
+                                                        <td className="px-4 py-2 border">
+                                                            <input
+                                                                type="number"
+                                                                id={`fare_${driver.driver_id}`}
+                                                                defaultValue={driver.fare ?? ''}
+                                                                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                placeholder="Enter fare"
+                                                                aria-label={`Fare for ${driver.name}`}
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2 border">
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {driver.is_assigned ? (
+                                                                    // Show only Unassign when already assigned
+                                                                    <button
+                                                                        onClick={() => handleUnassign(driver.driver_id)}
+                                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                                                                    >
+                                                                        Unassign
+                                                                    </button>
+                                                                ) : (
+                                                                    // Show only Assign when not assigned
+                                                                    <button
+                                                                        onClick={() => handleAssign(driver.driver_id)}
+                                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                                                                    >
+                                                                        Assign
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <p className="text-red-600 text-center mt-4">No drivers found.</p>
                                 )}
                             </div>
                         </div>

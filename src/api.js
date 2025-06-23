@@ -378,3 +378,66 @@ export async function withdrawJob({ driver_id, booking_journey_id, token }) {
   }
   return result.data;
 }
+export async function getSupplierMappedDrivers({ supplier_id, booking_jou_id, token }) {
+  const response = await fetch(
+    `https://jat-uk.com/api/users/get_supplier_mapped_drivers/${supplier_id}/${booking_jou_id}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+ 
+  const result = await response.json();
+ 
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to fetch supplier mapped drivers');
+  }
+ 
+  return result.data; // Contains array of driver info
+}
+export async function assignDriverToJourney({ booking_jou_id, driver_id, fare, token }) {
+  const response = await fetch(`https://jat-uk.com/api/users/assignedsubs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Bearer ${token}`,
+    },
+    body: new URLSearchParams({
+      booking_jou_id,
+      driver_id,
+      fare,
+    }),
+  });
+ 
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to assign driver');
+  }
+ 
+  return result; // {sucess: 1}
+}
+export async function unassignDriverFromJourney({ booking_jou_id, driver_id, token }) {
+  const response = await fetch(`https://jat-uk.com/api/users/Unassignsubs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Bearer ${token}`,
+    },
+    body: new URLSearchParams({
+      booking_jou_id,
+      driver_id,
+    }),
+  });
+ 
+  const result = await response.json();
+ 
+  if (!response.ok) {
+    throw new Error(result.error || 'Failed to unassign driver');
+  }
+ 
+  return result; // {sucess: 1}
+}
+ 
