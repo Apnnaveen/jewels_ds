@@ -23,10 +23,11 @@ const UpcomingJobs = () => {
     from_address: '',
     to_address: '',
     pickup_date: '',
+    car_id: '',
   });
- const [cars, setCars] = useState([]);
+  const [cars, setCars] = useState([]);
   // Fetch jobs
- useEffect(() => {
+  useEffect(() => {
     const fetchUpcomingJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
@@ -50,26 +51,44 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
- const getCarName = (car_id) => {
+  const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
   // Filter jobs
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
-      const match = (key) =>
-        filters[key]
-          ? job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase())
-          : true;
-      const matchDate = () =>
-        filters.pickup_date
-          ? job.pickup_date?.slice(0, 10) === filters.pickup_date
-          : true;
+      const matchText = (key) =>
+        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+
+      // Convert pickup_date to 'YYYY-MM-DD' for comparison
+      let jobDateISO = '';
+      if (job.pickup_date) {
+        const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+        jobDateISO = dt.isValid ? dt.toISODate() : '';
+      }
+
+      let dateMatch = true;
+      if (filters.pickup_date) {
+        dateMatch = jobDateISO === filters.pickup_date;
+      }
+
+      let carMatch = true;
+      if (filters.car_id) {
+        carMatch = job.car_id === filters.car_id;
+      }
+
       return (
-        match('booking_ref_id') &&
-        match('from_address') &&
-        match('to_address') &&
-        matchDate()
+        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+        (!filters.from_address || matchText('from_address')) &&
+        (!filters.to_address || matchText('to_address')) &&
+        (!filters.waypoint || matchText('waypoint')) &&
+        (!filters.passengers || matchText('passengers')) &&
+        (!filters.luggage || matchText('luggage')) &&
+        (!filters.distance || matchText('distance')) &&
+        (!filters.bid_expiry || matchText('bid_expiry')) &&
+        dateMatch &&
+        carMatch
       );
     });
     setFilteredJobs(filtered);
@@ -116,14 +135,14 @@ const UpcomingJobs = () => {
             <JobsTabs activeTab="upcoming" user={user} />
 
             {/* 4 Filters */}
-            <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
               <input
                 type="text"
                 name="booking_ref_id"
                 value={filters.booking_ref_id}
                 onChange={handleFilterChange}
-                placeholder="Booking Ref ID"
-                className="input input-bordered w-40"
+                placeholder="Booking Ref"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
               <input
                 type="text"
@@ -131,7 +150,7 @@ const UpcomingJobs = () => {
                 value={filters.from_address}
                 onChange={handleFilterChange}
                 placeholder="From Address"
-                className="input input-bordered w-40"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
               <input
                 type="text"
@@ -139,25 +158,39 @@ const UpcomingJobs = () => {
                 value={filters.to_address}
                 onChange={handleFilterChange}
                 placeholder="To Address"
-                className="input input-bordered w-40"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
               <input
                 type="date"
                 name="pickup_date"
                 value={filters.pickup_date}
                 onChange={handleFilterChange}
-                className="input input-bordered w-40"
-                placeholder="Pickup Date"
+                placeholder="Journey Date"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
+              <select
+                name="car_id"
+                value={filters.car_id}
+                onChange={handleFilterChange}
+                className="p-2 border border-gray-300 rounded-md w-full"
+              >
+                <option value="">All Vehicles</option>
+                {cars
+                  .map(car => (
+                    <option key={car.car_id} value={car.car_id}>
+                      {car.car_name}
+                    </option>
+                  ))}
+              </select>
             </div>
 
             {/* Card Grid */}
             <div className="jobs-content">
-             {loading ? (
+              {loading ? (
                 <div className="col-span-full flex justify-center items-center h-64">
                   <Loading />
                 </div>
-              ) :(
+              ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => {
@@ -171,52 +204,52 @@ const UpcomingJobs = () => {
                           className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                         >
                           <div className="flex justify-between items-center mb-2">
-                             {/* Show Acknowledged if acknowledge_status == 1 */}
-                              {job.acknowledge_status == 1 && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold mr-2">
-                                  Acknowledged
-                                </span>
-                              )}
-                          <span className="text-sm text-blue-600 font-medium ml-auto"><b>Upcoming</b></span>
-                         </div>
+                            {/* Show Acknowledged if acknowledge_status == 1 */}
+                            {job.acknowledge_status == 1 && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold mr-2">
+                                Acknowledged
+                              </span>
+                            )}
+                            <span className="text-sm text-blue-600 font-medium ml-auto"><b>Upcoming</b></span>
+                          </div>
                           <div className="mb-3">
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                               <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                             </h4>
-                            
+
                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                               <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
                             </p>
                           </div>
                           <div className="space-y-2 text-sm text-gray-700">
                             {/* Pickup */}
-                          <div>
-                          <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-marker-alt text-blue-500"></i><b> Pickup:</b>
-                          </span>
-                          <span className="block ml-6"><b>{job.from_address}</b></span>
-                          </div>
-                          {/* Waypoints */}
-                          {job.waypoint && job.waypoint.trim() !== '' && (
-                          job.waypoint.split('|').map((wp, i) =>
-                              wp.trim() && (
-                              <div key={i}>
-                                  <span className="flex items-center gap-2 font-medium text-gray-600">
-                                  <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                  <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
-                                  </span>
-                                  <span className="block ml-6"><b>{wp.trim()}</b></span>
-                              </div>
+                            <div>
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-map-marker-alt text-blue-500"></i><b> Pickup:</b>
+                              </span>
+                              <span className="block ml-6"><b>{job.from_address}</b></span>
+                            </div>
+                            {/* Waypoints */}
+                            {job.waypoint && job.waypoint.trim() !== '' && (
+                              job.waypoint.split('|').map((wp, i) =>
+                                wp.trim() && (
+                                  <div key={i}>
+                                    <span className="flex items-center gap-2 font-medium text-gray-600">
+                                      <i className="fas fa-map-marker-alt text-blue-500"></i>
+                                      <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
+                                    </span>
+                                    <span className="block ml-6"><b>{wp.trim()}</b></span>
+                                  </div>
+                                )
                               )
-                          )
-                          )}
-                          {/* DropOff */}
-                          <div>
-                          <span className="flex items-center gap-2 font-medium text-gray-600">
-                              <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
-                          </span>
-                          <span className="block ml-6"><b>{job.to_address}</b></span>
-                          </div>
+                            )}
+                            {/* DropOff */}
+                            <div>
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
+                              </span>
+                              <span className="block ml-6"><b>{job.to_address}</b></span>
+                            </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
@@ -230,17 +263,17 @@ const UpcomingJobs = () => {
                               <span className="text-right"><b>{job.pickup_date?.split(' at ')[0] || job.pickup_date}</b></span>
                             </div>
                             <div className="flex justify-between">
-                                 <span className="flex items-center gap-2 font-medium text-gray-600">
-                                     <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
-                                 </span>
-                                 <span className="text-right">
-                                    <b>{job.pickup_date
-                                     ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
-                                         zone: 'Europe/London'
-                                         }).toFormat("hh:mm a")
-                                     : ''}</b>
-                                 </span>
-                             </div>
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
+                              </span>
+                              <span className="text-right">
+                                <b>{job.pickup_date
+                                  ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                    zone: 'Europe/London'
+                                  }).toFormat("hh:mm a")
+                                  : ''}</b>
+                              </span>
+                            </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
@@ -261,33 +294,41 @@ const UpcomingJobs = () => {
                                 <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
                               </span>
                             </div>
-                              <div className="flex justify-start mt-2">
-                              <div
-                                className="
-                                  border border-gray-300 rounded-lg px-3 py-1 text-xs text-gray-700 bg-gray-50
-                                  shadow-sm max-w-full sm:max-w-[70%] truncate
-                                "
-                                title={job.car_info}
-                              >
-                                <i className="fas fa-info-circle text-blue-400 mr-1"></i>
-                                {job.car_info || 'No car info'}
+                            {job.car_info && (
+                              <div className="mt-2 text-xs text-gray-500 border-t pt-2">
+                                <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                                  <i className="fas fa-info-circle text-blue-500 "></i> {job.car_info}
+                                </p>
                               </div>
-                            </div>
+                            )}
                             <div className="flex justify-end gap-2 mt-3">
                               {/* Active Button */}
                               <button
                                 type="button"
-                                disabled={status != 0}
+                                disabled={
+                                  status != 0 ||
+                                  DateTime.fromFormat(
+                                    job.pickup_date,
+                                    "cccc, dd LLL yyyy 'at' HH:mm",
+                                    { zone: 'Europe/London' }
+                                  ).toISODate() !== DateTime.now().setZone('Europe/London').toISODate()
+                                }
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${
-                                    status == 1
-                                      ? 'bg-orange-500 text-white border-orange-600'
-                                      : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-700 hover:text-white'
-                                  } ${status != 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  ${status == 1
+                                    ? 'bg-orange-500 text-white border-orange-600'
+                                    : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-700 hover:text-white'
+                                  } ${status != 0 ||
+                                    DateTime.fromFormat(
+                                      job.pickup_date,
+                                      "cccc, dd LLL yyyy 'at' HH:mm",
+                                      { zone: 'Europe/London' }
+                                    ).toISODate() !== DateTime.now().setZone('Europe/London').toISODate()
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : ''
+                                  }`}
                                 onClick={() => handleStatusUpdate(job, 1)}
                               >
                                 Active
-                                
                               </button>
 
                               {/* POB Button */}
@@ -295,15 +336,14 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 1}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${
-                                    status == 2
-                                      ? 'bg-blue-500 text-white border-blue-600'
-                                      : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white'
+                                  ${status == 2
+                                    ? 'bg-blue-500 text-white border-blue-600'
+                                    : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white'
                                   } ${status != 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => handleStatusUpdate(job, 2)}
                               >
                                 POB
-                               
+
                               </button>
 
                               {/* Completed Button */}
@@ -311,18 +351,17 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 2}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${
-                                    status == 3
-                                      ? 'bg-green-500 text-white border-green-600'
-                                      : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
+                                  ${status == 3
+                                    ? 'bg-green-500 text-white border-green-600'
+                                    : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
                                   } ${status != 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 onClick={() => handleStatusUpdate(job, 3)}
                               >
                                 Completed
-                               
+
                               </button>
                             </div>
-                          
+
                           </div>
                         </div>
                       );
@@ -333,7 +372,7 @@ const UpcomingJobs = () => {
                     </div>
                   )}
                 </div>
-                )}
+              )}
             </div>
           </div>
         </div>

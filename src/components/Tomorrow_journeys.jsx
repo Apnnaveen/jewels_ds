@@ -21,12 +21,19 @@ const TomorrowJourneys = () => {
   const [cars, setCars] = useState([]);
   const [ackLoading, setAckLoading] = useState({});
   // Only 4 filters: refid, from, to, date
-  const [filters, setFilters] = useState({
-    booking_ref_id: '',
-    from_address: '',
-    to_address: '',
-    pickup_date: '',
-  });
+  
+const [filters, setFilters] = useState({
+  booking_ref_id: '',
+  from_address: '',
+  to_address: '',
+  waypoint: '',
+  pickup_date: '',
+  passengers: '',
+  luggage: '',
+  distance: '',
+  car_id: '',
+  bid_expiry: '',
+});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,23 +99,42 @@ const handleAcknowledge = async (job) => {
       setActionLoading(false); // Hide global loading
     }
 };
-  useEffect(() => {
+ useEffect(() => {
   const filtered = tomorrowJobs
-    .filter((job) => job.acknowledge_status !== 1 && job.acknowledge_status !== '1') // Hide acknowledged jobs
     .filter((job) => {
-      const match = (key) =>
-        filters[key]
-          ? job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase())
-          : true;
-      const matchDate = () =>
-        filters.pickup_date
-          ? job.pickup_date?.slice(0, 10) === filters.pickup_date
-          : true;
+      const matchText = (key) =>
+        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+
+      // Convert pickup_date to 'YYYY-MM-DD' for comparison
+      let jobDateISO = '';
+      if (job.pickup_date) {
+        const dt = DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", { zone: 'Europe/London' });
+        jobDateISO = dt.isValid ? dt.toISODate() : '';
+      }
+
+      let dateMatch = true;
+      if (filters.pickup_date) {
+        dateMatch = jobDateISO === filters.pickup_date;
+      }
+
+      let carMatch = true;
+      if (filters.car_id) {
+        carMatch = job.car_id === filters.car_id;
+      }
+
       return (
-        match('booking_ref_id') &&
-        match('from_address') &&
-        match('to_address') &&
-        matchDate()
+        (!filters.booking_ref_id || matchText('booking_sub_id')) &&
+        (!filters.from_address || matchText('from_address')) &&
+        (!filters.to_address || matchText('to_address')) &&
+        (!filters.waypoint || matchText('waypoint')) &&
+        (!filters.passengers || matchText('passengers')) &&
+        (!filters.luggage || matchText('luggage')) &&
+        (!filters.distance || matchText('distance')) &&
+        (!filters.bid_expiry || matchText('bid_expiry')) &&
+        dateMatch &&
+        carMatch &&
+        job.acknowledge_status !== 1 &&
+        job.acknowledge_status !== '1'
       );
     });
   setFilteredJobs(filtered);
@@ -121,7 +147,7 @@ const handleAcknowledge = async (job) => {
 
   const handleClearFilters = () => {
     setFilters({
-      booking_ref_id: '',
+      booking_sub_id: '',
       from_address: '',
       to_address: '',
       pickup_date: '',
@@ -145,22 +171,22 @@ const handleAcknowledge = async (job) => {
             <JobsTabs activeTab="tomorrow" user={user} />
 
             {/* 4 Filters */}
-            <div className="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap gap-4 items-end">
-              <input
-                type="text"
-                name="booking_ref_id"
-                value={filters.booking_ref_id}
-                onChange={handleFilterChange}
-                placeholder="Booking Ref ID"
-                className="input input-bordered w-40"
-              />
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
+            <input
+              type="text"
+              name="booking_sub_id" // <-- fix here
+              value={filters.booking_sub_id}
+              onChange={handleFilterChange}
+              placeholder="Booking Ref"
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
               <input
                 type="text"
                 name="from_address"
                 value={filters.from_address}
                 onChange={handleFilterChange}
                 placeholder="From Address"
-                className="input input-bordered w-40"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
               <input
                 type="text"
@@ -168,22 +194,30 @@ const handleAcknowledge = async (job) => {
                 value={filters.to_address}
                 onChange={handleFilterChange}
                 placeholder="To Address"
-                className="input input-bordered w-40"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
               <input
                 type="date"
                 name="pickup_date"
                 value={filters.pickup_date}
                 onChange={handleFilterChange}
-                className="input input-bordered w-40"
-                placeholder="Pickup Date"
+                placeholder="Journey Date"
+                className="p-2 border border-gray-300 rounded-md w-full"
               />
-              <button
-                className="btn btn-outline btn-sm ml-2"
-                onClick={handleClearFilters}
+              <select
+                name="car_id"
+                value={filters.car_id}
+                onChange={handleFilterChange}
+                className="p-2 border border-gray-300 rounded-md w-full"
               >
-                Clear
-              </button>
+                <option value="">All Vehicles</option>
+                {cars
+                  .map(car => (
+                    <option key={car.car_id} value={car.car_id}>
+                      {car.car_name}
+                    </option>
+                  ))}
+              </select>
             </div>
 
             {/* Card Grid */}
@@ -207,10 +241,7 @@ const handleAcknowledge = async (job) => {
                           <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                             <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                           </h4>
-                          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-                            <i className="fas fa-info-circle text-gray-500"></i>
-                            <span className="font-medium text-gray-700"><b>Car Info:</b></span> <b>{job.car_info}</b>
-                          </p>
+                         
                           <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                             <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_sub_id}</b>
                           </p>

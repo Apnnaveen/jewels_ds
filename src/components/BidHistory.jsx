@@ -25,13 +25,13 @@ const BidHistory = () => {
   const [reaction, setReaction] = useState(false); // <-- add this if setReaction is used
 
   const [filters, setFilters] = useState({
-    booking_ref_id: '',
-    biding_amount: '',
-    from_address: '',
-    to_address: '',
-    pickup_date_from: '',
-    pickup_date_to: ''
-  });
+  booking_ref_id: '',
+  biding_amount: '',
+  from_address: '',
+  to_address: '',
+  pickup_date: '',      
+  car_id: '',           
+});
   
   const handleUpdateBid = (bid) => {
     setSelectedBid(bid);
@@ -139,37 +139,40 @@ const getCarName = (car_id) => {
         return car ? car.car_name : car_id;
     };
 
-  useEffect(() => {
-    const filtered = bidHistory.filter((bid) => {
-      const matchText = (key) =>
-        bid[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+ useEffect(() => {
+  const filtered = bidHistory.filter((bid) => {
+    const matchText = (key) =>
+      bid[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-     const withinDateRange = () => {
-        const bidDateOnly = bid.pickup_date?.split(' at ')[0]; // Get "Tuesday, 17 Jun 2025"
-        const bidDate = bidDateOnly ? new Date(bidDateOnly) : null;
+    // Convert pickup_date to 'YYYY-MM-DD' for comparison
+    let bidDateISO = '';
+    if (bid.pickup_date) {
+      const dt = DateTime.fromFormat(bid.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+      bidDateISO = dt.isValid ? dt.toISODate() : '';
+    }
 
-        const from = filters.pickup_date_from ? new Date(filters.pickup_date_from) : null;
-        const to = filters.pickup_date_to ? new Date(filters.pickup_date_to) : null;
+    let dateMatch = true;
+    if (filters.pickup_date) {
+      dateMatch = bidDateISO === filters.pickup_date;
+    }
 
-        if (!bidDate) return false;
-        if (from && bidDate < from) return false;
-        if (to && bidDate > to) return false;
+    let carMatch = true;
+    if (filters.car_id) {
+      carMatch = bid.car_id === filters.car_id;
+    }
 
-        return true;
-      };
+    return (
+      (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+      (!filters.biding_amount || matchText('biding_amount')) &&
+      (!filters.from_address || matchText('from_address')) &&
+      (!filters.to_address || matchText('to_address')) &&
+      dateMatch &&
+      carMatch
+    );
+  });
 
-
-      return (
-        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        (!filters.biding_amount || matchText('biding_amount')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
-        withinDateRange()
-      );
-    });
-
-    setFilteredBids(filtered);
-  }, [filters, bidHistory]);
+  setFilteredBids(filtered);
+}, [filters, bidHistory]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -200,56 +203,55 @@ const getCarName = (car_id) => {
             </div>
 
             {/* Filter Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 px-5">
-              <input
-                type="text"
-                name="booking_ref_id"
-                value={filters.booking_ref_id}
-                onChange={handleFilterChange}
-                placeholder="Booking Ref"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-              <input
-                type="text"
-                name="biding_amount"
-                value={filters.biding_amount}
-                onChange={handleFilterChange}
-                placeholder="Bid Amount"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-              <input
-                type="date"
-                name="pickup_date_from"
-                value={filters.pickup_date_from}
-                onChange={handleFilterChange}
-                placeholder="From Date"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-              <input
-                type="date"
-                name="pickup_date_to"
-                value={filters.pickup_date_to}
-                onChange={handleFilterChange}
-                placeholder="To Date"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-              <input
-                type="text"
-                name="from_address"
-                value={filters.from_address}
-                onChange={handleFilterChange}
-                placeholder="From Address"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-              <input
-                type="text"
-                name="to_address"
-                value={filters.to_address}
-                onChange={handleFilterChange}
-                placeholder="To Address"
-                className="p-2 border border-gray-300 rounded-md w-full"
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
+            <input
+              type="text"
+              name="booking_ref_id"
+              value={filters.booking_ref_id}
+              onChange={handleFilterChange}
+              placeholder="Booking Ref"
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
+           <input
+              type="text"
+              name="from_address"
+              value={filters.from_address}
+              onChange={handleFilterChange}
+              placeholder="From Address"
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
+             <input
+              type="text"
+              name="to_address"
+              value={filters.to_address}
+              onChange={handleFilterChange}
+              placeholder="To Address"
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
+            <input
+              type="date"
+              name="pickup_date"
+              value={filters.pickup_date}
+              onChange={handleFilterChange}
+              placeholder="Journey Date"
+              className="p-2 border border-gray-300 rounded-md w-full"
+            />
+            <select
+              name="car_id"
+              value={filters.car_id}
+              onChange={handleFilterChange}
+              className="p-2 border border-gray-300 rounded-md w-full"
+            >
+              <option value="">All Vehicles</option>
+              {cars.map(car => (
+                <option key={car.car_id} value={car.car_id}>
+                  {car.car_name}
+                </option>
+              ))}
+            </select>
+           
+           
+          </div>
 
             {/* Card Grid */}
              {loading ? (
@@ -336,7 +338,7 @@ const getCarName = (car_id) => {
                             className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
                             onClick={() => handleWithdrawJob(bid)}
                           >
-                            Withdraw Job
+                            Cancel Bid
                           </button>
                           <button
                               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
