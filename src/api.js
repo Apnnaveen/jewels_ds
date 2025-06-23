@@ -140,7 +140,7 @@ export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
 // ...existing code...
 
 export async function bidJob({ booking_journey_id, driver_id, email, fare, token }) {
-  console.log('Submitting bid for booking_journey_id:', booking_journey_id, 'driver_id:', driver_id, 'email:', email, 'fare:', fare); 
+  console.log('Submitting bid for booking_journey_id:', booking_journey_id, 'driver_id:', driver_id, 'email:', email, 'fare:', fare);
   const response = await fetch('https://jat-uk.com/api/users/bid_job', {
     method: 'POST',
     headers: {
@@ -183,14 +183,14 @@ export async function changePasswordByForceStatus(email, newPassword, confirmPas
   return result.data;
 }
 export async function bid_history(driver_id, token) {
- // NO proxy setup? Then use full API URL
-const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_id}`, {
+  // NO proxy setup? Then use full API URL
+  const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_id}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-});
+  });
 
 
   const result = await response.json();
@@ -202,12 +202,12 @@ const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_
 }
 export async function scheduled_journey_details(driver_id, token) {
   const response = await fetch(`https://jat-uk.com/api/users/scheduled_journey_details/${driver_id}`, {
-      method: 'GET',
+    method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-});
+  });
 
 
   const result = await response.json();
@@ -219,12 +219,12 @@ export async function scheduled_journey_details(driver_id, token) {
 }
 export async function upcoming_journey_details(driver_id, token) {
   const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys/${driver_id}`, {
-      method: 'GET',
+    method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-});
+  });
 
 
   const result = await response.json();
@@ -236,12 +236,12 @@ export async function upcoming_journey_details(driver_id, token) {
 }
 export async function tomorrow_journeys(driver_id, token) {
   const response = await fetch(`https://jat-uk.com/api/users/tomorrow_journeys/${driver_id}`, {
-      method: 'GET',
+    method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-});
+  });
 
 
   const result = await response.json();
@@ -261,7 +261,7 @@ export async function completed_journeys(driver_id, token) {
   });
 
   const result = await response.json();
-  
+
   if (!response.ok) {
     throw new Error(result.message || 'Failed to fetch data');
   }
@@ -389,13 +389,13 @@ export async function getSupplierMappedDrivers({ supplier_id, booking_jou_id, to
       },
     }
   );
- 
+
   const result = await response.json();
- 
+
   if (!response.ok) {
     throw new Error(result.error || 'Failed to fetch supplier mapped drivers');
   }
- 
+
   return result.data; // Contains array of driver info
 }
 export async function assignDriverToJourney({ booking_jou_id, driver_id, fare, token }) {
@@ -411,12 +411,12 @@ export async function assignDriverToJourney({ booking_jou_id, driver_id, fare, t
       fare,
     }),
   });
- 
+
   const result = await response.json();
   if (!response.ok) {
     throw new Error(result.error || 'Failed to assign driver');
   }
- 
+
   return result; // {sucess: 1}
 }
 export async function unassignDriverFromJourney({ booking_jou_id, driver_id, token }) {
@@ -431,13 +431,12 @@ export async function unassignDriverFromJourney({ booking_jou_id, driver_id, tok
       driver_id,
     }),
   });
- 
+
   const result = await response.json();
- 
+
   if (!response.ok) {
     throw new Error(result.error || 'Failed to unassign driver');
   }
- 
+
   return result; // {sucess: 1}
 }
- 
