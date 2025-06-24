@@ -32,7 +32,23 @@ const ScheduledJobs = () => {
     pickup_date: '',
     car_id: '',
   });
-
+  const clearFilters = () => {
+    setFilters({
+      booking_ref_id: '',
+      from_address: '',
+      to_address: '',
+      waypoint: '',
+      pickup_date: '',
+      passengers: '',
+      luggage: '',
+      distance: '',
+      car_id: '',
+      bid_expiry: '',
+    });
+  };
+   const tabCounts = {
+        scheduled: filteredJobs.length, 
+    };
   useEffect(() => {
     const fetchCars = async () => {
       if (user?.driver_id && user?.token) {
@@ -187,10 +203,10 @@ const ScheduledJobs = () => {
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
             <div className="w-full">
-              <JobsTabs activeTab="scheduled" user={user} />
+              <JobsTabs activeTab="scheduled" user={user} tabCounts={tabCounts}/>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input
                 type="text"
                 name="booking_ref_id"
@@ -237,6 +253,12 @@ const ScheduledJobs = () => {
                     </option>
                   ))}
               </select>
+              <input
+                type="button"
+                value="Clear"
+                onClick={clearFilters}
+                className="p-2 border border-gray-300 rounded-md w-full cursor-pointer text-center bg-gray-100 hover:bg-red-100 text-red-500 font-semibold"
+              />
             </div>
             <div className="jobs-content">
               {loading ? (

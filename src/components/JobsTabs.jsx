@@ -10,25 +10,32 @@ const tabs = [
   { label: 'Completed Journeys', path: '/completed-jobs', key: 'completed' },
 ];
 
-const JobsTabs = ({ activeTab, user }) => {
+const JobsTabs = ({ activeTab, user, tabCounts = {} }) => {
   const navigate = useNavigate();
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
-  {tabs.map((tab) => (
-    <button
-      key={tab.key}
-      onClick={() => navigate(tab.path, { state: { user } })}
-      className={`py-2 px-4 rounded-md text-sm font-medium text-white transition-all duration-200
-        ${activeTab === tab.key
-          ? 'bg-blue-600 hover:bg-blue-700'
-          : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}`}
-    >
-      {tab.label}
-    </button>
-  ))}
-</div>
-
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          onClick={() => navigate(tab.path, { state: { user } })}
+          className={`py-2 px-4 rounded-md text-sm font-medium text-white transition-all duration-200
+            ${activeTab === tab.key
+              ? 'bg-blue-600 hover:bg-blue-700'
+              : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}`}
+        >
+          <span className="flex items-center justify-center gap-1">
+            {tab.label}
+            {/* Show badge if count > 0 */}
+            {tabCounts[tab.key] > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500 text-white">
+                {tabCounts[tab.key]}
+              </span>
+            )}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 };
 

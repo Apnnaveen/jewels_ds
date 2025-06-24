@@ -19,7 +19,7 @@ const CompletedJobs = () => {
   const [cars, setCars] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
 
- const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState({
     booking_ref_id: '',
     from_address: '',
     to_address: '',
@@ -31,7 +31,24 @@ const CompletedJobs = () => {
     car_id: '',
     bid_expiry: '',
   });
+  const clearFilters = () => {
+    setFilters({
+      booking_ref_id: '',
+      from_address: '',
+      to_address: '',
+      waypoint: '',
+      pickup_date: '',
+      passengers: '',
+      luggage: '',
+      distance: '',
+      car_id: '',
+      bid_expiry: '',
+    });
+  };
+   const tabCounts = {
+    completed: filteredJobs.length, // Quotation tab
 
+  };
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -40,14 +57,14 @@ const CompletedJobs = () => {
           return;
         }
         const [response, carsArray] = await Promise.all([
-                                        completed_journeys(user.driver_id, user.token),
-                                        getAllCars(user.driver_id, user.token)
-                                    ]);
+          completed_journeys(user.driver_id, user.token),
+          getAllCars(user.driver_id, user.token)
+        ]);
         const jobs = Array.isArray(response)
           ? response
           : Array.isArray(response?.data)
-          ? response.data
-          : [];
+            ? response.data
+            : [];
         setCompletedJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsArray) ? carsArray : []);
@@ -60,10 +77,10 @@ const CompletedJobs = () => {
     fetchData();
   }, [user]);
 
-const getCarName = (car_id) => {
-        const car = cars.find((c) => c.car_id === car_id);
-        return car ? car.car_name : car_id;
-    };
+  const getCarName = (car_id) => {
+    const car = cars.find((c) => c.car_id === car_id);
+    return car ? car.car_name : car_id;
+  };
 
   useEffect(() => {
     const filtered = completedJobs.filter((job) => {
@@ -108,7 +125,7 @@ const getCarName = (car_id) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleClearFilters = () => {
+  const handleClearFilters = () => {
     setFilters({
       booking_ref_id: '',
       from_address: '',
@@ -136,7 +153,7 @@ const handleClearFilters = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="completed" user={user} />
+            <JobsTabs activeTab="completed" user={user} tabCounts={tabCounts}/>
 
             {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
@@ -148,7 +165,7 @@ const handleClearFilters = () => {
                 placeholder="Booking Ref"
                 className="p-2 border border-gray-300 rounded-md w-full"
               />
-              
+
               <input
                 type="date"
                 name="pickup_date"
@@ -171,6 +188,12 @@ const handleClearFilters = () => {
                     </option>
                   ))}
               </select>
+              <input
+                type="button"
+                value="Clear"
+                onClick={clearFilters}
+                className="p-2 border border-gray-300 rounded-md w-full cursor-pointer text-center bg-gray-100 hover:bg-red-100 text-red-500 font-semibold"
+              />
             </div>
 
             {/* Card Grid */}
@@ -179,7 +202,7 @@ const handleClearFilters = () => {
                 <div className="col-span-full flex justify-center items-center h-64">
                   <Loading />
                 </div>
-              ) :(
+              ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => (
@@ -187,21 +210,21 @@ const handleClearFilters = () => {
                         key={job.id || idx}
                         className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                       >
-                         <div className="flex justify-between items-center mb-2">
+                        <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-blue-600 font-medium ml-auto"><b>Completed</b></span>
-                         </div>
+                        </div>
                         <div className="mb-3">
                           <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                             <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                           </h4>
-                          
+
                           <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                             <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
                           </p>
                         </div>
                         <div className="space-y-2 text-sm text-gray-700">
-                          
-                          
+
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
@@ -209,24 +232,24 @@ const handleClearFilters = () => {
                             <span className="text-right"><b>{job.pickup_date?.split(' at ')[0] || job.pickup_date}</b></span>
                           </div>
                           <div className="flex justify-between">
-                             <span className="flex items-center gap-2 font-medium text-gray-600">
-                                 <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
-                             </span>
-                             <span className="text-right">
-                                 <b>{job.pickup_date
-                                 ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
-                                     zone: 'Europe/London'
-                                     }).toFormat("hh:mm a")
-                                 : ''}</b>
-                             </span>
-                         </div>
-                         <div className="flex justify-between">
+                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                              <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
+                            </span>
+                            <span className="text-right">
+                              <b>{job.pickup_date
+                                ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
+                                  zone: 'Europe/London'
+                                }).toFormat("hh:mm a")
+                                : ''}</b>
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Fare Accepted:</b>
                             </span>
                             <span className="text-right"><b>&pound;{job.biding_amount}</b></span>
                           </div>
-                         
+
                         </div>
                       </div>
                     ))

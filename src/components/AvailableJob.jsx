@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './MainHeader/Header';
-import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars } from '../api'; import JobsTabs from './JobsTabs';
+import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars } from '../api';
+import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 
@@ -40,6 +41,24 @@ export default function AvailableJob() {
     const [submitting, setSubmitting] = useState(false);
     const [reaction, setReaction] = useState(false);
     const [cars, setCars] = useState([]);
+    const clearFilters = () => {
+        setFilters({
+            booking_ref_id: '',
+            from_address: '',
+            to_address: '',
+            waypoint: '',
+            pickup_date: '',
+            passengers: '',
+            luggage: '',
+            distance: '',
+            car_id: '',
+            bid_expiry: '',
+        });
+    };
+    const tabCounts = {
+        available: filteredJobs.length, // Quotation tab
+       
+    };
 
     useEffect(() => {
         if (user?.driver_id && user?.token) {
@@ -50,6 +69,7 @@ export default function AvailableJob() {
                         fetchAvailableJobs(user.driver_id, user.token),
                         getAllCars(user.driver_id, user.token)
                     ]);
+
                     setJobs(jobsArray);
                     setFilteredJobs(jobsArray);
                     setCars(Array.isArray(carsArray) ? carsArray : []);
@@ -132,14 +152,17 @@ export default function AvailableJob() {
     const handleViewDetails = async (job) => {
         setShowModal(true);
         setSelectedJob(job);
+        setIsChecked(true);
         setLoadingDetails(true);
         setDetailsError('');
+
         try {
             const details = await fetchJourneyDetails(job.booking_journey_id, user.driver_id, user.token);
             setSelectedJob(prev => ({ ...prev, ...details[0] }));
         } catch (err) {
             setDetailsError('Failed to load details.');
         }
+
         setLoadingDetails(false);
     };
 
@@ -195,10 +218,10 @@ export default function AvailableJob() {
                 <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
                     <div className="w-full">
                         <div className="w-full">
-                            <JobsTabs activeTab="available" user={user} />
+                            <JobsTabs activeTab="available" user={user} tabCounts={tabCounts} />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
                             <input
                                 type="text"
                                 name="booking_ref_id"
@@ -245,6 +268,12 @@ export default function AvailableJob() {
                                         </option>
                                     ))}
                             </select>
+                            <input
+                                type="button"
+                                value="Clear"
+                                onClick={clearFilters}
+                                className="p-2 border border-gray-300 rounded-md w-full cursor-pointer text-center bg-gray-100 hover:bg-red-100 text-red-500 font-semibold"
+                            />
                         </div>
 
 
@@ -453,7 +482,7 @@ export default function AvailableJob() {
                                             />
                                             <span className="text-gray-700">
                                                 By submitting your quote, you are accepting the Jewels Airport Transfers{' '}
-                                                <a href="#" target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                                                <a href="https://jat-uk.com/instructions-and-terms" target="_blank" rel="noopener noreferrer" className="text-blue-500">
                                                     terms and conditions
                                                 </a>
                                             </span>

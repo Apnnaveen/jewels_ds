@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney,getSupplierMappedDrivers} from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -29,6 +29,24 @@ const UpcomingJobs = () => {
     pickup_date: '',
     car_id: '',
   });
+  const clearFilters = () => {
+    setFilters({
+      booking_ref_id: '',
+      from_address: '',
+      to_address: '',
+      waypoint: '',
+      pickup_date: '',
+      passengers: '',
+      luggage: '',
+      distance: '',
+      car_id: '',
+      bid_expiry: '',
+    });
+  };
+  const tabCounts = {
+    upcoming: filteredJobs.length, // Quotation tab
+
+  };
   const [cars, setCars] = useState([]);
   // Fetch jobs
   useEffect(() => {
@@ -226,10 +244,10 @@ const UpcomingJobs = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="upcoming" user={user} />
+            <JobsTabs activeTab="upcoming" user={user} tabCounts={tabCounts} />
 
             {/* 4 Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input
                 type="text"
                 name="booking_ref_id"
@@ -276,6 +294,12 @@ const UpcomingJobs = () => {
                     </option>
                   ))}
               </select>
+              <input
+                type="button"
+                value="Clear"
+                onClick={clearFilters}
+                className="p-2 border border-gray-300 rounded-md w-full cursor-pointer text-center bg-gray-100 hover:bg-red-100 text-red-500 font-semibold"
+              />
             </div>
 
             {/* Card Grid */}
@@ -370,18 +394,16 @@ const UpcomingJobs = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-users text-purple-500"></i> <b>Passenger Name:</b>
+                                <i className="fas fa-user text-blue-500"></i> <b>Passenger Name:</b>
                               </span>
                               <span className="text-right"><b>{job.name}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-users text-purple-500"></i>
-                                <b>Mobile:</b>
+                                <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
                               </span>
-                              <span className="text-right">
-                                <b>{`+(${job.mobile_code}) ${job.mobile}`}</b>
-                              </span>
+                              <span className="text-right"><b>{`+(${job.mobile_code}) ${job.mobile}`}</b></span>
                             </div>
 
                             <div className="flex justify-between">
@@ -390,12 +412,33 @@ const UpcomingJobs = () => {
                               </span>
                               <span className="text-right"><b>{job.passengers}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
+                                <i className="fas fa-suitcase-rolling text-pink-500"></i> <b>Luggage:</b>
                               </span>
                               <span className="text-right"><b>{job.luggage}</b></span>
                             </div>
+
+                            {job.flight_no && job.flight_no.trim() !== '' && (
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                  <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
+                                </span>
+                                <span className="text-right"><b>{job.flight_no}</b></span>
+                              </div>
+                            )}
+
+                            {job.arrive_from && job.arrive_from.trim() !== '' && (
+                              <div className="flex justify-between">
+                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                  <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
+                                </span>
+                                <span className="text-right"><b>{job.arrive_from}</b></span>
+                              </div>
+                            )}
+
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
