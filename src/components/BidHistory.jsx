@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history, getAllCars, bidJob, withdrawJob } from '../api';
+import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs } from '../api';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 
@@ -22,8 +22,7 @@ const BidHistory = () => {
   const [quote, setQuote] = useState('');
   const [isChecked, setIsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [reaction, setReaction] = useState(false); // <-- add this if setReaction is used
-
+  const [reaction, setReaction] = useState(false); 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
     biding_amount: '',
@@ -61,17 +60,13 @@ const BidHistory = () => {
     if (!selectedBid || !quote || !isChecked) return;
     setSubmitting(true);
     try {
-      // Fetch latest bid history
-      let updatedBids = await bid_history(user.driver_id, user.token);
-      updatedBids = Array.isArray(updatedBids) ? updatedBids : [];
-      // Find the current bid by booking_journey_id
-      const latestBid = updatedBids.find(
-        (b) => b.booking_journey_id === selectedBid.booking_journey_id
-      );
-      if (!latestBid || latestBid.availability === 1) {
-        alert('This job has already moved to another tab and cannot be updated.');
+      const checkResult = await checkBidJobs(selectedBid.booking_journey_id, user.token);
+      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+        alert('This job has already been assigned to another driver.');
         setShowModal(false);
-        setActionLoading(false);
+        setQuote('');
+        setIsChecked(false);
+        setReaction(true); // refresh jobs
         setSubmitting(false);
         return;
       }

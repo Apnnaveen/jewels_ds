@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import Header from './MainHeader/Header';
-import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars } from '../api';
+import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs } from '../api';
 import { DateTime } from 'luxon';
 
 const ScheduledJobs = () => {
@@ -20,6 +20,8 @@ const ScheduledJobs = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [cars, setCars] = useState([]);
+  const [reaction, setReaction] = useState(false); 
+
 
   const [filters, setFilters] = useState({
     vehicle_type: '',
@@ -46,9 +48,9 @@ const ScheduledJobs = () => {
       bid_expiry: '',
     });
   };
-   const tabCounts = {
-        scheduled: filteredJobs.length, 
-    };
+  const tabCounts = {
+    scheduled: filteredJobs.length,
+  };
   useEffect(() => {
     const fetchCars = async () => {
       if (user?.driver_id && user?.token) {
@@ -74,6 +76,13 @@ const ScheduledJobs = () => {
         setError('User not authenticated');
         return;
       }
+      const checkResult = await checkBidJobs(job.booking_journey_id, user.token);
+      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+        alert('This job has already been assigned to another driver.');
+        window.location.reload();
+        setReaction(true);
+        return;
+      }
       setActionLoading(true);
       await confirmAvailability({
         driver_id: user.driver_id,
@@ -82,9 +91,11 @@ const ScheduledJobs = () => {
         token: user.token,
       });
       alert('Availability confirmed!');
+      setReaction(true);
       window.location.reload();
     } catch (err) {
       alert(err.message || 'Failed to confirm availability');
+     setReaction(true);
     } finally {
       setActionLoading(false);
     }
@@ -103,44 +114,74 @@ const ScheduledJobs = () => {
         token: user.token,
       });
       alert('Job declined!');
+      setReaction(true);
       window.location.reload();
     } catch (err) {
       alert(err.message || 'Failed to decline job');
+      setReaction(true);
     } finally {
       setActionLoading(false);
     }
   };
 
   useEffect(() => {
+  const fetchScheduledJobs = async () => {
+    try {
+      if (!user?.driver_id || !user?.token) {
+        setError('User not authenticated');
+        setLoading(false);
+        return;
+      }
+      const response = await scheduled_journey_details(user.driver_id, user.token);
+      const jobs = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : [];
+      if (!Array.isArray(jobs)) {
+        throw new Error('Invalid job data received.');
+      }
+      setScheduledJobs(jobs);
+      setFilteredJobs(jobs);
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchScheduledJobs();
+}, [user]);
+
+// Refresh jobs after accept/decline
+useEffect(() => {
+  if (reaction) {
     const fetchScheduledJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
           setError('User not authenticated');
           return;
         }
-
         const response = await scheduled_journey_details(user.driver_id, user.token);
         const jobs = Array.isArray(response)
           ? response
           : Array.isArray(response?.data)
             ? response.data
             : [];
-
         if (!Array.isArray(jobs)) {
           throw new Error('Invalid job data received.');
         }
-
         setScheduledJobs(jobs);
         setFilteredJobs(jobs);
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
         setLoading(false);
+        setReaction(false);
       }
     };
-
     fetchScheduledJobs();
-  }, [user]);
+  }
+}, [reaction, user]);
 
   useEffect(() => {
     const filtered = scheduledJobs.filter((job) => {
@@ -203,7 +244,7 @@ const ScheduledJobs = () => {
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
             <div className="w-full">
-              <JobsTabs activeTab="scheduled" user={user} tabCounts={tabCounts}/>
+              <JobsTabs activeTab="scheduled" user={user} tabCounts={tabCounts} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">

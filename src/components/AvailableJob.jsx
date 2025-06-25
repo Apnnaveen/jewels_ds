@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './MainHeader/Header';
-import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars } from '../api';
+import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJobs } from '../api';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -167,29 +167,40 @@ export default function AvailableJob() {
     };
 
     const handleSubmitBid = async () => {
-        if (!selectedJob || !quote || !isChecked) return;
-        setSubmitting(true);
-        try {
-            await bidJob({
-                booking_journey_id: selectedJob.booking_journey_id,
-                driver_id: user.driver_id,
-                email: user.email,
-                fare: quote,
-                token: user.token,
-            });
-            alert('Bid submitted successfully!');
+    if (!selectedJob || !quote || !isChecked) return;
+    // setSubmitting(true);
+    try {
+        // Check if already assigned
+        const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
+        if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+            alert('This job has already been assigned to another driver.');
             setShowModal(false);
             setQuote('');
             setIsChecked(false);
-            setReaction(true);
-
-        } catch (err) {
-            setLoading(false);
-
-            alert('Failed to submit bid: ' + err.message);
+            setReaction(true); // refresh jobs
+            // setSubmitting(false);
+            return;
         }
-        setSubmitting(false);
-    };
+
+        await bidJob({
+            booking_journey_id: selectedJob.booking_journey_id,
+            driver_id: user.driver_id,
+            email: user.email,
+            fare: quote,
+            token: user.token,
+        });
+        alert('Bid submitted successfully!');
+        setShowModal(false);
+        setQuote('');
+        setIsChecked(false);
+        setReaction(true);
+
+    } catch (err) {
+        setLoading(false);
+        alert('Failed to submit bid: ' + err.message);
+    }
+    setSubmitting(false);
+};
 
     const handleCloseModal = () => {
         setShowModal(false);
