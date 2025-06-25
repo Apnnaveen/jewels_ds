@@ -9,12 +9,15 @@ export default function Header() {
     const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
 
     useEffect(() => {
-            if (location.pathname.includes('profile')) {
-                setActiveItem('profile');
-            } else if (location.pathname.includes('dashboard')) {
-                setActiveItem('dashboard');
-            }
-        }, [location.pathname]);
+        if (location.pathname.includes('profile')) {
+            setActiveItem('profile');
+        } else if (location.pathname.includes('dashboard')) {
+            setActiveItem('dashboard');
+        }
+        else if (location.pathname.includes('driverlist')) {
+        setActiveItem('driverlist');
+    }
+    }, [location.pathname]);
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -36,6 +39,7 @@ export default function Header() {
     const menuItems = [
         { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
+        { key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' },
     ];
 
     const handleMenuClick = (key) => {
