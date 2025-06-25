@@ -444,8 +444,8 @@ export async function unassignDriverFromJourney({ booking_jou_id, driver_id, tok
 // src/api.js
 export async function add_driver(formData, token) {
   console.log('Sending token:', token);
-
-  const response = await fetch('http://jewels.com/api/users/add_driver', {
+  let environment = 'portal';
+  const response = await fetch(`http://jewels.com/api/users/add_driver/${environment}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -462,4 +462,82 @@ export async function add_driver(formData, token) {
 
   return result;
 }
+export async function get_driver_details(driverId, token) {
+  console.log('Sending token:', token);
+
+  const response = await fetch(`http://jewels.com/api/users/edit_driver_api/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Get Driver Details API failed.');
+  }
+
+  return result;
+}
+export async function get_supplier_details(driverId, token) {
+  try {
+    console.log('Sending token:', driverId);
+
+    const response = await fetch(`http://jewels.com/api/users/api_edit_supplier/${driverId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result?.message || 'Get Supplier Details API failed.');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in get_supplier_details:', error.message);
+    throw error;
+  }
+}
+
+  export async function save_supplier_driver(data, token) {
+    const response = await fetch('http://jewels.com/api/users/api_save_supplier_driver', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    if (!response.ok || result.status === false) {
+      throw new Error(result.message || 'Failed to save driver');
+    }
+    return result;
+  }
+
+export async function delete_driver(driverId, token) {
+  const response = await fetch(`http://jewels.com/api/users/api_delete_supplier_driver/${driverId}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const result = await response.json(); // <== This fails if response is HTML
+
+  if (!response.ok || result.status !== 200) {
+    throw new Error(result.message || 'Failed to delete driver');
+  }
+
+  return result;
+}
+
 

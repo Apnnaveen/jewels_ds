@@ -15,8 +15,8 @@ export default function Header() {
             setActiveItem('dashboard');
         }
         else if (location.pathname.includes('driverlist')) {
-        setActiveItem('driverlist');
-    }
+            setActiveItem('driverlist');
+        }
     }, [location.pathname]);
 
     const handleLogout = () => {
@@ -39,9 +39,11 @@ export default function Header() {
     const menuItems = [
         { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
-        { key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' },
+        // { key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' },
     ];
-
+    if (user?.user_type === 'supplier') {
+        menuItems.push({ key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' });
+    }
     const handleMenuClick = (key) => {
         setActiveItem(key);
         setMenuOpen(false);

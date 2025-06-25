@@ -11,7 +11,7 @@ import Dashboard from './components/Dashboard';
 import Bidjobs from './components/BidHistory';
 import ForgotPassword from './components/ForgotPassword';
 import ProfilePage from './components/ProfilePage';
-import AddDriver from './components/AddDriver';
+import DriverList from './components/DriverList';
 
 
 function App() {
@@ -29,8 +29,7 @@ function App() {
         <Route path="/upcoming-journeys" element={<UpcomingJourneys />} />
         <Route path="/completed-jobs" element={<Completed_journeys />} />
         <Route path="/tomorrow-journeys" element={<Tomorrow_journeys />} />
-        <Route path="/driverlist" element={<AddDriver />} /> {/* NEW */}
-
+        <Route path="/driverlist" element={<DriverList />} />
       </Routes>
     </Router>
   );
