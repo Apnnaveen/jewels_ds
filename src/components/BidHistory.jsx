@@ -22,7 +22,7 @@ const BidHistory = () => {
   const [quote, setQuote] = useState('');
   const [isChecked, setIsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [reaction, setReaction] = useState(false); 
+  const [reaction, setReaction] = useState(false);
   const [filters, setFilters] = useState({
     booking_ref_id: '',
     biding_amount: '',
@@ -380,6 +380,14 @@ const BidHistory = () => {
                               : ''}</b>
                           </span>
                         </div>
+                        {bid.driver_supplier_remarks && bid.driver_supplier_remarks.trim() !== '' && (
+                          <div>
+                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                              <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                            </span>
+                            <span className="block ml-6"><b>{bid.driver_supplier_remarks}</b></span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span className="flex items-center gap-2 font-medium text-gray-600">
                             <i className="fas fa-pound-sign text-green-600"></i> <b>Bid Amount:</b>

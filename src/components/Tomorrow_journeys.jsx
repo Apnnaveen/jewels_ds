@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { tomorrow_journeys, getAllCars, acknowledgeStatus } from '../api';
+import { tomorrow_journeys, getAllCars, acknowledgeStatus, checkBidJobsTomorrow } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -20,6 +20,8 @@ const TomorrowJourneys = () => {
   const [error, setError] = useState('');
   const [cars, setCars] = useState([]);
   const [ackLoading, setAckLoading] = useState({});
+  const [reaction, setReaction] = useState(false);
+
   // Only 4 filters: refid, from, to, date
 
   const [filters, setFilters] = useState({
@@ -48,12 +50,13 @@ const TomorrowJourneys = () => {
       bid_expiry: '',
     });
   };
-   const tabCounts = {
+  const tabCounts = {
     tomorrow: filteredJobs.length, // Quotation tab
-  
+
   };
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         if (!user?.driver_id || !user?.token) {
           setError('User not authenticated');
@@ -74,49 +77,80 @@ const TomorrowJourneys = () => {
         setCars(Array.isArray(carsArray) ? carsArray : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
+        setLoading(false);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [user]);
+  }, [user, reaction]);
 
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
   const handleAcknowledge = async (job) => {
-    setActionLoading(true); // Show global loading
-    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
-    try {
-      await acknowledgeStatus({
-        driver_id: user.driver_id,
-        booking_journey_id: job.booking_journey_id,
-        acknowledge_status: 1,
-        token: user.token,
-      });
-      // Update local state to reflect acknowledgment
-      setTomorrowJobs((prev) =>
-        prev.map((j) =>
-          j.booking_journey_id === job.booking_journey_id
-            ? { ...j, acknowledge_status: 1 }
-            : j
-        )
-      );
-      setFilteredJobs((prev) =>
-        prev.map((j) =>
-          j.booking_journey_id === job.booking_journey_id
-            ? { ...j, acknowledge_status: 1 }
-            : j
-        )
-      );
-    } catch (err) {
-      alert(err.message || 'Failed to acknowledge job');
-    } finally {
-      setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
-      setActionLoading(false); // Hide global loading
+  setActionLoading(true); // Global spinner
+  setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
+
+  try {
+    const checkResult = await checkBidJobsTomorrow(
+      job.booking_journey_id,
+      user.driver_id,
+      user.token
+    );
+
+    if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+      alert('This job has already been assigned to another driver.');
+      setReaction(true);
+      return;
     }
-  };
+
+    if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
+      alert('You have not been assigned this job yet.');
+      setReaction(true);
+      return;
+    }
+
+    // Proceed with acknowledge
+    await acknowledgeStatus({
+      driver_id: user.driver_id,
+      booking_journey_id: job.booking_journey_id,
+      acknowledge_status: 1,
+      token: user.token,
+    });
+
+    // Update job state in UI
+    setTomorrowJobs((prev) =>
+      prev.map((j) =>
+        j.booking_journey_id === job.booking_journey_id
+          ? { ...j, acknowledge_status: 1 }
+          : j
+      )
+    );
+    setFilteredJobs((prev) =>
+      prev.map((j) =>
+        j.booking_journey_id === job.booking_journey_id
+          ? { ...j, acknowledge_status: 1 }
+          : j
+      )
+    );
+
+    // Show success alert
+    alert('Job acknowledged successfully!');
+
+    // Force re-render by updating a state variable
+    setReaction(true);
+  } catch (err) {
+    alert(err.message || 'Failed to acknowledge job');
+  } finally {
+    // Always stop loading, even after alerts
+    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+    setActionLoading(false);
+  }
+};
+
+
   useEffect(() => {
     const filtered = tomorrowJobs
       .filter((job) => {
@@ -186,13 +220,13 @@ const TomorrowJourneys = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="tomorrow" user={user}  tabCounts={tabCounts} />
+            <JobsTabs activeTab="tomorrow" user={user} tabCounts={tabCounts} />
 
             {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input
                 type="text"
-                name="booking_sub_id" // <-- fix here
+                name="booking_sub_id"
                 value={filters.booking_sub_id}
                 onChange={handleFilterChange}
                 placeholder="Booking Ref"
@@ -345,6 +379,14 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="text-right"><b>{job.luggage}</b></span>
                           </div>
+                           {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                            <div>
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                              </span>
+                              <span className="block ml-6"><b>{job.driver_supplier_remarks}</b></span>
+                            </div>
+                          )}
                           <div className="flex justify-end mt-2">
                             {job.acknowledge_status === 1 || job.acknowledge_status === '1' ? (
                               <span className="text-green-600 font-semibold px-3 py-1 rounded bg-green-100 text-sm">

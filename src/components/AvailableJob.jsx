@@ -57,7 +57,7 @@ export default function AvailableJob() {
     };
     const tabCounts = {
         available: filteredJobs.length, // Quotation tab
-       
+
     };
 
     useEffect(() => {
@@ -97,10 +97,25 @@ export default function AvailableJob() {
 
     useEffect(() => {
         const filtered = jobs.filter((job) => {
-            const matchText = (key) =>
-                job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+            const matchText = (key) => {
+                const value = filters[key].toLowerCase();
+                const jobValue = job[key]?.toString().toLowerCase();
 
-            // Convert pickup_date to 'YYYY-MM-DD' for comparison
+                if (key === 'from_address') {
+                    // Extract first half of postcode from the address (e.g., "TR8")
+                    const postcodeMatch = jobValue.match(/[A-Z]{1,2}\d{1,2}[A-Z]?/i);
+                    const postcodePrefix = postcodeMatch ? postcodeMatch[0].toLowerCase() : '';
+
+                    // Check if input matches the postcode prefix first
+                    if (postcodePrefix && postcodePrefix.includes(value)) return true;
+
+                    // Fallback: match input in entire address
+                }
+
+                return jobValue.includes(value);
+            };
+
+            // Format pickup_date for comparison
             let jobDateISO = '';
             if (job.pickup_date) {
                 const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
@@ -135,6 +150,7 @@ export default function AvailableJob() {
         setCurrentPage(1);
     }, [filters, jobs]);
 
+
     const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
     const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
 
@@ -167,40 +183,40 @@ export default function AvailableJob() {
     };
 
     const handleSubmitBid = async () => {
-    if (!selectedJob || !quote || !isChecked) return;
-    // setSubmitting(true);
-    try {
-        // Check if already assigned
-        const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
-        if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-            alert('This job has already been assigned to another driver.');
+        if (!selectedJob || !quote || !isChecked) return;
+        // setSubmitting(true);
+        try {
+            // Check if already assigned
+            const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
+            if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+                alert('This job has already been assigned to another driver.');
+                setShowModal(false);
+                setQuote('');
+                setIsChecked(false);
+                setReaction(true); // refresh jobs
+                // setSubmitting(false);
+                return;
+            }
+
+            await bidJob({
+                booking_journey_id: selectedJob.booking_journey_id,
+                driver_id: user.driver_id,
+                email: user.email,
+                fare: quote,
+                token: user.token,
+            });
+            alert('Bid submitted successfully!');
             setShowModal(false);
             setQuote('');
             setIsChecked(false);
-            setReaction(true); // refresh jobs
-            // setSubmitting(false);
-            return;
+            setReaction(true);
+
+        } catch (err) {
+            setLoading(false);
+            alert('Failed to submit bid: ' + err.message);
         }
-
-        await bidJob({
-            booking_journey_id: selectedJob.booking_journey_id,
-            driver_id: user.driver_id,
-            email: user.email,
-            fare: quote,
-            token: user.token,
-        });
-        alert('Bid submitted successfully!');
-        setShowModal(false);
-        setQuote('');
-        setIsChecked(false);
-        setReaction(true);
-
-    } catch (err) {
-        setLoading(false);
-        alert('Failed to submit bid: ' + err.message);
-    }
-    setSubmitting(false);
-};
+        setSubmitting(false);
+    };
 
     const handleCloseModal = () => {
         setShowModal(false);
@@ -378,7 +394,22 @@ export default function AvailableJob() {
                                                     </span>
                                                     <span className="text-right"><b>{job.luggage}</b></span>
                                                 </div>
-
+                                                <div className="flex justify-between">
+                                                    <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                        <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
+                                                    </span>
+                                                    <span className="text-right">
+                                                        <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
+                                                    </span>
+                                                </div>
+                                                {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                                                    <div>
+                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                            <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                                                        </span>
+                                                        <span className="block ml-6"><b>{job.driver_supplier_remarks}</b></span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex flex-col space-y-3">
                                                 {job.car_info && (

@@ -20,7 +20,7 @@ const ScheduledJobs = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [cars, setCars] = useState([]);
-  const [reaction, setReaction] = useState(false); 
+  const [reaction, setReaction] = useState(false);
 
 
   const [filters, setFilters] = useState({
@@ -95,7 +95,7 @@ const ScheduledJobs = () => {
       window.location.reload();
     } catch (err) {
       alert(err.message || 'Failed to confirm availability');
-     setReaction(true);
+      setReaction(true);
     } finally {
       setActionLoading(false);
     }
@@ -125,40 +125,11 @@ const ScheduledJobs = () => {
   };
 
   useEffect(() => {
-  const fetchScheduledJobs = async () => {
-    try {
-      if (!user?.driver_id || !user?.token) {
-        setError('User not authenticated');
-        setLoading(false);
-        return;
-      }
-      const response = await scheduled_journey_details(user.driver_id, user.token);
-      const jobs = Array.isArray(response)
-        ? response
-        : Array.isArray(response?.data)
-          ? response.data
-          : [];
-      if (!Array.isArray(jobs)) {
-        throw new Error('Invalid job data received.');
-      }
-      setScheduledJobs(jobs);
-      setFilteredJobs(jobs);
-    } catch (err) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchScheduledJobs();
-}, [user]);
-
-// Refresh jobs after accept/decline
-useEffect(() => {
-  if (reaction) {
     const fetchScheduledJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
           setError('User not authenticated');
+          setLoading(false);
           return;
         }
         const response = await scheduled_journey_details(user.driver_id, user.token);
@@ -176,12 +147,41 @@ useEffect(() => {
         setError(err.message || 'Something went wrong');
       } finally {
         setLoading(false);
-        setReaction(false);
       }
     };
     fetchScheduledJobs();
-  }
-}, [reaction, user]);
+  }, [user]);
+
+  // Refresh jobs after accept/decline
+  useEffect(() => {
+    if (reaction) {
+      const fetchScheduledJobs = async () => {
+        try {
+          if (!user?.driver_id || !user?.token) {
+            setError('User not authenticated');
+            return;
+          }
+          const response = await scheduled_journey_details(user.driver_id, user.token);
+          const jobs = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data)
+              ? response.data
+              : [];
+          if (!Array.isArray(jobs)) {
+            throw new Error('Invalid job data received.');
+          }
+          setScheduledJobs(jobs);
+          setFilteredJobs(jobs);
+        } catch (err) {
+          setError(err.message || 'Something went wrong');
+        } finally {
+          setLoading(false);
+          setReaction(false);
+        }
+      };
+      fetchScheduledJobs();
+    }
+  }, [reaction, user]);
 
   useEffect(() => {
     const filtered = scheduledJobs.filter((job) => {
@@ -361,7 +361,7 @@ useEffect(() => {
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                             </span>
-                            <span className="text-right"><b>{job.distance ? `${job.distance} miles` : 'N/A'}</b></span>
+                            <span className="text-right"><b>{job.distance ? `${job.distance}` : 'N/A'}</b></span>
                           </div>
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -381,6 +381,14 @@ useEffect(() => {
                                 : ''}</b>
                             </span>
                           </div>
+                          {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                            <div>
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                              </span>
+                              <span className="block ml-6"><b>{job.driver_supplier_remarks}</b></span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-pound-sign text-green-500"></i> <b>Price:</b>

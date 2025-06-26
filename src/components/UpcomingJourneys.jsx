@@ -1,4 +1,3 @@
-// ...existing imports...
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
@@ -6,6 +5,7 @@ import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJour
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
+
 const UpcomingJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const UpcomingJobs = () => {
   const [driverModalLoading, setDriverModalLoading] = useState(false);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false); // NEW
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Filters
@@ -29,6 +29,7 @@ const UpcomingJobs = () => {
     pickup_date: '',
     car_id: '',
   });
+
   const clearFilters = () => {
     setFilters({
       booking_ref_id: '',
@@ -43,11 +44,13 @@ const UpcomingJobs = () => {
       bid_expiry: '',
     });
   };
-  const tabCounts = {
-    upcoming: filteredJobs.length, // Quotation tab
 
+  const tabCounts = {
+    upcoming: filteredJobs.length,
   };
+
   const [cars, setCars] = useState([]);
+
   // Fetch jobs
   useEffect(() => {
     const fetchUpcomingJobs = async () => {
@@ -61,7 +64,15 @@ const UpcomingJobs = () => {
           getAllCars(user.driver_id, user.token)
         ]);
         console.log('Jobs Data:', jobsData);
-        const jobs = Array.isArray(jobsData) ? jobsData : [];
+
+        // Filter out duplicates
+        const uniqueJobs = jobsData.filter((job, index, self) =>
+          index === self.findIndex((j) => (
+            j.id === job.id || j.booking_journey_id === job.booking_journey_id
+          ))
+        );
+
+        const jobs = Array.isArray(uniqueJobs) ? uniqueJobs : [];
         setUpcomingJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsData) ? carsData : []);
@@ -73,17 +84,18 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
+
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
+
   // Filter jobs
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
       const matchText = (key) =>
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-      // Convert pickup_date to 'YYYY-MM-DD' for comparison
       let jobDateISO = '';
       if (job.pickup_date) {
         const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
@@ -116,13 +128,11 @@ const UpcomingJobs = () => {
     setFilteredJobs(filtered);
   }, [filters, upcomingJobs]);
 
-  // Handle filter change
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle status update
   const handleStatusUpdate = async (job, status_code) => {
     setActionLoading(true);
     try {
@@ -140,6 +150,7 @@ const UpcomingJobs = () => {
       setActionLoading(false);
     }
   };
+
   const handleShowDriverList = async (job) => {
     setSelectedJob(job);
     setShowDriverModal(true);
@@ -246,7 +257,6 @@ const UpcomingJobs = () => {
           <div className="w-full">
             <JobsTabs activeTab="upcoming" user={user} tabCounts={tabCounts} />
 
-            {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input
                 type="text"
@@ -287,12 +297,11 @@ const UpcomingJobs = () => {
                 className="p-2 border border-gray-300 rounded-md w-full"
               >
                 <option value="">All Vehicles</option>
-                {cars
-                  .map(car => (
-                    <option key={car.car_id} value={car.car_id}>
-                      {car.car_name}
-                    </option>
-                  ))}
+                {cars.map(car => (
+                  <option key={car.car_id} value={car.car_id}>
+                    {car.car_name}
+                  </option>
+                ))}
               </select>
               <input
                 type="button"
@@ -302,7 +311,6 @@ const UpcomingJobs = () => {
               />
             </div>
 
-            {/* Card Grid */}
             <div className="jobs-content">
               {loading ? (
                 <div className="col-span-full flex justify-center items-center h-64">
@@ -313,16 +321,13 @@ const UpcomingJobs = () => {
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => {
                       const jobKey = job.id || job.booking_journey_id || idx;
-                      // Use icon_status or status_code as the source of truth
                       const status = job.icon_status ?? job.status_code;
-                      console.log('Job:', job, 'Status:', status); // Debugging log
                       return (
                         <div
                           key={jobKey}
                           className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
                         >
                           <div className="flex justify-between items-center mb-2">
-                            {/* Show Acknowledged if acknowledge_status == 1 */}
                             {job.acknowledge_status == 1 && (
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold mr-2">
                                 Acknowledged
@@ -334,20 +339,17 @@ const UpcomingJobs = () => {
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                               <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                             </h4>
-
                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                               <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
                             </p>
                           </div>
                           <div className="space-y-2 text-sm text-gray-700">
-                            {/* Pickup */}
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-map-marker-alt text-blue-500"></i><b> Pickup:</b>
                               </span>
                               <span className="block ml-6"><b>{job.from_address}</b></span>
                             </div>
-                            {/* Waypoints */}
                             {job.waypoint && job.waypoint.trim() !== '' && (
                               job.waypoint.split('|').map((wp, i) =>
                                 wp.trim() && (
@@ -361,7 +363,6 @@ const UpcomingJobs = () => {
                                 )
                               )
                             )}
-                            {/* DropOff */}
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
@@ -372,7 +373,7 @@ const UpcomingJobs = () => {
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                               </span>
-                              <span className="text-right"><b>{job.distance} miles Approx</b></span>
+                              <span className="text-right"><b>{job.distance} Approx</b></span>
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -398,28 +399,24 @@ const UpcomingJobs = () => {
                               </span>
                               <span className="text-right"><b>{job.name}</b></span>
                             </div>
-
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
                               </span>
                               <span className="text-right"><b>{`+(${job.mobile_code}) ${job.mobile}`}</b></span>
                             </div>
-
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                               </span>
                               <span className="text-right"><b>{job.passengers}</b></span>
                             </div>
-
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-suitcase-rolling text-pink-500"></i> <b>Luggage:</b>
                               </span>
                               <span className="text-right"><b>{job.luggage}</b></span>
                             </div>
-
                             {job.flight_no && job.flight_no.trim() !== '' && (
                               <div className="flex justify-between">
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -428,7 +425,6 @@ const UpcomingJobs = () => {
                                 <span className="text-right"><b>{job.flight_no}</b></span>
                               </div>
                             )}
-
                             {job.arrive_from && job.arrive_from.trim() !== '' && (
                               <div className="flex justify-between">
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -437,8 +433,6 @@ const UpcomingJobs = () => {
                                 <span className="text-right"><b>{job.arrive_from}</b></span>
                               </div>
                             )}
-
-
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
@@ -446,6 +440,20 @@ const UpcomingJobs = () => {
                               <span className="text-right">
                                 <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
                               </span>
+                            </div>
+                            {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                              <div>
+                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                  <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                                </span>
+                                <span className="block ml-6"><b>{job.driver_supplier_remarks}</b></span>
+                              </div>
+                            )}
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-calendar-alt text-blue-400"></i> <b>Fare Accepted:</b>
+                              </span>
+                              <span className="text-right"><b>&pound;{job.biding_amount}</b></span>
                             </div>
                             <button
                               onClick={() => handleShowDriverList(job)}
@@ -461,7 +469,6 @@ const UpcomingJobs = () => {
                               </div>
                             )}
                             <div className="flex justify-end gap-2 mt-3">
-                              {/* Active Button */}
                               <button
                                 type="button"
                                 disabled={
@@ -489,8 +496,6 @@ const UpcomingJobs = () => {
                               >
                                 Active
                               </button>
-
-                              {/* POB Button */}
                               <button
                                 type="button"
                                 disabled={status != 1}
@@ -502,10 +507,7 @@ const UpcomingJobs = () => {
                                 onClick={() => handleStatusUpdate(job, 2)}
                               >
                                 POB
-
                               </button>
-
-                              {/* Completed Button */}
                               <button
                                 type="button"
                                 disabled={status != 2}
@@ -517,10 +519,8 @@ const UpcomingJobs = () => {
                                 onClick={() => handleStatusUpdate(job, 3)}
                               >
                                 Completed
-
                               </button>
                             </div>
-
                           </div>
                         </div>
                       );
@@ -533,7 +533,6 @@ const UpcomingJobs = () => {
                   {showDriverModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                       <div className="bg-white w-full max-w-4xl p-6 rounded-lg shadow-lg relative">
-                        {/* Close Button */}
                         <button
                           onClick={() => setShowDriverModal(false)}
                           className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
@@ -541,13 +540,9 @@ const UpcomingJobs = () => {
                         >
                           &times;
                         </button>
-
-                        {/* Header */}
                         <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
                           Mapped Drivers
                         </h2>
-
-                        {/* Table Content */}
                         {driverModalLoading ? (
                           <Loading />
                         ) : driverList.length > 0 ? (
@@ -583,7 +578,6 @@ const UpcomingJobs = () => {
                                     <td className="px-4 py-2 border">
                                       <div className="flex flex-wrap gap-2">
                                         {driver.is_assigned ? (
-                                          // Show only Unassign when already assigned
                                           <button
                                             onClick={() => handleUnassign(driver.driver_id)}
                                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
@@ -591,7 +585,6 @@ const UpcomingJobs = () => {
                                             Unassign
                                           </button>
                                         ) : (
-                                          // Show only Assign when not assigned
                                           <button
                                             onClick={() => handleAssign(driver.driver_id)}
                                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
@@ -600,7 +593,6 @@ const UpcomingJobs = () => {
                                           </button>
                                         )}
                                       </div>
-
                                     </td>
                                   </tr>
                                 ))}
@@ -624,4 +616,3 @@ const UpcomingJobs = () => {
 };
 
 export default UpcomingJobs;
-// ...existing code...
