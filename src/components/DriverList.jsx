@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { get_driver_details, add_driver, save_supplier_driver,get_supplier_details, delete_driver, getAllCars } from '../api';
+import { get_driver_details, add_driver, save_supplier_driver, get_supplier_details, delete_driver, getAllCars } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 
@@ -87,13 +87,21 @@ const DriverList = () => {
     if (missing) return alert(`Please fill in ${missing.replace('_', ' ')}`);
 
     setActionLoading(true);
+
     try {
       const submitData = { ...formData };
+
       if (isEditing && editDriverId) {
         submitData.driver_id = editDriverId;
+        console.log("Submitting to save_supplier_driver:", submitData);
+        await save_supplier_driver(submitData, token);
+        alert('Driver updated successfully!');
+      } else {
+        // Add new driver
+        await add_driver(submitData, token);
+        alert('Driver added successfully!');
       }
-      await add_driver(submitData, token);
-      alert(isEditing ? 'Driver updated successfully!' : 'Driver added successfully!');
+
       setModalOpen(false);
       window.location.reload();
     } catch (error) {
@@ -102,6 +110,7 @@ const DriverList = () => {
       setActionLoading(false);
     }
   };
+
 
   const handleEditClick = async (driverId) => {
     try {
