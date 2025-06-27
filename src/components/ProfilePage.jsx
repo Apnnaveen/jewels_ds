@@ -3,7 +3,6 @@ import { getUserProfile } from '../api';
 import Header from './MainHeader/Header';
 
 export default function ProfilePage() {
-  // Get user from localStorage
   const user = (() => {
     const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
@@ -13,7 +12,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Fetch profile function for reuse
   const fetchProfile = async () => {
     setLoading(true);
     setError('');
@@ -34,7 +32,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-    // eslint-disable-next-line
   }, []);
 
   if (loading) return (
@@ -83,36 +80,40 @@ export default function ProfilePage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl w-full">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="bg-gradient-to-r from-indigo-500 to-blue-500 p-6">
-              <div className="flex items-center">
-                <div className="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-white text-3xl font-bold mr-4 shadow-lg ring-4 ring-white">
-                  {profile.firstname?.[0]?.toUpperCase() || 'U'}
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-white">{profile.firstname} {profile.lastname}</h1>
-                  <p className="text-indigo-100">{profile.email}</p>
-                </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="p-6">
+            <div className="flex justify-center mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               </div>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Personal Information</h3>
-                    <div className="mt-2 space-y-2">
-                      <div>
-                        <p className="text-sm text-gray-500">Full Name</p>
-                        <p className="text-lg font-medium text-gray-900">{profile.firstname} {profile.lastname}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Phone</p>
-                        <p className="text-lg font-medium text-gray-900">{profile.mob}</p>
-                      </div>
-                    </div>
-                  </div>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-800">{profile.firstname} {profile.lastname}</h2>
+            </div>
+            <div className="mt-6 space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg flex items-center">
+                <div className="flex-shrink-0 bg-indigo-100 p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 3M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-lg font-medium text-gray-900">{profile.email}</p>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg flex items-center">
+                <div className="flex-shrink-0 bg-indigo-100 p-3 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="text-lg font-medium text-gray-900">{profile.mob}</p>
                 </div>
               </div>
             </div>
