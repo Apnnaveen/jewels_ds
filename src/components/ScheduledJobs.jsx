@@ -183,42 +183,54 @@ const ScheduledJobs = () => {
     }
   }, [reaction, user]);
 
-  useEffect(() => {
-    const filtered = scheduledJobs.filter((job) => {
-      const matchText = (key) =>
-        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+ useEffect(() => {
+  const filtered = scheduledJobs.filter((job) => {
+    const matchText = (key) =>
+      job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-      // Convert pickup_date to 'YYYY-MM-DD' for comparison
-      let jobDateISO = '';
-      if (job.pickup_date) {
-        const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-        jobDateISO = dt.isValid ? dt.toISODate() : '';
+    const matchPostcode = (key) => {
+      const input = filters[key]?.toLowerCase().trim();
+      if (!input) return true;
+
+      const value = job[key]?.toString().toLowerCase();
+      const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+
+      if (postcodeMatch) {
+        const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+        const prefix = fullPostcode.slice(0, input.length);
+        return prefix === input;
       }
 
-      let dateMatch = true;
-      if (filters.pickup_date) {
-        dateMatch = jobDateISO === filters.pickup_date;
-      }
+      return false;
+    };
 
-      let carMatch = true;
-      if (filters.car_id) {
-        carMatch = job.car_id === filters.car_id;
-      }
+    // Convert pickup_date to 'YYYY-MM-DD'
+    let jobDateISO = '';
+    if (job.pickup_date) {
+      const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+      jobDateISO = dt.isValid ? dt.toISODate() : '';
+    }
 
-      return (
-        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
-        (!filters.meet_and_greet || matchText('meet_and_greet')) &&
-        (!filters.distance || matchText('distance')) &&
-        (!filters.quoted_price || matchText('quoted_price')) &&
-        dateMatch &&
-        carMatch
-      );
-    });
+    const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+    const carMatch = !filters.car_id || job.car_id === filters.car_id;
+    const fromPostcodeMatch = matchPostcode('from_address');
+    const toPostcodeMatch = matchPostcode('to_address');
 
-    setFilteredJobs(filtered);
-  }, [filters, scheduledJobs]);
+    return (
+      (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+      fromPostcodeMatch &&
+      toPostcodeMatch &&
+      (!filters.meet_and_greet || matchText('meet_and_greet')) &&
+      (!filters.distance || matchText('distance')) &&
+      (!filters.quoted_price || matchText('quoted_price')) &&
+      dateMatch &&
+      carMatch
+    );
+  });
+
+  setFilteredJobs(filtered);
+}, [filters, scheduledJobs]);
+
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;

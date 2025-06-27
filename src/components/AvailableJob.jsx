@@ -97,58 +97,46 @@ export default function AvailableJob() {
 
     useEffect(() => {
         const filtered = jobs.filter((job) => {
-            const matchText = (key) => {
-                const value = filters[key].toLowerCase();
+            const matchText = (key) =>
+                job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+
+            const matchPostcode = (key) => {
+                const input = filters[key]?.toLowerCase().trim();
+                if (!input) return true;
+
                 const jobValue = job[key]?.toString().toLowerCase();
+                const postcodeMatch = jobValue.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
 
-                if (key === 'from_address') {
-                    // Extract first half of postcode from the address (e.g., "TR8")
-                    const postcodeMatch = jobValue.match(/[A-Z]{1,2}\d{1,2}[A-Z]?/i);
-                    const postcodePrefix = postcodeMatch ? postcodeMatch[0].toLowerCase() : '';
-
-                    // Check if input matches the postcode prefix first
-                    if (postcodePrefix && postcodePrefix.includes(value)) return true;
-
-                    // Fallback: match input in entire address
+                if (postcodeMatch) {
+                    const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+                    const prefix = fullPostcode.slice(0, input.length);
+                    return prefix === input;
                 }
 
-                return jobValue.includes(value);
+                return false;
             };
 
-            // Format pickup_date for comparison
+            // Format pickup_date
             let jobDateISO = '';
             if (job.pickup_date) {
                 const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
                 jobDateISO = dt.isValid ? dt.toISODate() : '';
             }
 
-            let dateMatch = true;
-            if (filters.pickup_date) {
-                dateMatch = jobDateISO === filters.pickup_date;
-            }
+            const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+            const carMatch = !filters.car_id || job.car_id === filters.car_id;
+            const fromPostcodeMatch = matchPostcode('from_address');
+            const toPostcodeMatch = matchPostcode('to_address');
+            const bookingRefMatch = !filters.booking_ref_id || matchText('booking_ref_id');
 
-            let carMatch = true;
-            if (filters.car_id) {
-                carMatch = job.car_id === filters.car_id;
-            }
-
-            return (
-                (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-                (!filters.from_address || matchText('from_address')) &&
-                (!filters.to_address || matchText('to_address')) &&
-                (!filters.waypoint || matchText('waypoint')) &&
-                (!filters.passengers || matchText('passengers')) &&
-                (!filters.luggage || matchText('luggage')) &&
-                (!filters.distance || matchText('distance')) &&
-                (!filters.bid_expiry || matchText('bid_expiry')) &&
-                dateMatch &&
-                carMatch
-            );
+            return fromPostcodeMatch && toPostcodeMatch && dateMatch && carMatch && bookingRefMatch;
         });
 
         setFilteredJobs(filtered);
         setCurrentPage(1);
     }, [filters, jobs]);
+
+
 
 
     const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);

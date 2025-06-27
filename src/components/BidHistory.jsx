@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs } from '../api';
+import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver } from '../api';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 
@@ -67,6 +67,16 @@ const BidHistory = () => {
         setQuote('');
         setIsChecked(false);
         setReaction(true); // refresh jobs
+        setSubmitting(false);
+        return;
+      }
+      const checkCurrentResult = await checkBidForCurrentDriver(selectedBid.booking_journey_id, user.driver_id, user.token);
+      if (checkCurrentResult?.assigned === 1) {
+        alert('You cannot change the bid. Availability has already been sent. Please check the Availability tab.');
+        setShowModal(false);
+        setQuote('');
+        setIsChecked(false);
+        setReaction(true); // refresh job
         setSubmitting(false);
         return;
       }
@@ -192,28 +202,40 @@ const BidHistory = () => {
       const matchText = (key) =>
         bid[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-      // Convert pickup_date to 'YYYY-MM-DD' for comparison
+      const matchPostcode = (key) => {
+        const input = filters[key]?.toLowerCase().trim();
+        if (!input) return true;
+
+        const value = bid[key]?.toString().toLowerCase();
+        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+
+        if (postcodeMatch) {
+          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+          const prefix = fullPostcode.slice(0, input.length);
+          return prefix === input;
+        }
+
+        return false;
+      };
+
+      // Convert pickup_date to ISO
       let bidDateISO = '';
       if (bid.pickup_date) {
         const dt = DateTime.fromFormat(bid.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
         bidDateISO = dt.isValid ? dt.toISODate() : '';
       }
 
-      let dateMatch = true;
-      if (filters.pickup_date) {
-        dateMatch = bidDateISO === filters.pickup_date;
-      }
+      const dateMatch = !filters.pickup_date || bidDateISO === filters.pickup_date;
+      const carMatch = !filters.car_id || bid.car_id === filters.car_id;
 
-      let carMatch = true;
-      if (filters.car_id) {
-        carMatch = bid.car_id === filters.car_id;
-      }
+      const fromPostcodeMatch = matchPostcode('from_address');
+      const toPostcodeMatch = matchPostcode('to_address');
 
       return (
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
         (!filters.biding_amount || matchText('biding_amount')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
+        fromPostcodeMatch &&
+        toPostcodeMatch &&
         dateMatch &&
         carMatch
       );
@@ -221,6 +243,7 @@ const BidHistory = () => {
 
     setFilteredBids(filtered);
   }, [filters, bidHistory]);
+
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
