@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../api';
+import ReCAPTCHA from "react-google-recaptcha";
 import logo from '../assets/logo.png';
 
 export default function Login() {
@@ -8,10 +9,15 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaValue, setCaptchaValue] = useState(null);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!captchaValue) {
+      setError('Please verify the captcha');
+      return;
+    }
     setIsLoading(true);
     setError('');
     try {
@@ -25,19 +31,23 @@ export default function Login() {
     }
   };
 
+  const onChange = (value) => {
+    setCaptchaValue(value);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Header Section */}
         <div className="bg-indigo-600 py-6 px-8 text-center">
-        <img src={logo} alt="Logo" className="mx-auto h-24 w-auto mb-4" />
+          <img src={logo} alt="Logo" className="mx-auto h-24 w-auto mb-4" />
           <h1 className="text-2xl font-bold text-white">JEWELS AIRPORT TRANSFERS</h1>
         </div>
-        
+
         {/* Form Section */}
         <div className="p-8">
           <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">LOGIN</h2>
-          
+
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -51,7 +61,7 @@ export default function Login() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
               />
             </div>
-            
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
@@ -64,7 +74,7 @@ export default function Login() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -77,7 +87,7 @@ export default function Login() {
                   Remember me
                 </label>
               </div>
-              
+
               <div className="text-sm">
                 <Link
                   to="/forgot-password"
@@ -87,7 +97,14 @@ export default function Login() {
                 </Link>
               </div>
             </div>
-            
+
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                sitekey="6LekW28rAAAAAEPx5QXzSP8HDYv_eRDik9o2zQId " // Replace with your actual site key
+                onChange={onChange}
+              />
+            </div>
+
             <button
               type="submit"
               disabled={isLoading}
@@ -104,16 +121,12 @@ export default function Login() {
               ) : 'Login'}
             </button>
           </form>
-          
+
           {error && (
             <div className="mt-4 p-3 bg-red-50 rounded-lg">
               <p className="text-sm text-red-600 text-center">{error}</p>
             </div>
           )}
-          
-          <div className="mt-6">
-            
-          </div>
         </div>
       </div>
     </div>
