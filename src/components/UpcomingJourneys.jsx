@@ -20,6 +20,7 @@ const UpcomingJobs = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
+  const [assignedDriverId, setAssignedDriverId] = useState(null);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -96,26 +97,38 @@ const UpcomingJobs = () => {
       const matchText = (key) =>
         job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
+      const matchPostcode = (key) => {
+        const input = filters[key]?.toLowerCase().trim();
+        if (!input) return true;
+
+        const value = job[key]?.toString().toLowerCase();
+        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+
+        if (postcodeMatch) {
+          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+          const prefix = fullPostcode.slice(0, input.length);
+          return prefix === input;
+        }
+
+        return false;
+      };
+
+      // Convert pickup_date to ISO
       let jobDateISO = '';
       if (job.pickup_date) {
         const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
         jobDateISO = dt.isValid ? dt.toISODate() : '';
       }
 
-      let dateMatch = true;
-      if (filters.pickup_date) {
-        dateMatch = jobDateISO === filters.pickup_date;
-      }
-
-      let carMatch = true;
-      if (filters.car_id) {
-        carMatch = job.car_id === filters.car_id;
-      }
+      const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+      const carMatch = !filters.car_id || job.car_id === filters.car_id;
+      const fromPostcodeMatch = matchPostcode('from_address');
+      const toPostcodeMatch = matchPostcode('to_address');
 
       return (
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        (!filters.from_address || matchText('from_address')) &&
-        (!filters.to_address || matchText('to_address')) &&
+        fromPostcodeMatch &&
+        toPostcodeMatch &&
         (!filters.waypoint || matchText('waypoint')) &&
         (!filters.passengers || matchText('passengers')) &&
         (!filters.luggage || matchText('luggage')) &&
@@ -125,8 +138,10 @@ const UpcomingJobs = () => {
         carMatch
       );
     });
+
     setFilteredJobs(filtered);
   }, [filters, upcomingJobs]);
+
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -176,13 +191,24 @@ const UpcomingJobs = () => {
       });
 
       setDriverList(data);
+
+      // ✅ Identify and store assigned driver
+      const assigned = data.find((driver) => driver.is_assigned);
+      if (assigned) {
+        setAssignedDriverId(assigned.driver_id);
+      } else {
+        setAssignedDriverId(null);
+      }
+
     } catch (err) {
       alert("Failed to fetch driver list: " + err.message);
       setDriverList([]);
+      setAssignedDriverId(null);
     } finally {
       setDriverModalLoading(false);
     }
   };
+
 
   const handleAssign = async (driver_id) => {
     const booking_journey_id = selectedJob?.booking_journey_id;
@@ -211,12 +237,14 @@ const UpcomingJobs = () => {
       });
 
       alert('Driver assigned successfully');
+      setAssignedDriverId(driver_id); // ✅ track assigned driver
       await fetchMappedDrivers(selectedJob);
     } catch (err) {
       console.error(err);
       alert(err.message || 'Assign failed');
     }
   };
+
 
   const handleUnassign = async (driver_id) => {
     try {
@@ -235,13 +263,13 @@ const UpcomingJobs = () => {
       });
 
       alert('Driver unassigned successfully');
+      setAssignedDriverId(null); // ✅ clear the assigned driver
       await fetchMappedDrivers(selectedJob);
     } catch (err) {
       console.error(err);
       alert(err.message || 'Unassign failed');
     }
   };
-
   return (
     <>
       <Header />
@@ -395,18 +423,6 @@ const UpcomingJobs = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-user text-blue-500"></i> <b>Passenger Name:</b>
-                              </span>
-                              <span className="text-right"><b>{job.name}</b></span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
-                              </span>
-                              <span className="text-right"><b>{`+(${job.mobile_code}) ${job.mobile}`}</b></span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                               </span>
                               <span className="text-right"><b>{job.passengers}</b></span>
@@ -455,12 +471,29 @@ const UpcomingJobs = () => {
                               </span>
                               <span className="text-right"><b>&pound;{job.biding_amount}</b></span>
                             </div>
-                            <button
-                              onClick={() => handleShowDriverList(job)}
-                              className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded w-full"
-                            >
-                              Push Job To Driver
-                            </button>
+                            <hr className="my-2 border-t border-gray-300" />
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-user text-blue-500"></i> <b>Passenger Name:</b>
+                              </span>
+                              <span className="text-right"><b>{job.name}</b></span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
+                              </span>
+                              <span className="text-right"><b>{`+(${job.mobile_code}) ${job.mobile}`}</b></span>
+                            </div>
+
+                            {user.user_type === 'supplier' && (
+                              <button
+                                onClick={() => handleShowDriverList(job)}
+                                className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded w-full mt-2"
+                              >
+                                Push Job To Driver
+                              </button>
+                            )}
+
                             {job.car_info && (
                               <div className="mt-2 text-xs text-gray-500 border-t pt-2">
                                 <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
@@ -541,8 +574,7 @@ const UpcomingJobs = () => {
                           &times;
                         </button>
                         <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
-                          Mapped Drivers
-                        </h2>
+                          Assign a Driver</h2>
                         {driverModalLoading ? (
                           <Loading />
                         ) : driverList.length > 0 ? (
@@ -587,13 +619,15 @@ const UpcomingJobs = () => {
                                         ) : (
                                           <button
                                             onClick={() => handleAssign(driver.driver_id)}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50"
+                                            disabled={assignedDriverId !== null && assignedDriverId !== driver.driver_id}
                                           >
                                             Assign
                                           </button>
                                         )}
                                       </div>
                                     </td>
+
                                   </tr>
                                 ))}
                               </tbody>
