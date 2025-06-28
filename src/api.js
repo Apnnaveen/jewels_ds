@@ -588,3 +588,61 @@ export async function checkBidForCurrentDriver(booking_journey_id, driver_id, to
 
   return result.data; // Contains { assigned: 1/0, message?: 'Unassigned for current driver' }
 }
+export async function forgot_password_request(email) {
+  const response = await fetch('https://jat-uk.com/api/users/forgot_password_request', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to send OTP');
+  }
+
+  return result.data;
+}
+
+export async function verify_otp_password(email, otp) {
+  const response = await fetch('https://jat-uk.com/api/users/verify_otp_password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, otp }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to verify OTP');
+  }
+
+  return result.data;
+}
+
+export async function reset_password(email, newPassword, confirmPassword) {
+  const response = await fetch('https://jat-uk.com/api/users/reset_password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email,
+      new_password: newPassword,
+      confirm_password: confirmPassword
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to reset password');
+  }
+
+  return result;
+}
+
+
+
+

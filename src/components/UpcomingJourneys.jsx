@@ -67,13 +67,7 @@ const UpcomingJobs = () => {
         console.log('Jobs Data:', jobsData);
 
         // Filter out duplicates
-        const uniqueJobs = jobsData.filter((job, index, self) =>
-          index === self.findIndex((j) => (
-            j.id === job.id || j.booking_journey_id === job.booking_journey_id
-          ))
-        );
-
-        const jobs = Array.isArray(uniqueJobs) ? uniqueJobs : [];
+       const jobs = Array.isArray(jobsData) ? jobsData : [];
         setUpcomingJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsData) ? carsData : []);

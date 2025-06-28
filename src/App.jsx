@@ -12,6 +12,8 @@ import Bidjobs from './components/BidHistory';
 import ForgotPassword from './components/ForgotPassword';
 import ProfilePage from './components/ProfilePage';
 import DriverList from './components/DriverList';
+import VerifyOTP from './components/VerifyOTP';
+import ResetPassword from './components/ResetPassword';
 
 
 function App() {
@@ -30,6 +32,8 @@ function App() {
         <Route path="/completed-jobs" element={<Completed_journeys />} />
         <Route path="/tomorrow-journeys" element={<Tomorrow_journeys />} />
         <Route path="/driverlist" element={<DriverList />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </Router>
   );
