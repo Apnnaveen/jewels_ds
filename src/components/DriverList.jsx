@@ -5,6 +5,7 @@ import Loading from './Loading/Loading';
 
 const DriverList = () => {
   const [supplierDrivers, setSupplierDrivers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [message, setMessage] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -193,6 +194,16 @@ const DriverList = () => {
           <p className="text-gray-600 text-center">{message}</p>
         ) : (
           <div className="overflow-x-auto bg-white rounded shadow">
+            <div className="p-4">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search drivers by name or email"
+                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
             <table className="min-w-full text-sm text-left">
               <thead className="bg-gray-100">
                 <tr>
@@ -203,33 +214,38 @@ const DriverList = () => {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {supplierDrivers.map((driver, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-3">{index + 1}</td>
-                    <td className="px-6 py-3">{driver.name}</td>
-                    <td className="px-6 py-3">{driver.email}</td>
-                    <td className="px-6 py-3 text-center space-x-3">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleEditClick(driver.driver_id);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleDeleteClick(driver.driver_id);
-                        }}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {supplierDrivers
+                  .filter(driver =>
+                    driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    driver.email?.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((driver, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-3">{index + 1}</td>
+                      <td className="px-6 py-3">{driver.name}</td>
+                      <td className="px-6 py-3">{driver.email}</td>
+                      <td className="px-6 py-3 text-center space-x-3">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleEditClick(driver.driver_id);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleDeleteClick(driver.driver_id);
+                          }}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

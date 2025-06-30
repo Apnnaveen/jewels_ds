@@ -24,6 +24,7 @@ const UpcomingJobs = () => {
   const [error, setError] = useState('');
   const [assignedDriverId, setAssignedDriverId] = useState(null);
   const { refreshCounts } = useJobsCounts();
+  const [driverSearch, setDriverSearch] = useState('');
 
   // Filters
   const [filters, setFilters] = useState({
@@ -577,9 +578,29 @@ const UpcomingJobs = () => {
                         </button>
                         <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
                           Assign a Driver</h2>
+
+                        <div className="mb-5 px-4 py-3 bg-white border rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-700">
+                          <div className="mb-2 sm:mb-0">
+                            <span className="font-semibold text-gray-900">Job Reference No:</span> {selectedJob?.booking_ref_id || 'N/A'}
+                          </div>
+                          <div>
+                            <span className="font-semibold text-gray-900">Quoted Price:</span> £{selectedJob?.biding_amount || '0'}
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          <input
+                            type="text"
+                            value={driverSearch}
+                            onChange={(e) => setDriverSearch(e.target.value)}
+                            placeholder="Search by name or email"
+                            className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
+
                         {driverModalLoading ? (
                           <Loading />
                         ) : driverList.length > 0 ? (
+
                           <div className="overflow-x-auto max-h-[400px] border rounded-lg">
                             <table className="w-full text-sm text-left border-collapse">
                               <thead className="bg-gray-100 text-gray-700 uppercase">
@@ -593,8 +614,12 @@ const UpcomingJobs = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {driverList.map((driver, idx) => (
-                                  <tr key={driver.driver_id || idx} className="hover:bg-gray-50">
+                                {driverList
+                                  .filter(driver =>
+                                    driver.name.toLowerCase().includes(driverSearch.toLowerCase()) ||
+                                    driver.email.toLowerCase().includes(driverSearch.toLowerCase())
+                                  )
+                                  .map((driver, idx) => (<tr key={driver.driver_id || idx} className="hover:bg-gray-50">
                                     <td className="px-4 py-2 border text-center">{idx + 1}</td>
                                     <td className="px-4 py-2 border">{driver.name}</td>
                                     <td className="px-4 py-2 border">{driver.email}</td>
@@ -631,7 +656,7 @@ const UpcomingJobs = () => {
                                     </td>
 
                                   </tr>
-                                ))}
+                                  ))}
                               </tbody>
                             </table>
                           </div>

@@ -29,9 +29,12 @@ const JobsTabs = ({ activeTab, user }) => {
         >
           <span className="flex items-center justify-center gap-1">
             {tab.label}
-            <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">
-              {counts[tab.key] ?? 0}
-            </span>
+            {counts[tab.key] > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">
+                {counts[tab.key]}
+              </span>
+            )}
+
           </span>
         </button>
       ))}
