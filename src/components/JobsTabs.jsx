@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useJobsCounts } from './JobsCountsProvider';
 
 const tabs = [
   { label: 'Quotation', path: '/available-jobs', key: 'available' },
@@ -10,8 +11,9 @@ const tabs = [
   { label: 'Completed Journeys', path: '/completed-jobs', key: 'completed' },
 ];
 
-const JobsTabs = ({ activeTab, user, tabCounts = {} }) => {
+const JobsTabs = ({ activeTab, user }) => {
   const navigate = useNavigate();
+  const { counts, loading } = useJobsCounts();
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
@@ -19,23 +21,22 @@ const JobsTabs = ({ activeTab, user, tabCounts = {} }) => {
         <button
           key={tab.key}
           onClick={() => navigate(tab.path, { state: { user } })}
-          className={`py-2 px-4 rounded-md text-sm font-medium text-white transition-all duration-200
-            ${activeTab === tab.key
-              ? 'bg-blue-600 hover:bg-blue-700'
-              : 'bg-gray-300 text-gray-800 hover:bg-gray-400'}`}
+          className={`py-3 px-4 rounded-2xl text-sm font-semibold shadow-md transition-all duration-200 flex items-center justify-center gap-2
+        ${activeTab === tab.key
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           <span className="flex items-center justify-center gap-1">
             {tab.label}
-            {/* Show badge if count > 0 */}
-            {tabCounts[tab.key] > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-orange-500 text-white">
-                {tabCounts[tab.key]}
-              </span>
-            )}
+            <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">
+              {counts[tab.key] ?? 0}
+            </span>
           </span>
         </button>
       ))}
     </div>
+
   );
 };
 

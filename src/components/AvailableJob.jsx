@@ -6,6 +6,7 @@ import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
+import { useJobsCounts } from './JobsCountsProvider';
 
 
 const PAGE_SIZE = 6;
@@ -19,6 +20,7 @@ export default function AvailableJob() {
     const [jobs, setJobs] = useState([]);
     const [filteredJobs, setFilteredJobs] = useState([]);
     const [actionLoading, setActionLoading] = useState(false);
+    const { refreshCounts } = useJobsCounts();
     const [filters, setFilters] = useState({
         booking_ref_id: '',
         from_address: '',
@@ -70,7 +72,8 @@ export default function AvailableJob() {
                         fetchAvailableJobs(user.driver_id, user.token),
                         getAllCars(user.driver_id, user.token)
                     ]);
-
+                    refreshCounts();
+                    console.log('lenght',jobsArray.length);
                     setJobs(jobsArray);
                     setFilteredJobs(jobsArray);
                     setCars(Array.isArray(carsArray) ? carsArray : []);
@@ -169,6 +172,7 @@ export default function AvailableJob() {
         try {
             const details = await fetchJourneyDetails(job.booking_journey_id, user.driver_id, user.token);
             setSelectedJob(prev => ({ ...prev, ...details[0] }));
+            refreshCounts();
         } catch (err) {
             setDetailsError('Failed to load details.');
         }
@@ -200,6 +204,7 @@ export default function AvailableJob() {
                 token: user.token,
             });
             alert('Bid submitted successfully!');
+            refreshCounts();
             setShowModal(false);
             setQuote('');
             setIsChecked(false);
@@ -239,7 +244,7 @@ export default function AvailableJob() {
                 <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
                     <div className="w-full">
                         <div className="w-full">
-                            <JobsTabs activeTab="available" user={user} tabCounts={tabCounts} />
+                            <JobsTabs activeTab="available" user={user} />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">

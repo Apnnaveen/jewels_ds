@@ -6,6 +6,7 @@ import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
+import { useJobsCounts } from './JobsCountsProvider';
 
 const UpcomingJobs = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const UpcomingJobs = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [assignedDriverId, setAssignedDriverId] = useState(null);
+  const { refreshCounts } = useJobsCounts();
 
   // Filters
   const [filters, setFilters] = useState({
@@ -66,7 +68,7 @@ const UpcomingJobs = () => {
           getAllCars(user.driver_id, user.token)
         ]);
         console.log('Jobs Data:', jobsData);
-
+        refreshCounts();
         // Filter out duplicates
         const jobs = Array.isArray(jobsData) ? jobsData : [];
         setUpcomingJobs(jobs);
@@ -283,7 +285,7 @@ const UpcomingJobs = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="upcoming" user={user} tabCounts={tabCounts} />
+            <JobsTabs activeTab="upcoming" user={user} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input

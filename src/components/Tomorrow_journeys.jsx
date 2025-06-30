@@ -6,6 +6,7 @@ import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
+import { useJobsCounts } from './JobsCountsProvider';
 
 
 const TomorrowJourneys = () => {
@@ -22,6 +23,7 @@ const TomorrowJourneys = () => {
   const [cars, setCars] = useState([]);
   const [ackLoading, setAckLoading] = useState({});
   const [reaction, setReaction] = useState(false);
+  const { refreshCounts } = useJobsCounts();
 
   // Only 4 filters: refid, from, to, date
 
@@ -73,11 +75,13 @@ const TomorrowJourneys = () => {
           : Array.isArray(response?.data)
             ? response.data
             : [];
+        refreshCounts();
         setTomorrowJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsArray) ? carsArray : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
+        refreshCounts();
         setLoading(false);
       } finally {
         setLoading(false);
@@ -108,12 +112,14 @@ const TomorrowJourneys = () => {
 
       if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
         alert('This job has already been assigned to another driver.');
+        refreshCounts();
         setReaction(true);
         return;
       }
 
       if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
         alert('You have not been assigned this job yet.');
+        refreshCounts();
         setReaction(true);
         return;
       }
@@ -141,9 +147,9 @@ const TomorrowJourneys = () => {
             : j
         )
       );
-
       // Show success alert
       alert('Job acknowledged successfully!');
+      refreshCounts();
 
       // Force re-render by updating a state variable
       setReaction(true);
@@ -239,7 +245,7 @@ const TomorrowJourneys = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="tomorrow" user={user} tabCounts={tabCounts} />
+            <JobsTabs activeTab="tomorrow" user={user} />
 
             {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">

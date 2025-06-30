@@ -6,6 +6,7 @@ import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
+import { useJobsCounts } from './JobsCountsProvider';
 
 const CompletedJobs = () => {
   const location = useLocation();
@@ -19,6 +20,7 @@ const CompletedJobs = () => {
   const [error, setError] = useState('');
   const [cars, setCars] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const { refreshCounts } = useJobsCounts();
 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
@@ -66,6 +68,7 @@ const CompletedJobs = () => {
           : Array.isArray(response?.data)
             ? response.data
             : [];
+        refreshCounts();
         setCompletedJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsArray) ? carsArray : []);
@@ -157,7 +160,7 @@ const CompletedJobs = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="completed" user={user} tabCounts={tabCounts} />
+            <JobsTabs activeTab="completed" user={user} />
 
             {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">

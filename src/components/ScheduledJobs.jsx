@@ -7,6 +7,7 @@ import Header from './MainHeader/Header';
 import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs } from '../api';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
+import { useJobsCounts } from './JobsCountsProvider';
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const ScheduledJobs = () => {
   const [error, setError] = useState('');
   const [cars, setCars] = useState([]);
   const [reaction, setReaction] = useState(false);
+  const { refreshCounts } = useJobsCounts();
 
 
   const [filters, setFilters] = useState({
@@ -80,6 +82,7 @@ const ScheduledJobs = () => {
       const checkResult = await checkBidJobs(job.booking_journey_id, user.token);
       if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
         alert('This job has already been assigned to another driver.');
+        refreshCounts();
         window.location.reload();
         setReaction(true);
         return;
@@ -142,6 +145,7 @@ const ScheduledJobs = () => {
         if (!Array.isArray(jobs)) {
           throw new Error('Invalid job data received.');
         }
+        refreshCounts();
         setScheduledJobs(jobs);
         setFilteredJobs(jobs);
       } catch (err) {
@@ -171,6 +175,7 @@ const ScheduledJobs = () => {
           if (!Array.isArray(jobs)) {
             throw new Error('Invalid job data received.');
           }
+          refreshCounts();
           setScheduledJobs(jobs);
           setFilteredJobs(jobs);
         } catch (err) {
@@ -262,7 +267,7 @@ const ScheduledJobs = () => {
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
             <div className="w-full">
-              <JobsTabs activeTab="scheduled" user={user} tabCounts={tabCounts} />
+              <JobsTabs activeTab="scheduled" user={user} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">

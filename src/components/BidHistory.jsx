@@ -7,6 +7,7 @@ import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import Header from './MainHeader/Header';
+import { useJobsCounts } from './JobsCountsProvider';
 
 
 const BidHistory = () => {
@@ -23,6 +24,8 @@ const BidHistory = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [reaction, setReaction] = useState(false);
+  const { refreshCounts } = useJobsCounts();
+
   const [filters, setFilters] = useState({
     booking_ref_id: '',
     biding_amount: '',
@@ -63,6 +66,7 @@ const BidHistory = () => {
       const checkResult = await checkBidJobs(selectedBid.booking_journey_id, user.token);
       if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
         alert('This job has already been assigned to another driver.');
+        refreshCounts();
         setShowModal(false);
         setQuote('');
         setIsChecked(false);
@@ -73,6 +77,7 @@ const BidHistory = () => {
       const checkCurrentResult = await checkBidForCurrentDriver(selectedBid.booking_journey_id, user.driver_id, user.token);
       if (checkCurrentResult?.assigned === 1) {
         alert('You cannot change the bid. Availability has already been sent. Please check the Availability tab.');
+        refreshCounts();
         setShowModal(false);
         setQuote('');
         setIsChecked(false);
@@ -88,6 +93,7 @@ const BidHistory = () => {
         token: user.token,
       });
       alert('Bid submitted successfully!');
+      refreshCounts();
       setShowModal(false);
       setQuote('');
       setIsChecked(false);
@@ -113,6 +119,7 @@ const BidHistory = () => {
         token: user.token,
       });
       alert('Job withdrawn successfully!');
+      refreshCounts();
       // Optionally refresh bid history
       setBidHistory((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
       setFilteredBids((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
@@ -137,7 +144,7 @@ const BidHistory = () => {
 
             return dateA.toMillis() - dateB.toMillis();
           });
-
+          refreshCounts();
           setBidHistory(sortedData);
           setFilteredBids(sortedData);
         } catch (error) {
@@ -164,7 +171,7 @@ const BidHistory = () => {
           getAllCars(user.driver_id, user.token)
         ]);
         console.log('Bid History Response:', response);
-
+        refreshCounts();
         const data = Array.isArray(response) ? response : [];
 
         // Sort by pickup_date
@@ -275,7 +282,7 @@ const BidHistory = () => {
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
             <div className="w-full">
-              <JobsTabs activeTab="bid" user={user} tabCounts={tabCounts} />
+              <JobsTabs activeTab="bid" user={user} />
             </div>
 
             {/* Filter Inputs */}

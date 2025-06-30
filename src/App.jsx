@@ -8,34 +8,40 @@ import UpcomingJourneys from './components/UpcomingJourneys';
 import Tomorrow_journeys from './components/Tomorrow_journeys';
 import Completed_journeys from './components/Completed_journeys';
 import Dashboard from './components/Dashboard';
-import Bidjobs from './components/BidHistory';
+import BidHistory from './components/BidHistory';
 import ForgotPassword from './components/ForgotPassword';
 import ProfilePage from './components/ProfilePage';
 import DriverList from './components/DriverList';
 import VerifyOTP from './components/VerifyOTP';
 import ResetPassword from './components/ResetPassword';
+import { JobsCountsProvider } from './components/JobsCountsProvider';
 
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/available-jobs" element={<AvailableJobs />} />
-        <Route path="/profile" element={<ProfilePage />} />
+  const user = JSON.parse(localStorage.getItem('user'));
 
-        <Route path="/bid-history" element={<Bidjobs />} />
-        <Route path="/scheduled-jobs" element={<ScheduledJobs />} />
-        <Route path="/upcoming-journeys" element={<UpcomingJourneys />} />
-        <Route path="/completed-jobs" element={<Completed_journeys />} />
-        <Route path="/tomorrow-journeys" element={<Tomorrow_journeys />} />
-        <Route path="/driverlist" element={<DriverList />} />
-        <Route path="/verify-otp" element={<VerifyOTP />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-      </Routes>
-    </Router>
+  return (
+    <JobsCountsProvider user={user}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/available-jobs" element={<AvailableJobs />} />
+          <Route path="/profile" element={<ProfilePage />} />
+
+          <Route path="/bid-history" element={<BidHistory />} />
+          <Route path="/scheduled-jobs" element={<ScheduledJobs />} />
+          <Route path="/upcoming-journeys" element={<UpcomingJourneys />} />
+          <Route path="/completed-jobs" element={<Completed_journeys />} />
+          <Route path="/tomorrow-journeys" element={<Tomorrow_journeys />} />
+          <Route path="/driverlist" element={<DriverList />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+        </Routes>
+      </Router>
+    </JobsCountsProvider>
+
   );
 }
 
