@@ -5,6 +5,7 @@ import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJour
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
+import Select from 'react-select';
 
 const UpcomingJobs = () => {
   const location = useLocation();
@@ -28,7 +29,7 @@ const UpcomingJobs = () => {
     from_address: '',
     to_address: '',
     pickup_date: '',
-    car_id: '',
+    car_id: [],
   });
 
   const clearFilters = () => {
@@ -41,7 +42,7 @@ const UpcomingJobs = () => {
       passengers: '',
       luggage: '',
       distance: '',
-      car_id: '',
+      car_id: [],
       bid_expiry: '',
     });
   };
@@ -67,7 +68,7 @@ const UpcomingJobs = () => {
         console.log('Jobs Data:', jobsData);
 
         // Filter out duplicates
-       const jobs = Array.isArray(jobsData) ? jobsData : [];
+        const jobs = Array.isArray(jobsData) ? jobsData : [];
         setUpcomingJobs(jobs);
         setFilteredJobs(jobs);
         setCars(Array.isArray(carsData) ? carsData : []);
@@ -79,7 +80,12 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
-
+  const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
+  const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
+  const vehicleOptions = filteredCars.map(car => ({
+    label: car.car_name,
+    value: car.car_id,
+  }));
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
@@ -115,7 +121,7 @@ const UpcomingJobs = () => {
       }
 
       const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
-      const carMatch = !filters.car_id || job.car_id === filters.car_id;
+      const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
       const fromPostcodeMatch = matchPostcode('from_address');
       const toPostcodeMatch = matchPostcode('to_address');
 
@@ -309,22 +315,22 @@ const UpcomingJobs = () => {
                 name="pickup_date"
                 value={filters.pickup_date}
                 onChange={handleFilterChange}
+                min={new Date().toISOString().split('T')[0]}
                 placeholder="Journey Date"
                 className="p-2 border border-gray-300 rounded-md w-full"
               />
-              <select
+              <Select
+                isMulti
                 name="car_id"
-                value={filters.car_id}
-                onChange={handleFilterChange}
-                className="p-2 border border-gray-300 rounded-md w-full"
-              >
-                <option value="">All Vehicles</option>
-                {cars.map(car => (
-                  <option key={car.car_id} value={car.car_id}>
-                    {car.car_name}
-                  </option>
-                ))}
-              </select>
+                options={vehicleOptions}
+                value={vehicleOptions.filter(opt => filters.car_id.includes(opt.value))}
+                onChange={selectedOptions => {
+                  const selectedValues = selectedOptions.map(option => option.value);
+                  setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                }}
+                className="w-full"
+                placeholder="Select Vehicle(s)"
+              />
               <input
                 type="button"
                 value="Clear"

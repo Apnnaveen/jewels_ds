@@ -6,6 +6,7 @@ import Loading from './Loading/Loading';
 import Header from './MainHeader/Header';
 import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs } from '../api';
 import { DateTime } from 'luxon';
+import Select from 'react-select';
 
 const ScheduledJobs = () => {
   const location = useLocation();
@@ -32,7 +33,7 @@ const ScheduledJobs = () => {
     distance: '',
     quoted_price: '',
     pickup_date: '',
-    car_id: '',
+    car_id: [],
   });
   const clearFilters = () => {
     setFilters({
@@ -44,7 +45,7 @@ const ScheduledJobs = () => {
       passengers: '',
       luggage: '',
       distance: '',
-      car_id: '',
+      car_id: [],
       bid_expiry: '',
     });
   };
@@ -182,54 +183,59 @@ const ScheduledJobs = () => {
       fetchScheduledJobs();
     }
   }, [reaction, user]);
+  const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
+  const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
+  const vehicleOptions = filteredCars.map(car => ({
+    label: car.car_name,
+    value: car.car_id,
+  }));
+  useEffect(() => {
+    const filtered = scheduledJobs.filter((job) => {
+      const matchText = (key) =>
+        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
- useEffect(() => {
-  const filtered = scheduledJobs.filter((job) => {
-    const matchText = (key) =>
-      job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+      const matchPostcode = (key) => {
+        const input = filters[key]?.toLowerCase().trim();
+        if (!input) return true;
 
-    const matchPostcode = (key) => {
-      const input = filters[key]?.toLowerCase().trim();
-      if (!input) return true;
+        const value = job[key]?.toString().toLowerCase();
+        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
 
-      const value = job[key]?.toString().toLowerCase();
-      const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+        if (postcodeMatch) {
+          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+          const prefix = fullPostcode.slice(0, input.length);
+          return prefix === input;
+        }
 
-      if (postcodeMatch) {
-        const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
-        const prefix = fullPostcode.slice(0, input.length);
-        return prefix === input;
+        return false;
+      };
+
+      // Convert pickup_date to 'YYYY-MM-DD'
+      let jobDateISO = '';
+      if (job.pickup_date) {
+        const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+        jobDateISO = dt.isValid ? dt.toISODate() : '';
       }
 
-      return false;
-    };
+      const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+      const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
+      const fromPostcodeMatch = matchPostcode('from_address');
+      const toPostcodeMatch = matchPostcode('to_address');
 
-    // Convert pickup_date to 'YYYY-MM-DD'
-    let jobDateISO = '';
-    if (job.pickup_date) {
-      const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-      jobDateISO = dt.isValid ? dt.toISODate() : '';
-    }
+      return (
+        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
+        fromPostcodeMatch &&
+        toPostcodeMatch &&
+        (!filters.meet_and_greet || matchText('meet_and_greet')) &&
+        (!filters.distance || matchText('distance')) &&
+        (!filters.quoted_price || matchText('quoted_price')) &&
+        dateMatch &&
+        carMatch
+      );
+    });
 
-    const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
-    const carMatch = !filters.car_id || job.car_id === filters.car_id;
-    const fromPostcodeMatch = matchPostcode('from_address');
-    const toPostcodeMatch = matchPostcode('to_address');
-
-    return (
-      (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-      fromPostcodeMatch &&
-      toPostcodeMatch &&
-      (!filters.meet_and_greet || matchText('meet_and_greet')) &&
-      (!filters.distance || matchText('distance')) &&
-      (!filters.quoted_price || matchText('quoted_price')) &&
-      dateMatch &&
-      carMatch
-    );
-  });
-
-  setFilteredJobs(filtered);
-}, [filters, scheduledJobs]);
+    setFilteredJobs(filtered);
+  }, [filters, scheduledJobs]);
 
 
   const handleFilterChange = (e) => {
@@ -289,23 +295,22 @@ const ScheduledJobs = () => {
                 name="pickup_date"
                 value={filters.pickup_date}
                 onChange={handleFilterChange}
+                min={new Date().toISOString().split('T')[0]}
                 placeholder="Journey Date"
                 className="p-2 border border-gray-300 rounded-md w-full"
               />
-              <select
+              <Select
+                isMulti
                 name="car_id"
-                value={filters.car_id}
-                onChange={handleFilterChange}
-                className="p-2 border border-gray-300 rounded-md w-full"
-              >
-                <option value="">All Vehicles</option>
-                {cars
-                  .map(car => (
-                    <option key={car.car_id} value={car.car_id}>
-                      {car.car_name}
-                    </option>
-                  ))}
-              </select>
+                options={vehicleOptions}
+                value={vehicleOptions.filter(opt => filters.car_id.includes(opt.value))}
+                onChange={selectedOptions => {
+                  const selectedValues = selectedOptions.map(option => option.value);
+                  setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                }}
+                className="w-full"
+                placeholder="Select Vehicle(s)"
+              />
               <input
                 type="button"
                 value="Clear"
@@ -393,6 +398,22 @@ const ScheduledJobs = () => {
                                 : ''}</b>
                             </span>
                           </div>
+                          {job.flight_no && job.flight_no.trim() !== '' && (
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
+                              </span>
+                              <span className="text-right"><b>{job.flight_no}</b></span>
+                            </div>
+                          )}
+                          {job.arrive_from && job.arrive_from.trim() !== '' && (
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
+                              </span>
+                              <span className="text-right"><b>{job.arrive_from}</b></span>
+                            </div>
+                          )}
                           {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">

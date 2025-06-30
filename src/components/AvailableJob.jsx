@@ -5,6 +5,7 @@ import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJo
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
+import Select from 'react-select';
 
 
 const PAGE_SIZE = 6;
@@ -27,7 +28,7 @@ export default function AvailableJob() {
         passengers: '',
         luggage: '',
         distance: '',
-        car_id: '',
+        car_id: [],
         bid_expiry: '',
     });
     const [currentPage, setCurrentPage] = useState(1);
@@ -51,7 +52,7 @@ export default function AvailableJob() {
             passengers: '',
             luggage: '',
             distance: '',
-            car_id: '',
+            car_id: [],
             bid_expiry: '',
         });
     };
@@ -89,7 +90,12 @@ export default function AvailableJob() {
             getJobsAndCars();
         }
     }, [user, reaction]);
-
+    const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
+    const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
+    const vehicleOptions = filteredCars.map(car => ({
+        label: car.car_name,
+        value: car.car_id,
+    }));
     const getCarName = (car_id) => {
         const car = cars.find((c) => c.car_id === car_id);
         return car ? car.car_name : car_id;
@@ -124,7 +130,7 @@ export default function AvailableJob() {
             }
 
             const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
-            const carMatch = !filters.car_id || job.car_id === filters.car_id;
+            const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
             const fromPostcodeMatch = matchPostcode('from_address');
             const toPostcodeMatch = matchPostcode('to_address');
             const bookingRefMatch = !filters.booking_ref_id || matchText('booking_ref_id');
@@ -266,23 +272,24 @@ export default function AvailableJob() {
                                 name="pickup_date"
                                 value={filters.pickup_date}
                                 onChange={handleFilterChange}
+                                min={new Date().toISOString().split('T')[0]} // blocks past dates
                                 placeholder="Journey Date"
                                 className="p-2 border border-gray-300 rounded-md w-full"
                             />
-                            <select
+
+                            <Select
+                                isMulti
                                 name="car_id"
-                                value={filters.car_id}
-                                onChange={handleFilterChange}
-                                className="p-2 border border-gray-300 rounded-md w-full"
-                            >
-                                <option value="">All Vehicles</option>
-                                {cars
-                                    .map(car => (
-                                        <option key={car.car_id} value={car.car_id}>
-                                            {car.car_name}
-                                        </option>
-                                    ))}
-                            </select>
+                                options={vehicleOptions}
+                                value={vehicleOptions.filter(opt => filters.car_id.includes(opt.value))}
+                                onChange={selectedOptions => {
+                                    const selectedValues = selectedOptions.map(option => option.value);
+                                    setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                                }}
+                                className="w-full"
+                                placeholder="Select Vehicle(s)"
+                            />
+
                             <input
                                 type="button"
                                 value="Clear"
@@ -382,6 +389,22 @@ export default function AvailableJob() {
                                                     </span>
                                                     <span className="text-right"><b>{job.luggage}</b></span>
                                                 </div>
+                                                {job.flight_no && job.flight_no.trim() !== '' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                            <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
+                                                        </span>
+                                                        <span className="text-right"><b>{job.flight_no}</b></span>
+                                                    </div>
+                                                )}
+                                                {job.arrive_from && job.arrive_from.trim() !== '' && (
+                                                    <div className="flex justify-between">
+                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                            <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
+                                                        </span>
+                                                        <span className="text-right"><b>{job.arrive_from}</b></span>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between">
                                                     <span className="flex items-center gap-2 font-medium text-gray-600">
                                                         <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>

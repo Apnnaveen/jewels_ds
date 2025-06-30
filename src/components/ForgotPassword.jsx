@@ -56,7 +56,7 @@ export default function ForgotPassword() {
               disabled={isLoading}
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              {isLoading ? 'Sending...' : 'Send Reset Link'}
+              {isLoading ? 'Sending...' : 'Send Email Link'}
             </button>
           </form>
           {error && <div className="mt-4 p-3 bg-red-50 rounded-lg"><p className="text-sm text-red-600 text-center">{error}</p></div>}

@@ -5,6 +5,7 @@ import { tomorrow_journeys, getAllCars, acknowledgeStatus, checkBidJobsTomorrow 
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
+import Select from 'react-select';
 
 
 const TomorrowJourneys = () => {
@@ -33,7 +34,7 @@ const TomorrowJourneys = () => {
     passengers: '',
     luggage: '',
     distance: '',
-    car_id: '',
+    car_id: [],
     bid_expiry: '',
   });
   const clearFilters = () => {
@@ -46,7 +47,7 @@ const TomorrowJourneys = () => {
       passengers: '',
       luggage: '',
       distance: '',
-      car_id: '',
+      car_id: [],
       bid_expiry: '',
     });
   };
@@ -84,125 +85,130 @@ const TomorrowJourneys = () => {
     };
     fetchData();
   }, [user, reaction]);
-
+  const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
+  const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
+  const vehicleOptions = filteredCars.map(car => ({
+    label: car.car_name,
+    value: car.car_id,
+  }));
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
   const handleAcknowledge = async (job) => {
-  setActionLoading(true); // Global spinner
-  setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
+    setActionLoading(true); // Global spinner
+    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
 
-  try {
-    const checkResult = await checkBidJobsTomorrow(
-      job.booking_journey_id,
-      user.driver_id,
-      user.token
-    );
+    try {
+      const checkResult = await checkBidJobsTomorrow(
+        job.booking_journey_id,
+        user.driver_id,
+        user.token
+      );
 
-    if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-      alert('This job has already been assigned to another driver.');
+      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+        alert('This job has already been assigned to another driver.');
+        setReaction(true);
+        return;
+      }
+
+      if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
+        alert('You have not been assigned this job yet.');
+        setReaction(true);
+        return;
+      }
+
+      // Proceed with acknowledge
+      await acknowledgeStatus({
+        driver_id: user.driver_id,
+        booking_journey_id: job.booking_journey_id,
+        acknowledge_status: 1,
+        token: user.token,
+      });
+
+      // Update job state in UI
+      setTomorrowJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1 }
+            : j
+        )
+      );
+      setFilteredJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1 }
+            : j
+        )
+      );
+
+      // Show success alert
+      alert('Job acknowledged successfully!');
+
+      // Force re-render by updating a state variable
       setReaction(true);
-      return;
+    } catch (err) {
+      alert(err.message || 'Failed to acknowledge job');
+    } finally {
+      // Always stop loading, even after alerts
+      setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+      setActionLoading(false);
     }
-
-    if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
-      alert('You have not been assigned this job yet.');
-      setReaction(true);
-      return;
-    }
-
-    // Proceed with acknowledge
-    await acknowledgeStatus({
-      driver_id: user.driver_id,
-      booking_journey_id: job.booking_journey_id,
-      acknowledge_status: 1,
-      token: user.token,
-    });
-
-    // Update job state in UI
-    setTomorrowJobs((prev) =>
-      prev.map((j) =>
-        j.booking_journey_id === job.booking_journey_id
-          ? { ...j, acknowledge_status: 1 }
-          : j
-      )
-    );
-    setFilteredJobs((prev) =>
-      prev.map((j) =>
-        j.booking_journey_id === job.booking_journey_id
-          ? { ...j, acknowledge_status: 1 }
-          : j
-      )
-    );
-
-    // Show success alert
-    alert('Job acknowledged successfully!');
-
-    // Force re-render by updating a state variable
-    setReaction(true);
-  } catch (err) {
-    alert(err.message || 'Failed to acknowledge job');
-  } finally {
-    // Always stop loading, even after alerts
-    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
-    setActionLoading(false);
-  }
-};
+  };
 
 
   useEffect(() => {
-  const filtered = tomorrowJobs.filter((job) => {
-    const matchText = (key) =>
-      job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+    const filtered = tomorrowJobs.filter((job) => {
+      const matchText = (key) =>
+        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
 
-    const matchPostcode = (key) => {
-      const input = filters[key]?.toLowerCase().trim();
-      if (!input) return true;
+      const matchPostcode = (key) => {
+        const input = filters[key]?.toLowerCase().trim();
+        if (!input) return true;
 
-      const value = job[key]?.toString().toLowerCase();
-      const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+        const value = job[key]?.toString().toLowerCase();
+        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
 
-      if (postcodeMatch) {
-        const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
-        const prefix = fullPostcode.slice(0, input.length);
-        return prefix === input;
+        if (postcodeMatch) {
+          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
+          const prefix = fullPostcode.slice(0, input.length);
+          return prefix === input;
+        }
+
+        return false;
+      };
+
+      // Convert pickup_date to 'YYYY-MM-DD'
+      let jobDateISO = '';
+      if (job.pickup_date) {
+        const dt = DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", { zone: 'Europe/London' });
+        jobDateISO = dt.isValid ? dt.toISODate() : '';
       }
 
-      return false;
-    };
+      const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+      const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
 
-    // Convert pickup_date to 'YYYY-MM-DD'
-    let jobDateISO = '';
-    if (job.pickup_date) {
-      const dt = DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", { zone: 'Europe/London' });
-      jobDateISO = dt.isValid ? dt.toISODate() : '';
-    }
+      const fromPostcodeMatch = matchPostcode('from_address');
+      const toPostcodeMatch = matchPostcode('to_address');
 
-    const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
-    const carMatch = !filters.car_id || job.car_id === filters.car_id;
+      return (
+        (!filters.booking_sub_id || matchText('booking_sub_id')) &&
+        fromPostcodeMatch &&
+        toPostcodeMatch &&
+        (!filters.waypoint || matchText('waypoint')) &&
+        (!filters.passengers || matchText('passengers')) &&
+        (!filters.luggage || matchText('luggage')) &&
+        (!filters.distance || matchText('distance')) &&
+        (!filters.bid_expiry || matchText('bid_expiry')) &&
+        dateMatch &&
+        carMatch &&
+        job.acknowledge_status !== 1 &&
+        job.acknowledge_status !== '1'
+      );
+    });
 
-    const fromPostcodeMatch = matchPostcode('from_address');
-    const toPostcodeMatch = matchPostcode('to_address');
-
-    return (
-      (!filters.booking_sub_id || matchText('booking_sub_id')) &&
-      fromPostcodeMatch &&
-      toPostcodeMatch &&
-      (!filters.waypoint || matchText('waypoint')) &&
-      (!filters.passengers || matchText('passengers')) &&
-      (!filters.luggage || matchText('luggage')) &&
-      (!filters.distance || matchText('distance')) &&
-      (!filters.bid_expiry || matchText('bid_expiry')) &&
-      dateMatch &&
-      carMatch &&
-      job.acknowledge_status !== 1 &&
-      job.acknowledge_status !== '1'
-    );
-  });
-
-  setFilteredJobs(filtered);
-}, [filters, tomorrowJobs]);
+    setFilteredJobs(filtered);
+  }, [filters, tomorrowJobs]);
 
 
   const handleFilterChange = (e) => {
@@ -266,23 +272,22 @@ const TomorrowJourneys = () => {
                 name="pickup_date"
                 value={filters.pickup_date}
                 onChange={handleFilterChange}
+                min={new Date().toISOString().split('T')[0]}
                 placeholder="Journey Date"
                 className="p-2 border border-gray-300 rounded-md w-full"
               />
-              <select
+              <Select
+                isMulti
                 name="car_id"
-                value={filters.car_id}
-                onChange={handleFilterChange}
-                className="p-2 border border-gray-300 rounded-md w-full"
-              >
-                <option value="">All Vehicles</option>
-                {cars
-                  .map(car => (
-                    <option key={car.car_id} value={car.car_id}>
-                      {car.car_name}
-                    </option>
-                  ))}
-              </select>
+                options={vehicleOptions}
+                value={vehicleOptions.filter(opt => filters.car_id.includes(opt.value))}
+                onChange={selectedOptions => {
+                  const selectedValues = selectedOptions.map(option => option.value);
+                  setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                }}
+                className="w-full"
+                placeholder="Select Vehicle(s)"
+              />
               <input
                 type="button"
                 value="Clear"
@@ -392,7 +397,23 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="text-right"><b>{job.luggage}</b></span>
                           </div>
-                           {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                          {job.flight_no && job.flight_no.trim() !== '' && (
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
+                              </span>
+                              <span className="text-right"><b>{job.flight_no}</b></span>
+                            </div>
+                          )}
+                          {job.arrive_from && job.arrive_from.trim() !== '' && (
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
+                              </span>
+                              <span className="text-right"><b>{job.arrive_from}</b></span>
+                            </div>
+                          )}
+                          {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>

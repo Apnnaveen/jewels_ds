@@ -5,6 +5,7 @@ import { completed_journeys, getAllCars } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
+import Select from 'react-select';
 
 const CompletedJobs = () => {
   const location = useLocation();
@@ -28,7 +29,7 @@ const CompletedJobs = () => {
     passengers: '',
     luggage: '',
     distance: '',
-    car_id: '',
+    car_id: [],
     bid_expiry: '',
   });
   const clearFilters = () => {
@@ -41,12 +42,12 @@ const CompletedJobs = () => {
       passengers: '',
       luggage: '',
       distance: '',
-      car_id: '',
+      car_id: [],
       bid_expiry: '',
     });
   };
-   const tabCounts = {
-    completed: filteredJobs.length, // Quotation tab
+  const tabCounts = {
+    completed: filteredJobs.length,
 
   };
   useEffect(() => {
@@ -76,7 +77,12 @@ const CompletedJobs = () => {
     };
     fetchData();
   }, [user]);
-
+  const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
+  const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
+  const vehicleOptions = filteredCars.map(car => ({
+    label: car.car_name,
+    value: car.car_id,
+  }));
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
@@ -99,10 +105,8 @@ const CompletedJobs = () => {
         dateMatch = jobDateISO === filters.pickup_date;
       }
 
-      let carMatch = true;
-      if (filters.car_id) {
-        carMatch = job.car_id === filters.car_id;
-      }
+      const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
+
 
       return (
         (!filters.booking_ref_id || matchText('booking_ref_id')) &&
@@ -153,7 +157,7 @@ const CompletedJobs = () => {
       <div className="dashboard-layout mx-5 mt-5">
         <div className={`dashboard-main${sidebarOpen ? '' : ' centered'}`}>
           <div className="w-full">
-            <JobsTabs activeTab="completed" user={user} tabCounts={tabCounts}/>
+            <JobsTabs activeTab="completed" user={user} tabCounts={tabCounts} />
 
             {/* 4 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 px-5 mb-2">
@@ -174,20 +178,18 @@ const CompletedJobs = () => {
                 placeholder="Journey Date"
                 className="p-2 border border-gray-300 rounded-md w-full"
               />
-              <select
+              <Select
+                isMulti
                 name="car_id"
-                value={filters.car_id}
-                onChange={handleFilterChange}
-                className="p-2 border border-gray-300 rounded-md w-full"
-              >
-                <option value="">All Vehicles</option>
-                {cars
-                  .map(car => (
-                    <option key={car.car_id} value={car.car_id}>
-                      {car.car_name}
-                    </option>
-                  ))}
-              </select>
+                options={vehicleOptions}
+                value={vehicleOptions.filter(opt => filters.car_id.includes(opt.value))}
+                onChange={selectedOptions => {
+                  const selectedValues = selectedOptions.map(option => option.value);
+                  setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                }}
+                className="w-full"
+                placeholder="Select Vehicle(s)"
+              />
               <input
                 type="button"
                 value="Clear"
