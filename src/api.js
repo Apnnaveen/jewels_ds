@@ -506,39 +506,47 @@ export async function get_supplier_details(driverId, token) {
   }
 }
 
-  export async function save_supplier_driver(data, token) {
-    const response = await fetch('https://jat-uk.com/api/users/api_save_supplier_driver', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-    if (!response.ok || result.status === false) {
-      throw new Error(result.message || 'Failed to save driver');
-    }
-    return result;
-  }
-
-export async function delete_driver(driverId, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/api_delete_supplier_driver/${driverId}`, {
-    method: 'GET',
+export async function save_supplier_driver(data, token) {
+  const response = await fetch('https://jat-uk.com/api/users/api_save_supplier_driver', {
+    method: 'POST',
     headers: {
-      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
+    body: JSON.stringify(data),
   });
 
-  const result = await response.json(); // <== This fails if response is HTML
-
-  if (!response.ok || result.status !== 200) {
-    throw new Error(result.message || 'Failed to delete driver');
+  const result = await response.json();
+  if (!response.ok || result.status === false) {
+    throw new Error(result.message || 'Failed to save driver');
   }
-
   return result;
 }
+
+export async function delete_driver(driverId, token) {
+  console.log("Sending token:", token);
+
+  const response = await fetch(
+    `https://jat-uk.com/api/users/api_delete_supplier_driver/${driverId}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok || result.status !== 200) {
+    throw new Error(result.error || result.message || 'Failed to delete driver');
+  }
+
+  return result.data;
+}
+
+
 export async function checkBidJobs(booking_journey_id, token) {
   const response = await fetch(`https://jat-uk.com/api/users/check_bid_jobs/${booking_journey_id}`, {
     method: 'GET',
@@ -642,7 +650,22 @@ export async function reset_password(email, newPassword, confirmPassword) {
 
   return result;
 }
+export async function verify_login(email, otp) {
+  const response = await fetch('https://jat-uk.com/api/users/verify_login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, otp }),
+  });
 
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to verify OTP');
+  }
+
+  return result.data;
+}
 
 
 

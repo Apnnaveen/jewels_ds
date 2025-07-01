@@ -194,14 +194,22 @@ const DriverList = () => {
           <p className="text-gray-600 text-center">{message}</p>
         ) : (
           <div className="overflow-x-auto bg-white rounded shadow">
-            <div className="p-4">
+            <div className="p-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search drivers by name or email"
-                className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
+
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded hover:bg-red-100 hover:text-red-600 transition text-sm"
+              >
+                Clear
+              </button>
+
             </div>
 
             <table className="min-w-full text-sm text-left">

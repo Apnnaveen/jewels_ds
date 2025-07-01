@@ -62,7 +62,6 @@ export const JobsCountsProvider = ({ user, children }) => {
         if (!user?.driver_id || !user?.token) return;
         fetchCounts();
     }, [user]);
-    console.log('avsilsble', counts.available);
     return (
         <JobsCountsContext.Provider value={{ counts, loading, refreshCounts: fetchCounts }}>
             {children}

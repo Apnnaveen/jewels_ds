@@ -579,15 +579,18 @@ const UpcomingJobs = () => {
                         <h2 className="text-2xl font-bold mb-6 text-center text-blue-700">
                           Assign a Driver</h2>
 
-                        <div className="mb-5 px-4 py-3 bg-white border rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-700">
+                        <div className="mb-5 px-4 py-3 bg-white border rounded-lg shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between text-md text-gray-700">
                           <div className="mb-2 sm:mb-0">
-                            <span className="font-semibold text-gray-900">Job Reference No:</span> {selectedJob?.booking_ref_id || 'N/A'}
+                            <span className="font-bold text-gray-900">Job Reference No:</span>{' '}
+                            <span className="font-bold text-gray-900">{selectedJob?.booking_ref_id || 'N/A'}</span>
                           </div>
                           <div>
-                            <span className="font-semibold text-gray-900">Quoted Price:</span> £{selectedJob?.biding_amount || '0'}
+                            <span className="font-bold text-gray-900">Quoted Price:</span>{' '}
+                            <span className="font-bold text-gray-900">£{selectedJob?.biding_amount || '0'}</span>
                           </div>
                         </div>
-                        <div className="mb-4">
+
+                        <div className="mb-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
                           <input
                             type="text"
                             value={driverSearch}
@@ -595,6 +598,12 @@ const UpcomingJobs = () => {
                             placeholder="Search by name or email"
                             className="w-full px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           />
+                          <button
+                            onClick={() => setDriverSearch('')}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded hover:bg-red-100 hover:text-red-600 transition text-sm"
+                          >
+                            Clear
+                          </button>
                         </div>
 
                         {driverModalLoading ? (

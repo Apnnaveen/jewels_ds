@@ -18,15 +18,18 @@ import { JobsCountsProvider } from './components/JobsCountsProvider';
 
 
 function App() {
-  const user = JSON.parse(localStorage.getItem('user'));
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
 
   return (
     <JobsCountsProvider user={user}>
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Login setUser={setUser} />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/available-jobs" element={<AvailableJobs />} />
           <Route path="/profile" element={<ProfilePage />} />
 

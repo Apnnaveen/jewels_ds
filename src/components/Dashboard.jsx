@@ -5,14 +5,10 @@ import ProfilePage from './ProfilePage';
 // import './css/Dashboard.css';
 import AvailableJob from './AvailableJob';
 
-export default function Dashboard() {
+export default function Dashboard({user}) {
   const [activeItem, setActiveItem] = useState('dashboard');
 
-  const [user] = useState(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : { name: '', email: '' };
-  });
-  
+ 
   const handleLogout = () => {
     localStorage.removeItem('user');
     window.location.href = '/';
