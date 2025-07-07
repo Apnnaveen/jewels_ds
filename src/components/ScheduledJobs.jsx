@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import Header from './MainHeader/Header';
-import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs } from '../api';
+import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate } from '../api';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -24,7 +24,9 @@ const ScheduledJobs = () => {
   const [cars, setCars] = useState([]);
   const [reaction, setReaction] = useState(false);
   const { refreshCounts } = useJobsCounts();
-
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [sameDayJobs, setSameDayJobs] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
 
   const [filters, setFilters] = useState({
     vehicle_type: '',
@@ -73,11 +75,28 @@ const ScheduledJobs = () => {
     return car ? car.car_name : car_id;
   };
 
-  const handleAccept = async (job) => {
+  const handleAccept = async (job, skipConflictCheck = false) => {
     try {
       if (!user?.driver_id || !user?.token) {
         setError('User not authenticated');
         return;
+      }
+      // Get date in YYYY-MM-DD
+      const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+
+      const jobDate = dt.isValid ? dt.toISODate() : '';
+      if (!skipConflictCheck && jobDate) {
+        const conflicts = await getJourneysOnDate(user.driver_id, jobDate, user.token);
+        console.log(conflicts);
+
+        // Exclude the current job if present
+        const filtered = (conflicts || []).filter(j => j.booking_journey_id !== job.booking_journey_id);
+        if (filtered.length > 0) {
+          setSameDayJobs(filtered);
+          setSelectedJob(job);
+          setShowConflictModal(true);
+          return;
+        }
       }
       const checkResult = await checkBidJobs(job.booking_journey_id, user.token);
       if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
@@ -462,6 +481,77 @@ const ScheduledJobs = () => {
               )}
             </div>
           </div>
+          {showConflictModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="bg-white w-full max-w-6xl p-6 rounded-lg shadow-lg relative">
+                <button
+                  onClick={() => setShowConflictModal(false)}
+                  className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
+                  aria-label="Close modal"
+                >
+                  &times;
+                </button>
+                <h2 className="text-2xl font-bold mb-6 text-center text-red-600">
+                  You already have scheduled journeys for this date!
+                </h2>
+
+                <div className="overflow-x-auto border rounded-lg">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead className="bg-gray-100 text-gray-700 uppercase">
+                      <tr>
+                        <th className="px-4 py-2 border">Ref</th>
+                        <th className="px-4 py-2 border">Pickup</th>
+                        <th className="px-4 py-2 border">Dropoff</th>
+                        <th className="px-4 py-2 border">Journey Date</th>
+                        <th className="px-4 py-2 border">Journey Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sameDayJobs.map((j, idx) => {
+                        const pickupDate = new Date(j.pickup_date);
+                        const options = { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' };
+                        const date = pickupDate.toLocaleDateString('en-US', options); // Example: Thursday, 10 Jul 2025
+                        const time = pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        return (
+                          <tr key={j.booking_journey_id || idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 border">{j.booking_sub_id}</td>
+                            <td className="px-4 py-2 border">{j.from_address}</td>
+                            <td className="px-4 py-2 border">{j.to_address}</td>
+                            <td className="px-4 py-2 border">{date}</td>
+                            <td className="px-4 py-2 border">{time}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+
+                  </table>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    onClick={() => setShowConflictModal(false)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 border border-gray-300 rounded hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowConflictModal(false);
+                      await handleAccept(selectedJob, true); // skip conflict check
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white border border-green-600 rounded hover:bg-green-700 transition"
+                  >
+                    Accept Anyway
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+
         </div>
       </div>
     </>
