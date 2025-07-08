@@ -507,24 +507,33 @@ const ScheduledJobs = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sameDayJobs.map((j, idx) => {
-                        const pickupDate = new Date(j.pickup_date);
-                        const options = { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' };
-                        const date = pickupDate.toLocaleDateString('en-US', options); // Example: Thursday, 10 Jul 2025
-                        const time = pickupDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      {[...sameDayJobs]
+                        .sort((a, b) => new Date(a.pickup_date) - new Date(b.pickup_date)) // Sort by pickup time ascending
+                        .map((j, idx) => {
+                          const pickupDate = new Date(j.pickup_date);
+                          const options = {
+                            weekday: 'long',
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          };
+                          const date = pickupDate.toLocaleDateString('en-US', options);
+                          const time = pickupDate.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
 
-                        return (
-                          <tr key={j.booking_journey_id || idx} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 border">{j.booking_sub_id}</td>
-                            <td className="px-4 py-2 border">{j.from_address}</td>
-                            <td className="px-4 py-2 border">{j.to_address}</td>
-                            <td className="px-4 py-2 border">{date}</td>
-                            <td className="px-4 py-2 border">{time}</td>
-                          </tr>
-                        );
-                      })}
+                          return (
+                            <tr key={j.booking_journey_id || idx} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 border">{j.booking_sub_id}</td>
+                              <td className="px-4 py-2 border">{j.from_address}</td>
+                              <td className="px-4 py-2 border">{j.to_address}</td>
+                              <td className="px-4 py-2 border">{date}</td>
+                              <td className="px-4 py-2 border">{time}</td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
-
                   </table>
                 </div>
 
@@ -548,6 +557,7 @@ const ScheduledJobs = () => {
               </div>
             </div>
           )}
+
 
 
 

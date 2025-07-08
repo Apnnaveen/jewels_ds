@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -25,6 +25,26 @@ const UpcomingJobs = () => {
   const [assignedDriverId, setAssignedDriverId] = useState(null);
   const { refreshCounts } = useJobsCounts();
   const [driverSearch, setDriverSearch] = useState('');
+  const [countryCodes, setCountryCodes] = useState({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [vehicleTypes, setVehicleTypes] = useState([]);
+
+  const supplierId = user?.driver_id;
+
+  const [formData, setFormData] = useState({
+    supplier_id: supplierId || '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    mobile_number: '',
+    vehicle: '',
+    car_reg: '',
+    make: '',
+    vehicle_colour: '',
+    member_type: 'subs',
+    title: '',
+    password: '',
+  });
 
   // Filters
   const [filters, setFilters] = useState({
@@ -83,6 +103,30 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
+
+   useEffect(() => {
+      const fetchCars = async () => {
+        try {
+          const carsResponse = await getAllCars(supplierId, user.token);
+          console.log('Raw Cars API Data:', carsResponse);
+  
+          const formattedCars = (carsResponse || []).map((car) => {
+            const rawName = car.name || car.car_name || car.vehicle_name || 'Unknown';
+            return {
+              label: rawName.replace(/_/g, ' '),
+              value: car.car_id,
+            };
+          });
+  
+          setVehicleTypes(formattedCars);
+        } catch (error) {
+          console.error('Error fetching cars:', error);
+        }
+      };
+  
+      fetchCars();
+    }, [supplierId]);
+
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
   const vehicleOptions = filteredCars.map(car => ({
@@ -93,7 +137,35 @@ const UpcomingJobs = () => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const required = ['email', 'first_name', 'last_name', 'mobile_number', 'vehicle', 'car_reg', 'make'];
+    const missing = required.find((f) => !formData[f]);
+    if (missing) return alert(`Please fill in ${missing.replace('_', ' ')}`);
 
+    setActionLoading(true);
+
+    try {
+      const submitData = { ...formData };
+      // Add new driver
+      await add_driver(submitData, user.token);
+      alert('Driver added successfully!');
+
+
+      setModalOpen(false);
+      window.location.reload();
+    } catch (error) {
+      alert(error.message || 'Something went wrong');
+    } finally {
+      setActionLoading(false);
+    }
+  };
   // Filter jobs
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
@@ -273,6 +345,32 @@ const UpcomingJobs = () => {
       alert(err.message || 'Unassign failed');
     }
   };
+  useEffect(() => {
+    const preloadCountryCodes = async () => {
+      const uniqueCodes = [...new Set(upcomingJobs.map(job => job.mobile_code))];
+      for (const code of uniqueCodes) {
+        await getMobileCountryCode(code);
+      }
+    };
+    if (upcomingJobs.length > 0) preloadCountryCodes();
+  }, [upcomingJobs]);
+
+  const getMobileCountryCode = async (mobile_code) => {
+    if (!mobile_code || !user?.token) return '';
+
+    if (countryCodes[mobile_code]) return countryCodes[mobile_code];
+
+    try {
+      const code = await getcountrycode(mobile_code, user.token); // returns just the code (e.g. "44")
+      setCountryCodes((prev) => ({ ...prev, [mobile_code]: code }));
+      return code;
+    } catch (err) {
+      console.error("Failed to fetch country code:", err);
+      return '';
+    }
+  };
+
+
   return (
     <>
       <Header />
@@ -485,7 +583,8 @@ const UpcomingJobs = () => {
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
                               </span>
-                              <span className="text-right"><b>{`+(${job.mobile_code}) ${job.mobile}`}</b></span>
+                              <span className="text-right"><b>{`+${countryCodes[job.mobile_code] || job.mobile_code} ${job.mobile}`}</b>
+                              </span>
                             </div>
 
                             {user.user_type === 'supplier' && (
@@ -569,6 +668,26 @@ const UpcomingJobs = () => {
                   {showDriverModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                       <div className="bg-white w-full max-w-4xl p-6 rounded-lg shadow-lg relative">
+                        <button
+                          onClick={() => {
+                            setFormData({
+                              supplier_id: supplierId || '',
+                              email: '',
+                              first_name: '',
+                              last_name: '',
+                              mobile_number: '',
+                              vehicle: '',
+                              car_reg: '',
+                              make: '',
+                              vehicle_colour: '',
+                              member_type: 'subs',
+                            });
+                            setModalOpen(true);
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+                        >
+                          <i className="fas fa-plus mr-2"></i> Add Driver
+                        </button>
                         <button
                           onClick={() => setShowDriverModal(false)}
                           className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
@@ -681,6 +800,190 @@ const UpcomingJobs = () => {
           </div>
         </div>
       </div>
+      {modalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+            <button
+              onClick={() => {
+                setModalOpen(false);
+              }}
+              className="absolute top-2 right-3 text-gray-500 hover:text-red-600 text-xl"
+            >
+              &times;
+            </button>
+
+            <h2 className="text-xl font-semibold mb-4 text-center">
+              Add Driver
+            </h2>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Member Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Member Type</label>
+                <div className="flex items-center space-x-3">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="member_type"
+                      value="subs"
+                      checked={formData.member_type === 'subs'}
+                      onChange={handleChange}
+                      readOnly
+                    />
+                    <span>Subs</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Name and Contact */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="first_name"
+                    name="first_name"
+                    placeholder="First Name"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="last_name"
+                    name="last_name"
+                    placeholder="Last Name"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700 mb-1">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    id="mobile_number"
+                    name="mobile_number"
+                    placeholder="Mobile Number"
+                    value={formData.mobile_number}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Vehicle Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vehicle Type <span className="text-red-500">*</span>
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {vehicleTypes.map((v) => (
+                    <label key={v.value} className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        name="vehicle"
+                        value={v.value}
+                        checked={formData.vehicle === v.value}
+                        onChange={handleChange}
+                      />
+                      <span>{v.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Car Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="car_reg" className="block text-sm font-medium text-gray-700 mb-1">
+                    Car Registration <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="car_reg"
+                    name="car_reg"
+                    placeholder="Car Registration"
+                    value={formData.car_reg}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
+                    Make <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="make"
+                    name="make"
+                    placeholder="Make and Model"
+                    value={formData.make}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="vehicle_colour" className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle Colour
+                  </label>
+                  <input
+                    type="text"
+                    id="vehicle_colour"
+                    name="vehicle_colour"
+                    placeholder="Vehicle Colour"
+                    value={formData.vehicle_colour}
+                    onChange={handleChange}
+                    className="border px-3 py-2 rounded w-full"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+              >
+                Add Driver
+              </button>
+            </form>
+
+          </div>
+        </div>
+      )}
     </>
   );
 };

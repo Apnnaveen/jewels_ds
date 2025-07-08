@@ -661,7 +661,7 @@ export async function verify_login(email, otp) {
 
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || 'Failed to verify OTP');
+    throw new Error(result.error || 'Failed to verify OTP');
   }
 
   return result.data;
@@ -669,6 +669,21 @@ export async function verify_login(email, otp) {
 export async function getJourneysOnDate(driverId, date, token) {
   const response = await fetch(
     `https://jat-uk.com/api/users/journeys_on_date/${driverId}/${date}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
+  return result.data;
+}
+export async function getcountrycode(driverId, date, token) {
+  const response = await fetch(
+    `https://jat-uk.com/api/users/getcountrycode/${driverId}/${date}`,
     {
       method: 'GET',
       headers: {
