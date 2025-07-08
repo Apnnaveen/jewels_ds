@@ -681,20 +681,19 @@ export async function getJourneysOnDate(driverId, date, token) {
   if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
   return result.data;
 }
-export async function getcountrycode(driverId, date, token) {
-  const response = await fetch(
-    `https://jat-uk.com/api/users/getcountrycode/${driverId}/${date}`,
-    {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
+export async function getcountrycode(email, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/getcountrycode/${encodeURIComponent(email)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
+  if (!response.ok) throw new Error(result.error || 'Failed to fetch country code');
   return result.data;
 }
+
 
 

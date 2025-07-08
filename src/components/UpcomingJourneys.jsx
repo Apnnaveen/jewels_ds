@@ -104,28 +104,28 @@ const UpcomingJobs = () => {
     fetchUpcomingJobs();
   }, [user]);
 
-   useEffect(() => {
-      const fetchCars = async () => {
-        try {
-          const carsResponse = await getAllCars(supplierId, user.token);
-          console.log('Raw Cars API Data:', carsResponse);
-  
-          const formattedCars = (carsResponse || []).map((car) => {
-            const rawName = car.name || car.car_name || car.vehicle_name || 'Unknown';
-            return {
-              label: rawName.replace(/_/g, ' '),
-              value: car.car_id,
-            };
-          });
-  
-          setVehicleTypes(formattedCars);
-        } catch (error) {
-          console.error('Error fetching cars:', error);
-        }
-      };
-  
-      fetchCars();
-    }, [supplierId]);
+  useEffect(() => {
+    const fetchCars = async () => {
+      try {
+        const carsResponse = await getAllCars(supplierId, user.token);
+        console.log('Raw Cars API Data:', carsResponse);
+
+        const formattedCars = (carsResponse || []).map((car) => {
+          const rawName = car.name || car.car_name || car.vehicle_name || 'Unknown';
+          return {
+            label: rawName.replace(/_/g, ' '),
+            value: car.car_id,
+          };
+        });
+
+        setVehicleTypes(formattedCars);
+      } catch (error) {
+        console.error('Error fetching cars:', error);
+      }
+    };
+
+    fetchCars();
+  }, [supplierId]);
 
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
@@ -347,28 +347,36 @@ const UpcomingJobs = () => {
   };
   useEffect(() => {
     const preloadCountryCodes = async () => {
-      const uniqueCodes = [...new Set(upcomingJobs.map(job => job.mobile_code))];
-      for (const code of uniqueCodes) {
-        await getMobileCountryCode(code);
+      const uniqueEmails = [...new Set(upcomingJobs.map(job => job.email))];
+      for (const email of uniqueEmails) {
+        await getMobileCountryCode(email);
       }
     };
     if (upcomingJobs.length > 0) preloadCountryCodes();
   }, [upcomingJobs]);
 
-  const getMobileCountryCode = async (mobile_code) => {
-    if (!mobile_code || !user?.token) return '';
 
-    if (countryCodes[mobile_code]) return countryCodes[mobile_code];
+  const getMobileCountryCode = async (email) => {
+    if (!email || !user?.token) return '';
+
+    if (countryCodes[email]) return countryCodes[email]; // already cached
 
     try {
-      const code = await getcountrycode(mobile_code, user.token); // returns just the code (e.g. "44")
-      setCountryCodes((prev) => ({ ...prev, [mobile_code]: code }));
-      return code;
+      const data = await getcountrycode(email, user.token); // call API
+      if (data?.phone_code && data?.mobile) {
+        setCountryCodes(prev => ({
+          ...prev,
+          [email]: { code: data.phone_code, mobile: data.mobile } // store both
+        }));
+        return data;
+      }
     } catch (err) {
       console.error("Failed to fetch country code:", err);
-      return '';
     }
+
+    return '';
   };
+
 
 
   return (
@@ -583,8 +591,15 @@ const UpcomingJobs = () => {
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
                               </span>
-                              <span className="text-right"><b>{`+${countryCodes[job.mobile_code] || job.mobile_code} ${job.mobile}`}</b>
+                              <span className="text-right">
+                                <b>
+                                  {countryCodes[job.email]
+                                    ? `+${countryCodes[job.email].code} ${countryCodes[job.email].mobile}`
+                                    : `+${job.mobile_code} ${job.mobile}`
+                                  }
+                                </b>
                               </span>
+
                             </div>
 
                             {user.user_type === 'supplier' && (
