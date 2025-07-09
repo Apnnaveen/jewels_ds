@@ -17,6 +17,7 @@ const DriverList = () => {
   const user = storedUser ? JSON.parse(storedUser) : null;
   const token = user?.token;
   const supplierId = user?.driver_id;
+  const [agreed, setAgreed] = useState(false);
 
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
@@ -437,10 +438,15 @@ const DriverList = () => {
                   />
                 </div>
               </div>
-
+              <div class="flex items-center">
+                <input id="link-checkbox" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="link-checkbox" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-500">I agree with the <a href="https://jat-uk.com/instructions-and-terms" class="text-blue-600 dark:text-blue-500 hover:underline">terms and conditions</a>.</label>
+              </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                className={`w-full text-white py-2 rounded transition ${agreed ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                disabled={!agreed}
               >
                 {actionLoading ? (isEditing ? 'Updating...' : 'Adding...') : isEditing ? 'Update Driver' : 'Add Driver'}
               </button>

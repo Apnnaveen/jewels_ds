@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 // import AvailableJobs from './components/Available_jobs';
@@ -22,7 +22,13 @@ function App() {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
+  useEffect(() => {
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 300000); 
 
+    return () => clearInterval(interval); // Clear on unmount
+  }, []);
   return (
     <JobsCountsProvider user={user}>
       <Router>

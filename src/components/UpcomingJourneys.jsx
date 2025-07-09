@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -28,6 +28,7 @@ const UpcomingJobs = () => {
   const [countryCodes, setCountryCodes] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState([]);
+  const [agreed, setAgreed] = useState(false);
 
   const supplierId = user?.driver_id;
 
@@ -462,16 +463,50 @@ const UpcomingJobs = () => {
                       return (
                         <div
                           key={jobKey}
-                          className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
+                          className={`bg-white rounded-xl p-4 flex flex-col justify-between 
+                                                 ${job.acknowledge_status == 0
+                              ? 'border-2 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                              : 'shadow-md'
+                            }`
+                          }
                         >
                           <div className="flex justify-between items-center mb-2">
                             {job.acknowledge_status == 1 && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold mr-2">
-                                Acknowledged
-                              </span>
+                              <div className="mr-2">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold block mb-1">
+                                  Acknowledged
+                                </span>
+                                {job.acknowledge_time && (
+                                  <span className="text-xs text-gray-600 block">
+                                    {new Date(job.acknowledge_time).toLocaleString('en-GB', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true,
+                                    })}
+                                  </span>
+                                )}
+                              </div>
                             )}
-                            <span className="text-sm text-blue-600 font-medium ml-auto"><b>Upcoming</b></span>
+
+                            {job.acknowledge_status == 0 ? (
+                              <div className="text-sm text-blue-600 font-medium">
+                               <span className="mr-2 flex items-center text-xs text-red-600 font-bold">
+                                This journey has not been acknowledged.
+                               </span>
+                              </div>
+                            ) : (
+                              <div /> // placeholder to maintain spacing when acknowledge_status == 1
+                            )}
+
+                            <span className="text-sm text-blue-600 font-medium">
+                              <b>Upcoming</b>
+                            </span>
                           </div>
+
+
                           <div className="mb-3">
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                               <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
@@ -988,9 +1023,18 @@ const UpcomingJobs = () => {
                 </div>
               </div>
 
+
+
+              <div class="flex items-center">
+                <input id="link-checkbox" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="link-checkbox" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-500">I agree with the <a href="https://jat-uk.com/instructions-and-terms" class="text-blue-600 dark:text-blue-500 hover:underline">terms and conditions</a>.</label>
+              </div>
+
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                disabled={!agreed}
+                className={`w-full text-white py-2 rounded transition ${agreed ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                  }`}
               >
                 Add Driver
               </button>
