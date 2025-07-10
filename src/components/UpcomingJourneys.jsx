@@ -37,7 +37,8 @@ const UpcomingJobs = () => {
     email: '',
     first_name: '',
     last_name: '',
-    mobile_number: '',
+    country_code: '44',
+    mobile_number: '0',
     vehicle: '',
     car_reg: '',
     make: '',
@@ -493,9 +494,9 @@ const UpcomingJobs = () => {
 
                             {job.acknowledge_status == 0 ? (
                               <div className="text-sm text-blue-600 font-medium">
-                               <span className="mr-2 flex items-center text-xs text-red-600 font-bold">
-                                This journey has not been acknowledged.
-                               </span>
+                                <span className="mr-2 flex items-center text-xs text-red-600 font-bold">
+                                  This journey has not been acknowledged.
+                                </span>
                               </div>
                             ) : (
                               <div /> // placeholder to maintain spacing when acknowledge_status == 1
@@ -725,7 +726,8 @@ const UpcomingJobs = () => {
                               email: '',
                               first_name: '',
                               last_name: '',
-                              mobile_number: '',
+                              country_code: '44',
+                              mobile_number: '0',
                               vehicle: '',
                               car_reg: '',
                               make: '',
@@ -852,7 +854,7 @@ const UpcomingJobs = () => {
       </div>
       {modalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 relative">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative">
             <button
               onClick={() => {
                 setModalOpen(false);
@@ -935,21 +937,47 @@ const UpcomingJobs = () => {
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700 mb-1">
-                    Mobile Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    id="mobile_number"
-                    name="mobile_number"
-                    placeholder="Mobile Number"
-                    value={formData.mobile_number}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
+                <div className="flex space-x-2">
+                  {/* Country Code Field */}
+                   <div className="w-28">
+                    <label htmlFor="country_code" className="block text-sm font-medium text-gray-700 mb-1">
+                      Code
+                    </label>
+                    <div className="flex items-center border rounded px-2 py-2 bg-white">
+                      {/* + symbol box */}
+                      <span className="text-gray-700 text-sm font-semibold mr-1">+</span>
+
+                      {/* actual input field for country code */}
+                      <input
+                        type="text"
+                        id="country_code"
+                        name="country_code"
+                        placeholder="44"
+                        value={formData.country_code}
+                        onChange={handleChange}
+                        className="w-full border-none focus:ring-0 focus:outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mobile Number Field */}
+                  <div className="flex-1">
+                    <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700 mb-1">
+                      Mobile Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="mobile_number"
+                      name="mobile_number"
+                      placeholder="Mobile Number"
+                      value={formData.mobile_number}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                      required
+                    />
+                  </div>
                 </div>
+
               </div>
 
               {/* Vehicle Type */}

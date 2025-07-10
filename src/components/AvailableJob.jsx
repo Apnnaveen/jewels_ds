@@ -315,7 +315,7 @@ export default function AvailableJob() {
                                             const diffInHours = journeyDate.diff(now, 'hours').hours;
                                             isDanger = diffInHours <= 2;
                                             noSubAssigned = !job.sub_assigned;
-                                            if (isDanger && noSubAssigned) {
+                                            if (isDanger && noSubAssigned && (user.user_type == 'supplier')) {
                                                 alertMsg = (
                                                     <span className="mr-2 flex items-center text-xs text-red-600 font-bold">
                                                         ⚠️ Alert: Supplier has not assigned a sub for this job.
@@ -327,7 +327,7 @@ export default function AvailableJob() {
                                             <div
                                                 key={job.booking_id || idx}
                                                 className={`bg-white rounded-xl p-4 flex flex-col justify-between 
-                                                 ${isDanger && noSubAssigned
+                                                 ${isDanger && noSubAssigned && (user.user_type == 'supplier')
                                                         ? 'border-2 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
                                                         : 'shadow-md'
                                                     }`
