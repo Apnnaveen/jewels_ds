@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-
+import { logoutStatus } from '../../api';
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -19,10 +19,16 @@ export default function Header() {
         }
     }, [location.pathname]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('user');
-        navigate('/');
-    };
+    const handleLogout = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    if (user && user.email) {
+        await logoutStatus(user.email); // or 'app' if from mobile
+    }
+
+    localStorage.removeItem('user');
+    navigate('/');
+};
 
     useEffect(() => {
         const id = 'fontawesome-cdn';

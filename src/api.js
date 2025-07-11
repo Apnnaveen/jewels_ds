@@ -694,6 +694,28 @@ export async function getcountrycode(email, token) {
   if (!response.ok) throw new Error(result.error || 'Failed to fetch country code');
   return result.data;
 }
+// api.js
+
+export async function logoutStatus(email) {
+    try {
+        const response = await fetch('https://jat-uk.com/api/users/logout_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // Add Authorization if needed
+            },
+            body: JSON.stringify({
+                email,
+            }),
+        });
+
+        const result = await response.json();
+        return result;
+    } catch (error) {
+        console.error('Logout status update failed:', error);
+        return { status: false, message: 'Network error' };
+    }
+}
 
 
 

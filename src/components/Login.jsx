@@ -9,47 +9,27 @@ export default function Login({ setUser }) {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  // const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [captchaValue, setCaptchaValue] = useState(null);
   const navigate = useNavigate();
 
-  const handleforgot_password_request = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    try {
-      await forgot_password_request(email);
-      setOtpSent(true);
-    } catch (err) {
-      setError(err.message || 'Failed to send OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleforgot_password_request = async (e) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   setError('');
+  //   try {
+  //     await forgot_password_request(email);
+  //     setOtpSent(true);
+  //   } catch (err) {
+  //     setError(err.message || 'Failed to send OTP. Please try again.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleverify_login = async (e) => {
-    e.preventDefault();
-    if (!captchaValue) {
-      setError('Please verify the captcha');
-      return;
-    }
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await verify_login(email, otp);
-      localStorage.setItem('user', JSON.stringify(data));
-      setUser(data);
-      navigate('/dashboard', { state: { user: data } });
-    } catch (err) {
-      setError(err.message || 'Failed to verify OTP. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // const handleLogin = async (e) => {
+  // const handleverify_login = async (e) => {
   //   e.preventDefault();
   //   // if (!captchaValue) {
   //   //   setError('Please verify the captcha');
@@ -58,15 +38,35 @@ export default function Login({ setUser }) {
   //   setIsLoading(true);
   //   setError('');
   //   try {
-  //     const data = await loginUser(email, password);
+  //     const data = await verify_login(email, otp);
   //     localStorage.setItem('user', JSON.stringify(data));
+  //     setUser(data);
   //     navigate('/dashboard', { state: { user: data } });
   //   } catch (err) {
-  //     setError(err.message || 'Login failed. Please try again.');
+  //     setError(err.message || 'Failed to verify OTP. Please try again.');
   //   } finally {
   //     setIsLoading(false);
   //   }
   // };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!captchaValue) {
+      setError('Please verify the captcha');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await loginUser(email, password);
+      localStorage.setItem('user', JSON.stringify(data));
+      navigate('/dashboard', { state: { user: data } });
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onChange = (value) => {
     setCaptchaValue(value);
@@ -88,9 +88,10 @@ export default function Login({ setUser }) {
             {otpSent ? 'Verify OTP' : 'Login'}
           </h2>
 
-          <form onSubmit={otpSent ? handleverify_login : handleforgot_password_request} className="space-y-5">
+          {/* <form onSubmit={otpSent ? handleverify_login : handleforgot_password_request} className="space-y-5"> */}
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label htmlFor="email" className="block text-sm --medium text-gray-700 mb-1">Email Address</label>
               <input
                 id="email"
                 type="email"
@@ -101,7 +102,7 @@ export default function Login({ setUser }) {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
               />
             </div>
-            {otpSent && (
+            {/* {otpSent && (
               <div>
                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
                   OTP
@@ -116,9 +117,9 @@ export default function Login({ setUser }) {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
                 />
               </div>
-            )}
+            )} */}
 
-            {/* <div>
+            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="password"
@@ -129,7 +130,7 @@ export default function Login({ setUser }) {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
               />
-            </div> */}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -161,7 +162,7 @@ export default function Login({ setUser }) {
               />
             </div>
 
-            <button
+            {/* <button
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -179,6 +180,9 @@ export default function Login({ setUser }) {
               ) : (
                 'Send OTP'
               )}
+            </button> */}
+            <button  type="submit"className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 `} >
+              Login
             </button>
           </form>
 
