@@ -31,10 +31,10 @@ export default function Login({ setUser }) {
 
   const handleverify_login = async (e) => {
     e.preventDefault();
-    // if (!captchaValue) {
-    //   setError('Please verify the captcha');
-    //   return;
-    // }
+    if (!captchaValue) {
+      setError('Please verify the captcha');
+      return;
+    }
     setIsLoading(true);
     setError('');
     try {

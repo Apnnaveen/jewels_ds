@@ -140,11 +140,19 @@ const UpcomingJobs = () => {
     return car ? car.car_name : car_id;
   };
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // Allow only digits for country_code field
+    const newValue = name === "country_code"
+      ? value.replace(/\D/g, "") // remove non-numeric characters
+      : value;
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: newValue,
     }));
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const required = ['email', 'first_name', 'last_name', 'mobile_number', 'vehicle', 'car_reg', 'make'];
@@ -461,16 +469,32 @@ const UpcomingJobs = () => {
                     filteredJobs.map((job, idx) => {
                       const jobKey = job.id || job.booking_journey_id || idx;
                       const status = job.icon_status ?? job.status_code;
+
+                      const jobPickupDateTime = DateTime.fromFormat(
+                        job.pickup_date,
+                        "cccc, dd LLL yyyy 'at' HH:mm",
+                        { zone: 'Europe/London' }
+                      );
+                      const isPastPickup = jobPickupDateTime < DateTime.now().setZone('Europe/London');
                       return (
                         <div
                           key={jobKey}
-                          className={`bg-white rounded-xl p-4 flex flex-col justify-between 
-                                                 ${job.acknowledge_status == 0
-                              ? 'border-2 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
-                              : 'shadow-md'
-                            }`
-                          }
+                          className={`rounded-xl p-4 flex flex-col justify-between 
+                                       ${isPastPickup
+                              ? 'border-2 border-orange-200 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
+                              : job.acknowledge_status == 0
+                                ? 'border-2 border-red-600 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                                : 'shadow-md'
+                            }
+                           `}
                         >
+                          {isPastPickup && (
+                            <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
+                              <i className="fas fa-exclamation-triangle text-orange-600"></i>
+                                The pickup time has already passed, but this journey is still not marked as completed.
+                            </div>
+                          )}
+
                           <div className="flex justify-between items-center mb-2">
                             {job.acknowledge_status == 1 && (
                               <div className="mr-2">
@@ -939,7 +963,7 @@ const UpcomingJobs = () => {
 
                 <div className="flex space-x-2">
                   {/* Country Code Field */}
-                   <div className="w-28">
+                  <div className="w-28">
                     <label htmlFor="country_code" className="block text-sm font-medium text-gray-700 mb-1">
                       Code
                     </label>
@@ -955,8 +979,13 @@ const UpcomingJobs = () => {
                         placeholder="44"
                         value={formData.country_code}
                         onChange={handleChange}
+                        pattern="[0-9]{1,4}"
+                        maxLength={4}
+                        title="Enter a valid country code"
                         className="w-full border-none focus:ring-0 focus:outline-none text-sm"
+                        required
                       />
+
                     </div>
                   </div>
 

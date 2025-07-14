@@ -77,11 +77,18 @@ const DriverList = () => {
   }, [token, supplierId]);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const { name, value } = e.target;
+
+  // Allow only digits for country_code field
+  const newValue = name === "country_code"
+    ? value.replace(/\D/g, "") // remove non-numeric characters
+    : value;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: newValue,
+  }));
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -371,7 +378,11 @@ const DriverList = () => {
                         placeholder="44"
                         value={formData.country_code}
                         onChange={handleChange}
+                        pattern="[0-9]{1,4}"
+                        maxLength={4}
+                        title="Enter a valid country code"
                         className="w-full border-none focus:ring-0 focus:outline-none text-sm"
+                        required
                       />
                     </div>
                   </div>
