@@ -717,5 +717,19 @@ export async function logoutStatus(email) {
     }
 }
 
-
+export async function getAssignsOnDate(driverId, date, token) {
+  const response = await fetch(
+    `https://jat-uk.com/api/users/assigns_on_date/${driverId}/${date}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
+  return result.data;
+}
 

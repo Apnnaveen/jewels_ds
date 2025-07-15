@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -31,6 +31,10 @@ const UpcomingJobs = () => {
   const [agreed, setAgreed] = useState(false);
 
   const supplierId = user?.driver_id;
+  const [conflictDriverId, setConflictDriverId] = useState(null);
+  const [conflictJobs, setConflictJobs] = useState([]);
+  const [conflictSelectedJob, setConflictSelectedJob] = useState(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
 
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
@@ -295,13 +299,12 @@ const UpcomingJobs = () => {
   };
 
 
-  const handleAssign = async (driver_id) => {
+  const handleAssign = async (driver_id, skipConflictCheck = false) => {
     const booking_journey_id = selectedJob?.booking_journey_id;
     const token = user?.token;
 
     if (!booking_journey_id || !token) {
       alert('Missing booking or token');
-      console.log("Debug:", { booking_journey_id, token });
       return;
     }
 
@@ -313,6 +316,22 @@ const UpcomingJobs = () => {
       return;
     }
 
+    // Get pickup_date in ISO format
+    const dt = DateTime.fromFormat(selectedJob.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+    const jobDate = dt.isValid ? dt.toISODate() : '';
+
+    if (!skipConflictCheck && jobDate) {
+      const conflicts = await getAssignsOnDate(driver_id, jobDate, token);
+      const filtered = (conflicts || []).filter(j => j.booking_journey_id !== booking_journey_id);
+      if (filtered.length > 0) {
+        setConflictJobs(filtered);
+        setConflictDriverId(driver_id);
+        setConflictSelectedJob(selectedJob);
+        setShowConflictModal(true);
+        return;
+      }
+    }
+
     try {
       await assignDriverToJourney({
         booking_jou_id: booking_journey_id,
@@ -322,13 +341,14 @@ const UpcomingJobs = () => {
       });
 
       alert('Driver assigned successfully');
-      setAssignedDriverId(driver_id); // ✅ track assigned driver
+      setAssignedDriverId(driver_id);
       await fetchMappedDrivers(selectedJob);
     } catch (err) {
       console.error(err);
       alert(err.message || 'Assign failed');
     }
   };
+
 
 
   const handleUnassign = async (driver_id) => {
@@ -491,7 +511,7 @@ const UpcomingJobs = () => {
                           {isPastPickup && (
                             <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
                               <i className="fas fa-exclamation-triangle text-orange-600"></i>
-                                The pickup time has already passed, but this journey is still not marked as completed.
+                              The pickup time has already passed, but this journey is still not marked as completed.
                             </div>
                           )}
 
@@ -1100,6 +1120,69 @@ const UpcomingJobs = () => {
           </div>
         </div>
       )}
+      {showConflictModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white w-full max-w-5xl p-6 rounded-lg shadow-lg relative">
+            <button
+              onClick={() => setShowConflictModal(false)}
+              className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
+              aria-label="Close modal"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-center text-red-600">
+              This driver already has jobs scheduled on this date!
+            </h2>
+
+            <div className="overflow-x-auto border rounded-lg mb-4">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead className="bg-gray-100 text-gray-700 uppercase">
+                  <tr>
+                    <th className="px-4 py-2 border">Ref</th>
+                    <th className="px-4 py-2 border">Pickup</th>
+                    <th className="px-4 py-2 border">Dropoff</th>
+                    <th className="px-4 py-2 border">Date</th>
+                    <th className="px-4 py-2 border">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conflictJobs.map((j, idx) => {
+                    const pickupDate = new Date(j.pickup_date);
+                    return (
+                      <tr key={j.booking_journey_id || idx} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 border">{j.booking_sub_id}</td>
+                        <td className="px-4 py-2 border">{j.from_address}</td>
+                        <td className="px-4 py-2 border">{j.to_address}</td>
+                        <td className="px-4 py-2 border">{pickupDate.toLocaleDateString()}</td>
+                        <td className="px-4 py-2 border">{pickupDate.toLocaleTimeString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConflictModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 border rounded hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowConflictModal(false);
+                  await handleAssign(conflictDriverId, true); // skip check
+                }}
+                className="px-4 py-2 bg-green-600 text-white border border-green-600 rounded hover:bg-green-700"
+              >
+                Assign Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 };

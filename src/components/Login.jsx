@@ -38,6 +38,7 @@ export default function Login({ setUser }) {
     setIsLoading(true);
     setError('');
     try {
+      
       const data = await verify_login(email, otp);
       localStorage.setItem('user', JSON.stringify(data));
       setUser(data);

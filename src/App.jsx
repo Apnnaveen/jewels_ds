@@ -25,7 +25,7 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
-    }, 300000); 
+    }, 1800000); 
 
     return () => clearInterval(interval); // Clear on unmount
   }, []);
