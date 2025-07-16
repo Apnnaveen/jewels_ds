@@ -35,6 +35,8 @@ const UpcomingJobs = () => {
   const [conflictJobs, setConflictJobs] = useState([]);
   const [conflictSelectedJob, setConflictSelectedJob] = useState(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
+  const [disabledButton, setDisabledButton] = useState(new Set());
+  const [disabledDriverIds, setDisabledDriverIds] = useState(new Set());
 
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
@@ -66,13 +68,8 @@ const UpcomingJobs = () => {
       booking_ref_id: '',
       from_address: '',
       to_address: '',
-      waypoint: '',
       pickup_date: '',
-      passengers: '',
-      luggage: '',
-      distance: '',
       car_id: [],
-      bid_expiry: '',
     });
   };
 
@@ -83,6 +80,7 @@ const UpcomingJobs = () => {
   const [cars, setCars] = useState([]);
 
   // Fetch jobs
+  // ...existing code...
   useEffect(() => {
     const fetchUpcomingJobs = async () => {
       try {
@@ -94,12 +92,18 @@ const UpcomingJobs = () => {
           upcoming_journey_details(user.driver_id, user.token),
           getAllCars(user.driver_id, user.token)
         ]);
-        console.log('Jobs Data:', jobsData);
         refreshCounts();
-        // Filter out duplicates
+        // Remove duplicates by booking_journey_id or id
         const jobs = Array.isArray(jobsData) ? jobsData : [];
-        setUpcomingJobs(jobs);
-        setFilteredJobs(jobs);
+        const uniqueJobs = Object.values(
+          jobs.reduce((acc, job) => {
+            const key = job.booking_journey_id || job.id;
+            acc[key] = job;
+            return acc;
+          }, {})
+        );
+        setUpcomingJobs(uniqueJobs);
+        setFilteredJobs(uniqueJobs);
         setCars(Array.isArray(carsData) ? carsData : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
@@ -183,46 +187,33 @@ const UpcomingJobs = () => {
   // Filter jobs
   useEffect(() => {
     const filtered = upcomingJobs.filter((job) => {
-      const matchText = (key) =>
-        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+      // Booking Ref filter
+      const bookingRefMatch = !filters.booking_ref_id ||
+        job.booking_ref_id?.toLowerCase().includes(filters.booking_ref_id.toLowerCase());
 
-      const matchPostcode = (key) => {
-        const input = filters[key]?.toLowerCase().trim();
-        if (!input) return true;
+      // From Address filter
+      const fromAddressMatch = !filters.from_address ||
+        job.from_address?.toLowerCase().includes(filters.from_address.toLowerCase());
 
-        const value = job[key]?.toString().toLowerCase();
-        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
+      // To Address filter
+      const toAddressMatch = !filters.to_address ||
+        job.to_address?.toLowerCase().includes(filters.to_address.toLowerCase());
 
-        if (postcodeMatch) {
-          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
-          const prefix = fullPostcode.slice(0, input.length);
-          return prefix === input;
-        }
-
-        return false;
-      };
-
-      // Convert pickup_date to ISO
+      // Date filter
       let jobDateISO = '';
       if (job.pickup_date) {
         const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
         jobDateISO = dt.isValid ? dt.toISODate() : '';
       }
-
       const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
+
+      // Car filter
       const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
-      const fromPostcodeMatch = matchPostcode('from_address');
-      const toPostcodeMatch = matchPostcode('to_address');
 
       return (
-        (!filters.booking_ref_id || matchText('booking_ref_id')) &&
-        fromPostcodeMatch &&
-        toPostcodeMatch &&
-        (!filters.waypoint || matchText('waypoint')) &&
-        (!filters.passengers || matchText('passengers')) &&
-        (!filters.luggage || matchText('luggage')) &&
-        (!filters.distance || matchText('distance')) &&
-        (!filters.bid_expiry || matchText('bid_expiry')) &&
+        bookingRefMatch &&
+        fromAddressMatch &&
+        toAddressMatch &&
         dateMatch &&
         carMatch
       );
@@ -238,6 +229,8 @@ const UpcomingJobs = () => {
   };
 
   const handleStatusUpdate = async (job, status_code) => {
+    setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
+
     setActionLoading(true);
     try {
       await updateJobData({
@@ -251,6 +244,11 @@ const UpcomingJobs = () => {
     } catch (err) {
       alert(err.message || 'Failed to update job status');
     } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.booking_journey_id);
+        return newSet;
+      });
       setActionLoading(false);
     }
   };
@@ -300,11 +298,17 @@ const UpcomingJobs = () => {
 
 
   const handleAssign = async (driver_id, skipConflictCheck = false) => {
+    setDisabledDriverIds(prev => new Set(prev).add(driver_id));
     const booking_journey_id = selectedJob?.booking_journey_id;
     const token = user?.token;
 
     if (!booking_journey_id || !token) {
       alert('Missing booking or token');
+      setDisabledDriverIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(driver_id);
+        return newSet;
+      });
       return;
     }
 
@@ -313,6 +317,11 @@ const UpcomingJobs = () => {
 
     if (!fare) {
       alert('Please enter fare');
+      setDisabledDriverIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(driver_id);
+        return newSet;
+      });
       return;
     }
 
@@ -328,6 +337,11 @@ const UpcomingJobs = () => {
         setConflictDriverId(driver_id);
         setConflictSelectedJob(selectedJob);
         setShowConflictModal(true);
+        setDisabledDriverIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(driver_id);
+          return newSet;
+        });
         return;
       }
     }
@@ -346,12 +360,20 @@ const UpcomingJobs = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || 'Assign failed');
+    } finally {
+      setDisabledDriverIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(driver_id);
+        return newSet;
+      });
     }
   };
 
 
 
   const handleUnassign = async (driver_id) => {
+    setDisabledDriverIds(prev => new Set(prev).add(driver_id));
+
     try {
       const booking_jou_id = selectedJob?.booking_journey_id;
       const token = user?.token;
@@ -373,6 +395,12 @@ const UpcomingJobs = () => {
     } catch (err) {
       console.error(err);
       alert(err.message || 'Unassign failed');
+    } finally {
+      setDisabledDriverIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(driver_id);
+        return newSet;
+      });
     }
   };
   useEffect(() => {
@@ -708,7 +736,7 @@ const UpcomingJobs = () => {
                                     "cccc, dd LLL yyyy 'at' HH:mm",
                                     { zone: 'Europe/London' }
                                   ).toISODate() !== DateTime.now().setZone('Europe/London').toISODate()
-                                }
+                                  || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
                                   ${status == 1
                                     ? 'bg-orange-500 text-white border-orange-600'
@@ -728,7 +756,7 @@ const UpcomingJobs = () => {
                               </button>
                               <button
                                 type="button"
-                                disabled={status != 1}
+                                disabled={status != 1 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
                                   ${status == 2
                                     ? 'bg-blue-500 text-white border-blue-600'
@@ -740,7 +768,7 @@ const UpcomingJobs = () => {
                               </button>
                               <button
                                 type="button"
-                                disabled={status != 2}
+                                disabled={status != 2 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
                                   ${status == 3
                                     ? 'bg-green-500 text-white border-green-600'
@@ -864,6 +892,8 @@ const UpcomingJobs = () => {
                                           <button
                                             onClick={() => handleUnassign(driver.driver_id)}
                                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                                            disabled={disabledDriverIds.has(driver.driver_id)}
+
                                           >
                                             Unassign
                                           </button>
@@ -871,7 +901,7 @@ const UpcomingJobs = () => {
                                           <button
                                             onClick={() => handleAssign(driver.driver_id)}
                                             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50"
-                                            disabled={assignedDriverId !== null && assignedDriverId !== driver.driver_id}
+                                            disabled={assignedDriverId !== null && assignedDriverId !== driver.driver_id || disabledDriverIds.has(driver.driver_id)}
                                           >
                                             Assign
                                           </button>
@@ -1174,6 +1204,8 @@ const UpcomingJobs = () => {
                   setShowConflictModal(false);
                   await handleAssign(conflictDriverId, true); // skip check
                 }}
+                disabled={disabledDriverIds.has(conflictDriverId)}
+
                 className="px-4 py-2 bg-green-600 text-white border border-green-600 rounded hover:bg-green-700"
               >
                 Assign Anyway

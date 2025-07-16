@@ -27,6 +27,7 @@ const ScheduledJobs = () => {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [sameDayJobs, setSameDayJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [disabledButton, setDisabledButton] = useState(new Set());
 
   const [filters, setFilters] = useState({
     vehicle_type: '',
@@ -76,6 +77,8 @@ const ScheduledJobs = () => {
   };
 
   const handleAccept = async (job, skipConflictCheck = false) => {
+    setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
+
     try {
       if (!user?.driver_id || !user?.token) {
         setError('User not authenticated');
@@ -120,11 +123,18 @@ const ScheduledJobs = () => {
       alert(err.message || 'Failed to confirm availability');
       setReaction(true);
     } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.booking_journey_id);
+        return newSet;
+      });
       setActionLoading(false);
     }
   };
 
   const handleDecline = async (job) => {
+    setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
+
     try {
       if (!user?.driver_id || !user?.token) {
         setError('User not authenticated');
@@ -143,6 +153,11 @@ const ScheduledJobs = () => {
       alert(err.message || 'Failed to decline job');
       setReaction(true);
     } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.booking_journey_id);
+        return newSet;
+      });
       setActionLoading(false);
     }
   };
@@ -463,13 +478,13 @@ const ScheduledJobs = () => {
                         <div className="flex gap-2 mt-4">
                           <button
                             className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleAccept(job)}
+                            onClick={() => handleAccept(job)} disabled={disabledButton.has(job.booking_journey_id)}
                           >
                             Accept
                           </button>
                           <button
                             className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleDecline(job)}
+                            onClick={() => handleDecline(job)} disabled={disabledButton.has(job.booking_journey_id)}
                           >
                             Reject
                           </button>
@@ -549,6 +564,8 @@ const ScheduledJobs = () => {
                       setShowConflictModal(false);
                       await handleAccept(selectedJob, true); // skip conflict check
                     }}
+                    disabled={disabledButton.has(selectedJob?.booking_journey_id)}
+
                     className="px-4 py-2 bg-green-600 text-white border border-green-600 rounded hover:bg-green-700 transition"
                   >
                     Accept Anyway

@@ -25,6 +25,7 @@ const BidHistory = () => {
   const [submitting, setSubmitting] = useState(false);
   const [reaction, setReaction] = useState(false);
   const { refreshCounts } = useJobsCounts();
+  const [disabledButton, setDisabledButton] = useState(new Set());
 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
@@ -59,6 +60,8 @@ const BidHistory = () => {
     setIsChecked(true);
   };
   const handleSubmitUpdateBid = async () => {
+    setDisabledButton(prev => new Set(prev).add(selectedBid.booking_journey_id));
+    
     setActionLoading(true);
     if (!selectedBid || !quote || !isChecked) return;
     setSubmitting(true);
@@ -102,6 +105,11 @@ const BidHistory = () => {
       setLoading(false);
       alert('Failed to submit bid: ' + err.message);
     } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(selectedBid.booking_journey_id);
+        return newSet;
+      });
       setActionLoading(false);
     }
     setSubmitting(false);
@@ -110,6 +118,8 @@ const BidHistory = () => {
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
   const handleWithdrawJob = async (bid) => {
+    setDisabledButton(prev => new Set(prev).add(bid.booking_journey_id));
+
     if (!window.confirm('Are you sure you want to withdraw this job?')) return;
     setActionLoading(true);
     try {
@@ -126,6 +136,11 @@ const BidHistory = () => {
     } catch (err) {
       alert('Failed to withdraw job: ' + err.message);
     } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bid.booking_journey_id);
+        return newSet;
+      });
       setActionLoading(false);
     }
   };
@@ -448,7 +463,7 @@ const BidHistory = () => {
                         <div className="flex gap-2 mt-4">
                           <button
                             className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleWithdrawJob(bid)}
+                            onClick={() => handleWithdrawJob(bid)} disabled={disabledButton.has(bid.booking_journey_id)}
                           >
                             Cancel Bid
                           </button>
@@ -519,7 +534,7 @@ const BidHistory = () => {
                 </div>
                 <button
                   className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  disabled={!isChecked || !quote}
+                  disabled={!isChecked || !quote || disabledButton.has(selectedBid.booking_journey_id)}
                   onClick={handleSubmitUpdateBid}
                 >
                   {submitting ? 'Updating...' : 'Update Bid'}

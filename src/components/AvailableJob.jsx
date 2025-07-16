@@ -42,6 +42,8 @@ export default function AvailableJob() {
     const [quote, setQuote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [reaction, setReaction] = useState(false);
+    const [disabledButton, setDisabledButton] = useState(new Set());
+
     const [cars, setCars] = useState([]);
     const clearFilters = () => {
         setFilters({
@@ -156,6 +158,8 @@ export default function AvailableJob() {
     };
 
     const handleViewDetails = async (job) => {
+        setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
+
         setShowModal(true);
         setSelectedJob(job);
         setIsChecked(true);
@@ -168,12 +172,20 @@ export default function AvailableJob() {
             refreshCounts();
         } catch (err) {
             setDetailsError('Failed to load details.');
+        } finally {
+            setDisabledButton(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(job.booking_journey_id);
+                return newSet;
+            });
         }
 
         setLoadingDetails(false);
     };
 
     const handleSubmitBid = async () => {
+        setDisabledButton(prev => new Set(prev).add(selectedJob.booking_journey_id));
+
         if (!selectedJob || !quote || !isChecked) return;
         try {
             const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
@@ -203,6 +215,12 @@ export default function AvailableJob() {
         } catch (err) {
             setLoading(false);
             alert('Failed to submit bid: ' + err.message);
+        } finally {
+            setDisabledButton(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(selectedJob.booking_journey_id);
+                return newSet;
+            });
         }
         setSubmitting(false);
     };
@@ -459,6 +477,7 @@ export default function AvailableJob() {
                                                     <button
                                                         onClick={() => handleViewDetails(job)}
                                                         className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded w-full"
+                                                        disabled={disabledButton.has(job.booking_journey_id)}
                                                     >
                                                         View Details
                                                     </button>
@@ -567,7 +586,7 @@ export default function AvailableJob() {
                                         </div>
                                         <button
                                             className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                                            disabled={!isChecked || !quote}
+                                            disabled={!isChecked || !quote || disabledButton.has(selectedJob.booking_journey_id)}
                                             onClick={handleSubmitBid}
                                         >
                                             {submitting ? 'Submitting...' : 'Submit'}
