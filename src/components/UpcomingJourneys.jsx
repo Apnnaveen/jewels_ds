@@ -726,7 +726,7 @@ const UpcomingJobs = () => {
                                 </p>
                               </div>
                             )}
-                            <div className="flex justify-end gap-2 mt-3">
+                            <div className="flex justify-end gap-2 mt-3 flex-wrap">
                               <button
                                 type="button"
                                 disabled={
