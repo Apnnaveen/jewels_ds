@@ -16,30 +16,40 @@ const JobsTabs = ({ activeTab, user }) => {
   const { counts, loading } = useJobsCounts();
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          onClick={() => navigate(tab.path, { state: { user } })}
-          className={`py-3 px-4 rounded-2xl text-sm font-semibold shadow-md transition-all duration-200 flex items-center justify-center gap-2
+
+    <div className="w-full">
+      {/* Top Scroll Message */}
+      <div className="w-full bg-yellow-100 border border-yellow-300 rounded-lg mb-4 overflow-hidden shadow">
+        <marquee behavior="scroll" direction="left" className="text-sm text-yellow-800 font-semibold py-2 px-4">
+          We request you to kindly reset your password using Forget Password and keep it safely as an alternative login process. We will migrate to User ID and Password login process shortly.
+        </marquee>
+      </div>
+
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => navigate(tab.path, { state: { user } })}
+            className={`py-3 px-4 rounded-2xl text-sm font-semibold shadow-md transition-all duration-200 flex items-center justify-center gap-2
         ${activeTab === tab.key
-              ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-        >
-          <span className="flex items-center justify-center gap-1">
-            {tab.label}
-            {counts[tab.key] > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">
-                {counts[tab.key]}
-              </span>
-            )}
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+          >
+            <span className="flex items-center justify-center gap-1">
+              {tab.label}
+              {counts[tab.key] > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">
+                  {counts[tab.key]}
+                </span>
+              )}
 
-          </span>
-        </button>
-      ))}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
-
   );
 };
 
