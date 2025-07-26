@@ -1,12 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { logoutStatus } from '../../api';
+import { logoutStatus, fetchAvailableJobs, scheduled_journey_details, getUserNotificationStates } from '../../api';
 export default function Header() {
     const location = useLocation();
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [activeItem, setActiveItem] = useState('dashboard');
     const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
+    const [notificationCount, setNotificationCount] = useState(0);
+    const [scheduledNotificationCount, setScheduledNotificationCount] = useState(0);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            const localUser = JSON.parse(localStorage.getItem('user'));
+            if (localUser?.driver_id && localUser?.token) {
+                try {
+                    const [
+                        jobs,
+                        notificationSeen
+                    ] = await Promise.all([
+                        fetchAvailableJobs(localUser.driver_id, localUser.token),
+                        getUserNotificationStates(localUser.driver_id, localUser.token)
+                    ]);
+
+                    const bookingIds = jobs.map(job => job.booking_journey_id.toString());
+                    const availableSeen = notificationSeen.availableSeen;
+
+                    const newUnseen = bookingIds.filter(id => !availableSeen.includes(id));
+
+                    setNotificationCount(newUnseen.length);
+
+                } catch (err) {
+                    console.error('Failed to fetch notifications', err);
+                }
+            }
+        };
+
+        fetchNotifications();
+
+        const handleSeenUpdate = () => fetchNotifications();
+        window.addEventListener('userSeenUpdated', handleSeenUpdate);
+
+        return () => {
+            window.removeEventListener('userSeenUpdated', handleSeenUpdate);
+        };
+    }, []);
+
+    // useEffect(() => {
+    //     const fetchScheduledNotifications = async () => {
+    //         const localUser = JSON.parse(localStorage.getItem('user'));
+    //         if (localUser?.driver_id && localUser?.token) {
+    //             try {
+    //                 const [
+    //                     scheduledJobs,
+    //                     notificationSeen
+    //                 ] = await Promise.all([
+    //                     scheduled_journey_details(localUser.driver_id, localUser.token),
+    //                     getUserNotificationStates(localUser.driver_id, localUser.token)
+    //                 ]);
+
+    //                 const bookingIds = scheduledJobs.map(job => job.booking_journey_id.toString());
+    //                 const scheduledSeen = notificationSeen.scheduledSeen;
+
+    //                 const newUnseen = bookingIds.filter(id => !scheduledSeen.includes(id));
+    //                 setScheduledNotificationCount(newUnseen.length);
+    //             } catch (err) {
+    //                 console.error('Scheduled notification error:', err);
+    //             }
+    //         }
+    //     };
+
+
+    //     fetchScheduledNotifications();
+
+    //     const listener = () => {
+    //         fetchScheduledNotifications();
+    //     };
+
+    //     window.addEventListener('userScheduledSeenUpdated', listener);
+    //     return () => {
+    //         window.removeEventListener('userScheduledSeenUpdated', listener);
+    //     };
+    // }, []);
+
+
+
 
     useEffect(() => {
         if (location.pathname.includes('profile')) {
@@ -20,15 +98,15 @@ export default function Header() {
     }, [location.pathname]);
 
     const handleLogout = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem('user'));
 
-    if (user && user.email) {
-        await logoutStatus(user.email); // or 'app' if from mobile
-    }
+        if (user && user.email) {
+            await logoutStatus(user.email); // or 'app' if from mobile
+        }
 
-    localStorage.removeItem('user');
-    navigate('/');
-};
+        localStorage.removeItem('user');
+        navigate('/');
+    };
 
     useEffect(() => {
         const id = 'fontawesome-cdn';
@@ -66,7 +144,18 @@ export default function Header() {
                         <div className="text-white">
                             <i className="fas fa-user-circle fa-2x"></i>
                         </div>
+                        <button
+                            onClick={() => navigate('/notification', { state: { user } })}
+                            className="relative flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 transition"
+                        >
+                            <i className="fas fa-bell"></i>
+                            {(notificationCount > 0 ) && (
+                                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                                    {notificationCount}
+                                </span>
+                            )}
 
+                        </button>
                         {/* Profile Info */}
                         <div className="md:flex flex-col leading-tight">
                             <h3 className="text-sm font-medium">{user?.name}</h3>

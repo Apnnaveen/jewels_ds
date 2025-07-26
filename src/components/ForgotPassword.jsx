@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReCAPTCHA from "react-google-recaptcha";
 import { forgot_password_request } from '../api';
 import logo from '../assets/logo.png';
 
@@ -8,10 +9,18 @@ export default function ForgotPassword() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
+  const [captchaValue, setCaptchaValue] = useState(null);
 
+  const navigate = useNavigate();
+  const onChange = (value) => {
+    setCaptchaValue(value);
+  };
   const handleForgotPassword = async (e) => {
     e.preventDefault();
+    if (!captchaValue) {
+      setError('Please verify the captcha');
+      return;
+    }
     setIsLoading(true);
     setError('');
     setMessage('');
@@ -49,6 +58,12 @@ export default function ForgotPassword() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+              />
+            </div>
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                sitekey="6LekW28rAAAAAEPx5QXzSP8HDYv_eRDik9o2zQId " // Replace with your actual site key
+                onChange={onChange}
               />
             </div>
             <button

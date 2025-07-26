@@ -624,7 +624,7 @@ export async function verify_otp_password(email, otp) {
 
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || 'Failed to verify OTP');
+    throw new Error(result.error || 'Failed to verify OTP');
   }
 
   return result.data;
@@ -697,24 +697,24 @@ export async function getcountrycode(email, token) {
 // api.js
 
 export async function logoutStatus(email) {
-    try {
-        const response = await fetch('https://jat-uk.com/api/users/logout_status', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                // Add Authorization if needed
-            },
-            body: JSON.stringify({
-                email,
-            }),
-        });
+  try {
+    const response = await fetch('https://jat-uk.com/api/users/logout_status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add Authorization if needed
+      },
+      body: JSON.stringify({
+        email,
+      }),
+    });
 
-        const result = await response.json();
-        return result;
-    } catch (error) {
-        console.error('Logout status update failed:', error);
-        return { status: false, message: 'Network error' };
-    }
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Logout status update failed:', error);
+    return { status: false, message: 'Network error' };
+  }
 }
 
 export async function getAssignsOnDate(driverId, date, token) {
@@ -732,4 +732,99 @@ export async function getAssignsOnDate(driverId, date, token) {
   if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
   return result.data;
 }
+
+export async function saveSecretQuestions(driverId, questions, token) {
+  const response = await fetch('https://jat-uk.com/api/users/save_secret_questions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      driver_id: driverId,
+      questions: questions, // [{question, answer}]
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to save secret questions');
+  }
+  return result.data;
+}
+export async function getSecretQuestions(driverId, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/get_secret_questions/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch secret questions');
+  }
+  return Array.isArray(result.data) ? result.data : [];
+}
+export async function updateUserSeen(driverId, userSeenArray, token) {
+  const response = await fetch('https://jat-uk.com/api/users/update_user_seen', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      driver_id: driverId,
+      user_seen: userSeenArray,
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to update user seen bookings');
+  }
+  return result.data;
+}
+export async function updateUserSeenScheduled(driverId, userSeenScheduledArray, token) {
+  const response = await fetch('https://jat-uk.com/api/users/update_user_seen_scheduled', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      driver_id: driverId,
+      user_seen_scheduled: userSeenScheduledArray,
+    }),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to update user seen scheduled bookings');
+  }
+  return result.data;
+}
+export async function getUserNotificationStates(driverId, token) {
+  const response = await fetch('https://jat-uk.com/api/users/get_user_notifications', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ driver_id: driverId }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch notification states');
+  }
+
+  const data = result.data || {};
+  return {
+    availableSeen: Array.isArray(data.available_seen) ? data.available_seen : [],
+    scheduledSeen: Array.isArray(data.scheduled_seen) ? data.scheduled_seen : [],
+  };
+}
+
+
+
+
 

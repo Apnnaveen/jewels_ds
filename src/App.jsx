@@ -15,6 +15,7 @@ import DriverList from './components/DriverList';
 import VerifyOTP from './components/VerifyOTP';
 import ResetPassword from './components/ResetPassword';
 import { JobsCountsProvider } from './components/JobsCountsProvider';
+import Notification from './components/Notification';
 
 
 function App() {
@@ -25,7 +26,7 @@ function App() {
   useEffect(() => {
     const interval = setInterval(() => {
       window.location.reload();
-    }, 1800000); 
+    }, 1800000);
 
     return () => clearInterval(interval); // Clear on unmount
   }, []);
@@ -38,6 +39,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard user={user} />} />
           <Route path="/available-jobs" element={<AvailableJobs />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/notification" element={<Notification />} />
 
           <Route path="/bid-history" element={<BidHistory />} />
           <Route path="/scheduled-jobs" element={<ScheduledJobs />} />

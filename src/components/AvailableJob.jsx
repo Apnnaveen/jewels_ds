@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './MainHeader/Header';
-import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJobs } from '../api';
+import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJobs, updateUserSeen } from '../api';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -62,6 +62,37 @@ export default function AvailableJob() {
     const tabCounts = {
         available: filteredJobs.length, // Quotation tab
     };
+    useEffect(() => {
+        if (user?.driver_id && user?.token) {
+            const getJobs = async () => {
+                try {
+                    const jobsArray = await fetchAvailableJobs(user.driver_id, user.token);
+                    setJobs(jobsArray);
+                    setFilteredJobs(jobsArray);
+
+                    // Mark unseen as seen
+                    const seen = JSON.parse(user.user_seen || '[]');
+                    const newRefs = jobsArray.map(job => job.booking_journey_id);
+                    const updatedSeen = [...new Set([...seen, ...newRefs])];
+
+                    if (newRefs.length > 0) {
+                        await updateUserSeen(user.driver_id, updatedSeen, user.token);
+
+                        const updatedUser = { ...user, user_seen: JSON.stringify(updatedSeen) };
+                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                        window.dispatchEvent(new Event('userSeenUpdated'));
+
+                    }
+                } catch (error) {
+                    console.error('Error loading jobs or updating seen:', error);
+                }
+            };
+
+            getJobs();
+        }
+    }, [user]);
+
+
 
     useEffect(() => {
         if (user?.driver_id && user?.token) {

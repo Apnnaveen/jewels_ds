@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUserProfile } from '../api';
+import { getUserProfile, saveSecretQuestions, getSecretQuestions } from '../api';
 import Header from './MainHeader/Header';
 
 export default function ProfilePage() {
@@ -11,6 +11,56 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [fields, setFields] = useState([
+    { question: '', answer: '' }
+  ]);
+  // Add a new field
+  const handleAddField = () => {
+    setFields([...fields, { question: '', answer: '' }]);
+  };
+  const handleRemoveField = (index) => {
+    const updatedFields = [...fields];
+    updatedFields.splice(index, 1);
+    setFields(updatedFields);
+  };
+  // Update field value
+  const handleChange = (index, key, value) => {
+    const updatedFields = [...fields];
+    updatedFields[index][key] = value;
+    setFields(updatedFields);
+  };
+  const handleSubmit = async () => {
+  try {
+    if (!user || !user.driver_id || !user.token) {
+      setError('User not authenticated. Please log in again.');
+      return;
+    }
+    // Only send non-empty questions
+    const validFields = fields.filter(f => f.question && f.answer);
+    if (validFields.length === 0) {
+      setError('Please add at least one question and answer.');
+      return;
+    }
+    await saveSecretQuestions(user.driver_id, validFields, user.token);
+    setShowModal(false);
+    fetchProfile(); // Optionally refresh profile
+  } catch (err) {
+    setError(err.message);
+  }
+};
+const fetchQuestions = async () => {
+  if (!user || !user.driver_id || !user.token) return;
+  try {
+    const questions = await getSecretQuestions(user.driver_id, user.token);
+    setFields(questions.length ? questions.map(q => ({
+      question: q.question,
+      answer: q.answer
+    })) : [{ question: '', answer: '' }]);
+  } catch (err) {
+    // Optionally handle error
+  }
+};
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -29,10 +79,17 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+  const handleShowModal = () => {
+    setShowModal(true);
+  }
+  const handleCloseModal = () => {
+    setShowModal(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  };
+ useEffect(() => {
+  fetchProfile();
+  fetchQuestions();
+}, []);
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
@@ -116,10 +173,86 @@ export default function ProfilePage() {
                   <p className="text-lg font-medium text-gray-900">{profile.mob}</p>
                 </div>
               </div>
+              {/* <div className="p-2 rounded-lg flex items-center">
+
+                <div className="ml-4">
+                  <button onClick={() => handleShowModal()}
+                    className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white  focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
+                    <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-white-900  rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+                      Add Questions
+                    </span>
+                  </button>
+                </div>
+              </div> */}
             </div>
           </div>
         </div>
       </div>
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md relative">
+            {/* Close Button */}
+            <button
+              onClick={handleCloseModal}
+              className="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-700"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-bold mb-4">Add Questions</h2>
+            {fields.map((field, index) => (
+              <div key={index} className="mb-4 p-4 border rounded-lg relative bg-gray-50">
+                <label className="block mb-1 font-medium">Question {index + 1}</label>
+
+                <input
+                  key={index}
+                  value={field.question}
+                  onChange={(e) => handleChange(index, 'question', e.target.value)}
+                  placeholder={`Field ${index + 1}`}
+                  className="mb-2 block w-full px-3 py-2 border rounded"
+                  required
+                />
+                <label className="block mb-1 font-medium">Answer</label>
+                <input
+                  type="text"
+                  placeholder="Answer (1-2 words)"
+                  value={field.answer}
+                  onChange={(e) => handleChange(index, 'answer', e.target.value)}
+                  className="w-full px-3 py-2 border rounded focus:ring-2 focus:ring-blue-400"
+                  required
+                />
+                {fields.length > 1 && (
+                  <button
+                    onClick={() => handleRemoveField(index)}
+                    className="absolute top-2 right-2 text-sm text-red-500 hover:text-red-700"
+                  >
+                    &times;
+                  </button>
+                  // <button
+                  //   onClick={() => {/* handle edit logic here */}}
+                  //   className="absolute top-2 left-2 text-sm text-blue-500 hover:text-blue-700"
+                  // >
+                  //   Edit
+                  // </button>
+                )}
+              </div>
+            ))}
+            {fields.length < 3 && (
+              <button
+                onClick={handleAddField}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Add Field
+              </button>)}
+            <div className="mt-4 flex justify-end">
+              <button onClick={handleSubmit} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+
+      )}
     </>
   );
 }
