@@ -23,8 +23,9 @@ export async function loginUser(email, password) {
 
 // Available jobs API
 export async function fetchAvailableJobs(driverId, token) {
+  let environment = 'portal';
   const response = await fetch(
-    `https://jat-uk.com/api/users/available_jobs/${driverId}`,
+    `https://jat-uk.com/api/users/available_jobs/${driverId}/${environment}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -184,7 +185,8 @@ export async function changePasswordByForceStatus(email, newPassword, confirmPas
 }
 export async function bid_history(driver_id, token) {
   // NO proxy setup? Then use full API URL
-  const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_id}`, {
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_id}/${environment}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -201,7 +203,8 @@ export async function bid_history(driver_id, token) {
   return result.data;
 }
 export async function scheduled_journey_details(driver_id, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/scheduled_journey_details/${driver_id}`, {
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/scheduled_journey_details/${driver_id}/${environment}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -218,7 +221,8 @@ export async function scheduled_journey_details(driver_id, token) {
   return result.data;
 }
 export async function upcoming_journey_details(driver_id, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys/${driver_id}`, {
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys/${driver_id}/${environment}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -235,7 +239,8 @@ export async function upcoming_journey_details(driver_id, token) {
   return result.data;
 }
 export async function tomorrow_journeys(driver_id, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/tomorrow_journeys/${driver_id}`, {
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/tomorrow_journeys/${driver_id}/${environment}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

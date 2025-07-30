@@ -679,7 +679,7 @@ const UpcomingJobs = () => {
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
                                 </span>
-                                <span className="block ml-6"><b>{job.driver_supplier_remarks}</b></span>
+                                <div className="block ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
                               </div>
                             )}
                             <div className="flex justify-between">
