@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import Header from './MainHeader/Header';
-import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate } from '../api';
+import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled } from '../api';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -162,7 +162,7 @@ const ScheduledJobs = () => {
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchScheduledJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
@@ -182,6 +182,18 @@ const ScheduledJobs = () => {
         refreshCounts();
         setScheduledJobs(jobs);
         setFilteredJobs(jobs);
+        // Mark unseen as seen
+        const seen = JSON.parse(user.user_seen || '[]');
+        const newRefs = jobs.map(job => job.booking_journey_id);
+        const updatedSeen = [...new Set([...seen, ...newRefs])];
+ 
+        if (newRefs.length > 0) {
+          await updateUserSeenScheduled(user.driver_id, updatedSeen, user.token);
+ 
+          window.dispatchEvent(new Event('userScheduledSeenUpdated'));
+ 
+ 
+        }
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
@@ -190,6 +202,7 @@ const ScheduledJobs = () => {
     };
     fetchScheduledJobs();
   }, [user]);
+ 
 
   // Refresh jobs after accept/decline
   useEffect(() => {

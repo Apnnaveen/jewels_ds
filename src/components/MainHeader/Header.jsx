@@ -46,42 +46,42 @@ export default function Header() {
         };
     }, []);
 
-    // useEffect(() => {
-    //     const fetchScheduledNotifications = async () => {
-    //         const localUser = JSON.parse(localStorage.getItem('user'));
-    //         if (localUser?.driver_id && localUser?.token) {
-    //             try {
-    //                 const [
-    //                     scheduledJobs,
-    //                     notificationSeen
-    //                 ] = await Promise.all([
-    //                     scheduled_journey_details(localUser.driver_id, localUser.token),
-    //                     getUserNotificationStates(localUser.driver_id, localUser.token)
-    //                 ]);
+    useEffect(() => {
+        const fetchScheduledNotifications = async () => {
+            const localUser = JSON.parse(localStorage.getItem('user'));
+            if (localUser?.driver_id && localUser?.token) {
+                try {
+                    const [
+                        scheduledJobs,
+                        notificationSeen
+                    ] = await Promise.all([
+                        scheduled_journey_details(localUser.driver_id, localUser.token),
+                        getUserNotificationStates(localUser.driver_id, localUser.token)
+                    ]);
 
-    //                 const bookingIds = scheduledJobs.map(job => job.booking_journey_id.toString());
-    //                 const scheduledSeen = notificationSeen.scheduledSeen;
+                    const bookingIds = scheduledJobs.map(job => job.booking_journey_id.toString());
+                    const scheduledSeen = notificationSeen.scheduledSeen;
 
-    //                 const newUnseen = bookingIds.filter(id => !scheduledSeen.includes(id));
-    //                 setScheduledNotificationCount(newUnseen.length);
-    //             } catch (err) {
-    //                 console.error('Scheduled notification error:', err);
-    //             }
-    //         }
-    //     };
+                    const newUnseen = bookingIds.filter(id => !scheduledSeen.includes(id));
+                    setScheduledNotificationCount(newUnseen.length);
+                } catch (err) {
+                    console.error('Scheduled notification error:', err);
+                }
+            }
+        };
 
 
-    //     fetchScheduledNotifications();
+        fetchScheduledNotifications();
 
-    //     const listener = () => {
-    //         fetchScheduledNotifications();
-    //     };
+        const listener = () => {
+            fetchScheduledNotifications();
+        };
 
-    //     window.addEventListener('userScheduledSeenUpdated', listener);
-    //     return () => {
-    //         window.removeEventListener('userScheduledSeenUpdated', listener);
-    //     };
-    // }, []);
+        window.addEventListener('userScheduledSeenUpdated', listener);
+        return () => {
+            window.removeEventListener('userScheduledSeenUpdated', listener);
+        };
+    }, []);
 
 
 
@@ -149,11 +149,12 @@ export default function Header() {
                             className="relative flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-700 transition"
                         >
                             <i className="fas fa-bell"></i>
-                            {(notificationCount > 0 ) && (
+                            {(notificationCount + scheduledNotificationCount > 0) && (
                                 <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                                    {notificationCount}
+                                    {notificationCount + scheduledNotificationCount}
                                 </span>
                             )}
+
 
                         </button>
                         {/* Profile Info */}
