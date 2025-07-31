@@ -314,21 +314,25 @@ const TomorrowJourneys = () => {
                     filteredJobs.map((job, idx) => (
                       <div
                         key={job.id || idx}
-                        className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between"
+                        className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full"
                       >
+                        {/* Header */}
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-blue-600 font-medium ml-auto"><b>Tomorrow</b></span>
                         </div>
-                        <div className="mb-3">
-                          <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                            <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
-                          </h4>
 
-                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_sub_id}</b>
-                          </p>
-                        </div>
-                        <div className="space-y-2 text-sm text-gray-700">
+                        {/* Content block with flex-grow */}
+                        <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
+                          <div className="mb-2">
+                            <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                              <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
+                            </h4>
+
+                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                              <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_sub_id}</b>
+                            </p>
+                          </div>
+
                           {/* Pickup */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -336,8 +340,9 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="block ml-6"><b>{job.from_address}</b></span>
                           </div>
+
                           {/* Waypoints */}
-                          {job.waypoint && job.waypoint.trim() !== '' && (
+                          {job.waypoint?.trim() !== '' &&
                             job.waypoint.split('|').map((wp, i) =>
                               wp.trim() && (
                                 <div key={i}>
@@ -348,8 +353,8 @@ const TomorrowJourneys = () => {
                                   <span className="block ml-6"><b>{wp.trim()}</b></span>
                                 </div>
                               )
-                            )
-                          )}
+                            )}
+
                           {/* DropOff */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -357,12 +362,14 @@ const TomorrowJourneys = () => {
                             </span>
                             <span className="block ml-6"><b>{job.to_address}</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                             </span>
                             <span className="text-right"><b>{job.distance} miles Approx</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
@@ -377,6 +384,7 @@ const TomorrowJourneys = () => {
                               </b>
                             </span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
@@ -391,19 +399,22 @@ const TomorrowJourneys = () => {
                               </b>
                             </span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                             </span>
                             <span className="text-right"><b>{job.passengers}</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
                             </span>
                             <span className="text-right"><b>{job.luggage}</b></span>
                           </div>
-                          {job.flight_no && job.flight_no.trim() !== '' && (
+
+                          {job.flight_no?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
@@ -411,7 +422,8 @@ const TomorrowJourneys = () => {
                               <span className="text-right"><b>{job.flight_no}</b></span>
                             </div>
                           )}
-                          {job.arrive_from && job.arrive_from.trim() !== '' && (
+
+                          {job.arrive_from?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
@@ -419,15 +431,20 @@ const TomorrowJourneys = () => {
                               <span className="text-right"><b>{job.arrive_from}</b></span>
                             </div>
                           )}
-                          {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+
+                          {job.driver_supplier_remarks?.trim() !== '' && (
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
                               </span>
-                                <div className="block ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
+                              <div className="ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
                             </div>
                           )}
-                          <div className="flex justify-end mt-2">
+                        </div>
+
+                        {/* Bottom pinned button/status */}
+                        <div className="mt-auto pt-3">
+                          <div className="flex justify-end">
                             {job.acknowledge_status === 1 || job.acknowledge_status === '1' ? (
                               <span className="text-green-600 font-semibold px-3 py-1 rounded bg-green-100 text-sm">
                                 <b>Acknowledged</b>
@@ -444,6 +461,7 @@ const TomorrowJourneys = () => {
                           </div>
                         </div>
                       </div>
+
                     ))
                   ) : (
                     <div className="col-span-full text-center text-gray-600 p-4 border rounded-md">

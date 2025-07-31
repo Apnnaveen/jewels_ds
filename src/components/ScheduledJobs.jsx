@@ -162,7 +162,7 @@ const ScheduledJobs = () => {
     }
   };
 
- useEffect(() => {
+  useEffect(() => {
     const fetchScheduledJobs = async () => {
       try {
         if (!user?.driver_id || !user?.token) {
@@ -186,13 +186,13 @@ const ScheduledJobs = () => {
         const seen = JSON.parse(user.user_seen || '[]');
         const newRefs = jobs.map(job => job.booking_journey_id);
         const updatedSeen = [...new Set([...seen, ...newRefs])];
- 
+
         if (newRefs.length > 0) {
           await updateUserSeenScheduled(user.driver_id, updatedSeen, user.token);
- 
+
           window.dispatchEvent(new Event('userScheduledSeenUpdated'));
- 
- 
+
+
         }
       } catch (err) {
         setError(err.message || 'Something went wrong');
@@ -202,7 +202,7 @@ const ScheduledJobs = () => {
     };
     fetchScheduledJobs();
   }, [user]);
- 
+
 
   // Refresh jobs after accept/decline
   useEffect(() => {
@@ -385,19 +385,26 @@ const ScheduledJobs = () => {
                     </div>
                   ) : (
                     filteredJobs.map((job, index) => (
-                      <div key={job.id || index} className="bg-white rounded-xl shadow-md p-4 flex flex-col justify-between">
+                      <div
+                        key={job.id || index}
+                        className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full"
+                      >
+                        {/* Top section */}
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-blue-600 font-medium ml-auto"><b>Scheduled</b></span>
                         </div>
-                        <div className="mb-3">
-                          <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                            <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
-                          </h4>
-                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
-                          </p>
-                        </div>
-                        <div className="space-y-2 text-sm text-gray-700">
+
+                        {/* Main content (top & middle) */}
+                        <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
+                          <div className="mb-2">
+                            <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                              <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
+                            </h4>
+                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                              <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                            </p>
+                          </div>
+
                           {/* Pickup */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -405,8 +412,9 @@ const ScheduledJobs = () => {
                             </span>
                             <span className="block ml-6"><b>{job.from_address}</b></span>
                           </div>
+
                           {/* Waypoints */}
-                          {job.waypoint && job.waypoint.trim() !== '' && (
+                          {job.waypoint?.trim() !== '' &&
                             job.waypoint.split('|').map((wp, i) =>
                               wp.trim() && (
                                 <div key={i}>
@@ -417,8 +425,8 @@ const ScheduledJobs = () => {
                                   <span className="block ml-6"><b>{wp.trim()}</b></span>
                                 </div>
                               )
-                            )
-                          )}
+                            )}
+
                           {/* DropOff */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -426,31 +434,34 @@ const ScheduledJobs = () => {
                             </span>
                             <span className="block ml-6"><b>{job.to_address}</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                             </span>
                             <span className="text-right"><b>{job.distance ? `${job.distance}` : 'N/A'}</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                             </span>
                             <span className="text-right"><b>{job.pickup_date?.split(' at ')[0]}</b></span>
                           </div>
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
                             </span>
                             <span className="text-right">
                               <b>{job.pickup_date
-                                ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
-                                  zone: 'Europe/London'
-                                }).toFormat("hh:mm a")
+                                ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' })
+                                  .toFormat("hh:mm a")
                                 : ''}</b>
                             </span>
                           </div>
-                          {job.flight_no && job.flight_no.trim() !== '' && (
+
+                          {job.flight_no?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
@@ -458,7 +469,8 @@ const ScheduledJobs = () => {
                               <span className="text-right"><b>{job.flight_no}</b></span>
                             </div>
                           )}
-                          {job.arrive_from && job.arrive_from.trim() !== '' && (
+
+                          {job.arrive_from?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
@@ -466,14 +478,16 @@ const ScheduledJobs = () => {
                               <span className="text-right"><b>{job.arrive_from}</b></span>
                             </div>
                           )}
-                          {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+
+                          {job.driver_supplier_remarks?.trim() !== '' && (
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
                               </span>
-                                <div className="block ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
+                              <div className="ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
                             </div>
                           )}
+
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-pound-sign text-green-500"></i> <b>Price:</b>
@@ -481,28 +495,35 @@ const ScheduledJobs = () => {
                             <span className="text-right"><b>£{job.biding_amount || '10.00'}</b></span>
                           </div>
                         </div>
-                        {job.car_info && (
-                          <div className="mt-2 text-xs text-gray-500 border-t pt-2">
-                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                              <i className="fas fa-info-circle text-blue-500 "></i> {job.car_info}
-                            </p>
+
+                        {/* Bottom pinned section */}
+                        <div className="mt-auto pt-3">
+                          {job.car_info && (
+                            <div className="text-xs text-gray-500 border-t pt-2 mb-2">
+                              <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                                <i className="fas fa-info-circle text-blue-500 "></i> {job.car_info}
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded"
+                              onClick={() => handleAccept(job)}
+                              disabled={disabledButton.has(job.booking_journey_id)}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded"
+                              onClick={() => handleDecline(job)}
+                              disabled={disabledButton.has(job.booking_journey_id)}
+                            >
+                              Reject
+                            </button>
                           </div>
-                        )}
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleAccept(job)} disabled={disabledButton.has(job.booking_journey_id)}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleDecline(job)} disabled={disabledButton.has(job.booking_journey_id)}
-                          >
-                            Reject
-                          </button>
                         </div>
                       </div>
+
                     ))
                   )}
                 </div>

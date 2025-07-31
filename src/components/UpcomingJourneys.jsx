@@ -527,30 +527,34 @@ const UpcomingJobs = () => {
                       return (
                         <div
                           key={jobKey}
-                          className={`rounded-xl p-4 flex flex-col justify-between 
-                                       ${isPastPickup
+                          className={`rounded-xl p-4 flex flex-col h-full ${isPastPickup
                               ? 'border-2 border-orange-200 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
                               : job.acknowledge_status == 0
                                 ? 'border-2 border-red-600 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
-                                : 'shadow-md'
-                            }
-                           `}
+                                : 'bg-white shadow-md'
+                            }`}
                         >
-                          {isPastPickup && (
-                            <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
-                              <i className="fas fa-exclamation-triangle text-orange-600"></i>
-                              The pickup time has already passed, but this journey is still not marked as completed.
-                            </div>
-                          )}
-
+                          {/* Top - Upcoming label */}
                           <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm text-blue-600 font-medium ml-auto"><b>Upcoming</b></span>
+                          </div>
+
+                          {/* Middle - All journey details */}
+                          <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
+                            {isPastPickup && (
+                              <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
+                                <i className="fas fa-exclamation-triangle text-orange-600"></i>
+                                The pickup time has already passed, but this journey is still not marked as completed.
+                              </div>
+                            )}
+
                             {job.acknowledge_status == 1 && (
-                              <div className="mr-2">
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold block mb-1">
+                              <div className="mb-2">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
                                   Acknowledged
                                 </span>
                                 {job.acknowledge_time && (
-                                  <span className="text-xs text-gray-600 block">
+                                  <span className="text-xs text-gray-600 block mt-1">
                                     {new Date(job.acknowledge_time).toLocaleString('en-GB', {
                                       day: '2-digit',
                                       month: '2-digit',
@@ -564,38 +568,31 @@ const UpcomingJobs = () => {
                               </div>
                             )}
 
-                            {job.acknowledge_status == 0 ? (
-                              <div className="text-sm text-blue-600 font-medium">
-                                <span className="mr-2 flex items-center text-xs text-red-600 font-bold">
-                                  This journey has not been acknowledged.
-                                </span>
+                            {job.acknowledge_status == 0 && (
+                              <div className="mb-2 text-sm text-red-600 font-bold">
+                                <span>This journey has not been acknowledged.</span>
                               </div>
-                            ) : (
-                              <div /> // placeholder to maintain spacing when acknowledge_status == 1
                             )}
 
-                            <span className="text-sm text-blue-600 font-medium">
-                              <b>Upcoming</b>
-                            </span>
-                          </div>
+                            <div className="mb-2">
+                              <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                                <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
+                              </h4>
+                              <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                                <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                              </p>
+                            </div>
 
-
-                          <div className="mb-3">
-                            <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                              <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
-                            </h4>
-                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                              <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
-                            </p>
-                          </div>
-                          <div className="space-y-2 text-sm text-gray-700">
+                            {/* Pickup */}
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-map-marker-alt text-blue-500"></i><b> Pickup:</b>
+                                <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
                               </span>
                               <span className="block ml-6"><b>{job.from_address}</b></span>
                             </div>
-                            {job.waypoint && job.waypoint.trim() !== '' && (
+
+                            {/* Waypoints */}
+                            {job.waypoint?.trim() !== '' &&
                               job.waypoint.split('|').map((wp, i) =>
                                 wp.trim() && (
                                   <div key={i}>
@@ -606,26 +603,30 @@ const UpcomingJobs = () => {
                                     <span className="block ml-6"><b>{wp.trim()}</b></span>
                                   </div>
                                 )
-                              )
-                            )}
+                              )}
+
+                            {/* DropOff */}
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
                               </span>
                               <span className="block ml-6"><b>{job.to_address}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                               </span>
                               <span className="text-right"><b>{job.distance} Approx</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                               </span>
                               <span className="text-right"><b>{job.pickup_date?.split(' at ')[0] || job.pickup_date}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
@@ -638,19 +639,22 @@ const UpcomingJobs = () => {
                                   : ''}</b>
                               </span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                               </span>
                               <span className="text-right"><b>{job.passengers}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-suitcase-rolling text-pink-500"></i> <b>Luggage:</b>
                               </span>
                               <span className="text-right"><b>{job.luggage}</b></span>
                             </div>
-                            {job.flight_no && job.flight_no.trim() !== '' && (
+
+                            {job.flight_no?.trim() !== '' && (
                               <div className="flex justify-between">
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
@@ -658,7 +662,8 @@ const UpcomingJobs = () => {
                                 <span className="text-right"><b>{job.flight_no}</b></span>
                               </div>
                             )}
-                            {job.arrive_from && job.arrive_from.trim() !== '' && (
+
+                            {job.arrive_from?.trim() !== '' && (
                               <div className="flex justify-between">
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
@@ -666,6 +671,7 @@ const UpcomingJobs = () => {
                                 <span className="text-right"><b>{job.arrive_from}</b></span>
                               </div>
                             )}
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
@@ -674,27 +680,32 @@ const UpcomingJobs = () => {
                                 <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
                               </span>
                             </div>
-                            {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+
+                            {job.driver_supplier_remarks?.trim() !== '' && (
                               <div>
                                 <span className="flex items-center gap-2 font-medium text-gray-600">
                                   <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
                                 </span>
-                                <div className="block ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
+                                <div className="ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
                               </div>
                             )}
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-calendar-alt text-blue-400"></i> <b>Fare Accepted:</b>
+                                <i className="fas fa-pound-sign text-green-600"></i> <b>Fare Accepted:</b>
                               </span>
-                              <span className="text-right"><b>&pound;{job.biding_amount}</b></span>
+                              <span className="text-right font-bold text-green-700"><b>£{job.biding_amount}</b></span>
                             </div>
+
                             <hr className="my-2 border-t border-gray-300" />
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-user text-blue-500"></i> <b>Passenger Name:</b>
                               </span>
                               <span className="text-right"><b>{job.name}</b></span>
                             </div>
+
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
@@ -707,26 +718,29 @@ const UpcomingJobs = () => {
                                   }
                                 </b>
                               </span>
-
                             </div>
+                          </div>
 
+                          {/* Bottom fixed button group */}
+                          <div className="mt-auto pt-3 flex flex-col gap-2">
                             {user.user_type === 'supplier' && (
                               <button
                                 onClick={() => handleShowDriverList(job)}
-                                className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded w-full mt-2"
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 rounded w-full"
                               >
                                 Push Job To Driver
                               </button>
                             )}
 
                             {job.car_info && (
-                              <div className="mt-2 text-xs text-gray-500 border-t pt-2">
+                              <div className="text-xs text-gray-500 border-t pt-2">
                                 <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                                  <i className="fas fa-info-circle text-blue-500 "></i> {job.car_info}
+                                  <i className="fas fa-info-circle text-blue-500"></i> {job.car_info}
                                 </p>
                               </div>
                             )}
-                            <div className="flex justify-end gap-2 mt-3 flex-wrap">
+
+                            <div className="flex justify-end gap-2 mt-1 flex-wrap">
                               <button
                                 type="button"
                                 disabled={
@@ -738,7 +752,7 @@ const UpcomingJobs = () => {
                                   ).toISODate() !== DateTime.now().setZone('Europe/London').toISODate()
                                   || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 1
+          ${status == 1
                                     ? 'bg-orange-500 text-white border-orange-600'
                                     : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-700 hover:text-white'
                                   } ${status != 0 ||
@@ -758,7 +772,7 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 1 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 2
+          ${status == 2
                                     ? 'bg-blue-500 text-white border-blue-600'
                                     : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white'
                                   } ${status != 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -770,7 +784,7 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 2 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                  ${status == 3
+          ${status == 3
                                     ? 'bg-green-500 text-white border-green-600'
                                     : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
                                   } ${status != 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -781,6 +795,7 @@ const UpcomingJobs = () => {
                             </div>
                           </div>
                         </div>
+
                       );
                     })
                   ) : (

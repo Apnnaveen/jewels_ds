@@ -367,21 +367,24 @@ const BidHistory = () => {
                   filteredBids.map((bid, idx) => (
                     <div
                       key={bid.id || idx}
-                      className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full justify-between"
+                      className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full"
                     >
+                      {/* Top - Bid label */}
                       <div className="flex justify-between items-center mb-2">
-                        {/* Removed h3 and kept Bid text right-aligned */}
                         <span className="text-sm text-blue-600 font-medium ml-auto"><b>Bid</b></span>
                       </div>
-                      <div className="mb-3">
-                        <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                          <i className="fas fa-car-side"></i> <b>{getCarName(bid.car_id)}</b>
-                        </h4>
-                        <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                          <i className="fas fa-receipt text-gray-500"></i> <b>{bid.booking_ref_id}</b>
-                        </p>
-                      </div>
-                      <div className="space-y-2 text-sm text-gray-700">
+
+                      {/* Middle - All journey details */}
+                      <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
+                        <div className="mb-2">
+                          <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                            <i className="fas fa-car-side"></i> <b>{getCarName(bid.car_id)}</b>
+                          </h4>
+                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                            <i className="fas fa-receipt text-gray-500"></i> <b>{bid.booking_ref_id}</b>
+                          </p>
+                        </div>
+
                         {/* Pickup */}
                         <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -389,8 +392,9 @@ const BidHistory = () => {
                           </span>
                           <span className="block ml-6"><b>{bid.from_address}</b></span>
                         </div>
+
                         {/* Waypoints */}
-                        {bid.waypoint && bid.waypoint.trim() !== '' && (
+                        {bid.waypoint?.trim() !== '' &&
                           bid.waypoint.split('|').map((wp, i) =>
                             wp.trim() && (
                               <div key={i}>
@@ -401,8 +405,8 @@ const BidHistory = () => {
                                 <span className="block ml-6"><b>{wp.trim()}</b></span>
                               </div>
                             )
-                          )
-                        )}
+                          )}
+
                         {/* DropOff */}
                         <div>
                           <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -411,13 +415,13 @@ const BidHistory = () => {
                           <span className="block ml-6"><b>{bid.to_address}</b></span>
                         </div>
 
-
                         <div className="flex justify-between">
                           <span className="flex items-center gap-2 font-medium text-gray-600">
                             <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
                           </span>
                           <span className="text-right"><b>{bid.pickup_date?.split(' at ')[0]}</b></span>
                         </div>
+
                         <div className="flex justify-between">
                           <span className="flex items-center gap-2 font-medium text-gray-600">
                             <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
@@ -430,7 +434,8 @@ const BidHistory = () => {
                               : ''}</b>
                           </span>
                         </div>
-                        {bid.flight_no && bid.flight_no.trim() !== '' && (
+
+                        {bid.flight_no?.trim() !== '' && (
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
@@ -438,7 +443,8 @@ const BidHistory = () => {
                             <span className="text-right"><b>{bid.flight_no}</b></span>
                           </div>
                         )}
-                        {bid.arrive_from && bid.arrive_from.trim() !== '' && (
+
+                        {bid.arrive_from?.trim() !== '' && (
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
@@ -446,36 +452,42 @@ const BidHistory = () => {
                             <span className="text-right"><b>{bid.arrive_from}</b></span>
                           </div>
                         )}
-                        {bid.driver_supplier_remarks && bid.driver_supplier_remarks.trim() !== '' && (
+
+                        {bid.driver_supplier_remarks?.trim() !== '' && (
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
                             </span>
-                                <div className="block ml-6" dangerouslySetInnerHTML={{ __html: bid.driver_supplier_remarks }} />
+                            <div className="ml-6" dangerouslySetInnerHTML={{ __html: bid.driver_supplier_remarks }} />
                           </div>
                         )}
+
                         <div className="flex justify-between">
                           <span className="flex items-center gap-2 font-medium text-gray-600">
                             <i className="fas fa-pound-sign text-green-600"></i> <b>Bid Amount:</b>
                           </span>
                           <span className="text-right font-bold text-green-700"><b>£{bid.biding_amount}</b></span>
                         </div>
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleWithdrawJob(bid)} disabled={disabledButton.has(bid.booking_journey_id)}
-                          >
-                            Cancel Bid
-                          </button>
-                          <button
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
-                            onClick={() => handleUpdateBid(bid)}
-                          >
-                            Re-quote
-                          </button>
-                        </div>
+                      </div>
+
+                      {/* Bottom fixed button group */}
+                      <div className="mt-auto pt-3 flex gap-2">
+                        <button
+                          className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium py-2 px-4 rounded"
+                          onClick={() => handleWithdrawJob(bid)}
+                          disabled={disabledButton.has(bid.booking_journey_id)}
+                        >
+                          Cancel Bid
+                        </button>
+                        <button
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
+                          onClick={() => handleUpdateBid(bid)}
+                        >
+                          Re-quote
+                        </button>
                       </div>
                     </div>
+
                   ))
                 ) : (
                   <div className="col-span-full text-center text-gray-600 p-4 border rounded-md">

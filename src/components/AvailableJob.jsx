@@ -375,136 +375,145 @@ export default function AvailableJob() {
                                         return (
                                             <div
                                                 key={job.booking_id || idx}
-                                                className={`bg-white rounded-xl p-4 flex flex-col justify-between 
-                                                 ${isDanger && noSubAssigned && (user.user_type == 'supplier')
+                                                className={`bg-white rounded-xl p-4 flex flex-col h-full 
+                                                ${isDanger && noSubAssigned && (user.user_type == 'supplier')
                                                         ? 'border-2 border-red-400 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
                                                         : 'shadow-md'
-                                                    }`
-                                                }
+                                                    }`}
                                             >
+                                                {/* Top section: Alert and header */}
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <div className="flex items-center">
-                                                        {alertMsg}
-                                                    </div>
+                                                    <div className="flex items-center">{alertMsg}</div>
                                                     <span className="text-sm text-blue-600 font-medium ml-auto"><b>Quotation</b></span>
                                                 </div>
-                                                <div className="mb-3">
-                                                    <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
-                                                        <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
-                                                    </h4>
-                                                    <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                                                        <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
-                                                    </p>
-                                                </div>
-                                                <div className="space-y-2 text-sm text-gray-700">
-                                                    {/* Pickup */}
-                                                    <div>
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
-                                                        </span>
-                                                        <span className="block ml-6"><b>{job.from_address}</b></span>
-                                                    </div>
-                                                    {/* Waypoints */}
-                                                    {job.waypoint && job.waypoint.trim() !== '' && (
-                                                        job.waypoint.split('|').map((wp, i) =>
-                                                            wp.trim() && (
-                                                                <div key={i}>
-                                                                    <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                                        <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                                                        <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
-                                                                    </span>
-                                                                    <span className="block ml-6"><b>{wp.trim()}</b></span>
-                                                                </div>
-                                                            )
-                                                        )
-                                                    )}
-                                                    {/* DropOff */}
-                                                    <div>
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
-                                                        </span>
-                                                        <span className="block ml-6"><b>{job.to_address}</b></span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
-                                                        </span>
-                                                        <span className="text-right"><b>{job.distance} Approx</b></span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
-                                                        </span>
-                                                        <span className="text-right"><b>{job.pickup_date?.split(' at ')[0]}</b></span>
+
+                                                {/* Middle content that fills vertically */}
+                                                <div className="flex-1 flex flex-col">
+                                                    <div className="mb-3">
+                                                        <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
+                                                            <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
+                                                        </h4>
+                                                        <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                                                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                                                        </p>
                                                     </div>
 
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
-                                                        </span>
-                                                        <span className="text-right">
-                                                            <b>{job.pickup_date
-                                                                ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", {
-                                                                    zone: 'Europe/London'
-                                                                }).toFormat("hh:mm a")
-                                                                : ''}</b>
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
-                                                        </span>
-                                                        <span className="text-right"><b>{job.passengers}</b></span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
-                                                        </span>
-                                                        <span className="text-right"><b>{job.luggage}</b></span>
-                                                    </div>
-                                                    {job.flight_no && job.flight_no.trim() !== '' && (
-                                                        <div className="flex justify-between">
-                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                                <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
-                                                            </span>
-                                                            <span className="text-right"><b>{job.flight_no}</b></span>
-                                                        </div>
-                                                    )}
-                                                    {job.arrive_from && job.arrive_from.trim() !== '' && (
-                                                        <div className="flex justify-between">
-                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                                <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
-                                                            </span>
-                                                            <span className="text-right"><b>{job.arrive_from}</b></span>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex justify-between">
-                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                            <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
-                                                        </span>
-                                                        <span className="text-right">
-                                                            <b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b>
-                                                        </span>
-                                                    </div>
-                                                    {job.driver_supplier_remarks && job.driver_supplier_remarks.trim() !== '' && (
+                                                    <div className="space-y-1 text-sm text-gray-700">
+                                                        {/* Pickup */}
                                                         <div>
                                                             <span className="flex items-center gap-2 font-medium text-gray-600">
-                                                                <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                                                                <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
                                                             </span>
-                                                            <div className="block ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
+                                                            <span className="block ml-6"><b>{job.from_address}</b></span>
                                                         </div>
-                                                    )}
+
+                                                        {/* Waypoints */}
+                                                        {job.waypoint?.trim() !== '' &&
+                                                            job.waypoint.split('|').map((wp, i) =>
+                                                                wp.trim() && (
+                                                                    <div key={i}>
+                                                                        <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                            <i className="fas fa-map-marker-alt text-blue-500"></i>
+                                                                            <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
+                                                                        </span>
+                                                                        <span className="block ml-6"><b>{wp.trim()}</b></span>
+                                                                    </div>
+                                                                )
+                                                            )}
+
+                                                        {/* DropOff */}
+                                                        <div>
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
+                                                            </span>
+                                                            <span className="block ml-6"><b>{job.to_address}</b></span>
+                                                        </div>
+
+                                                        {/* Other Info */}
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
+                                                            </span>
+                                                            <span className="text-right"><b>{job.distance} Approx</b></span>
+                                                        </div>
+
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
+                                                            </span>
+                                                            <span className="text-right"><b>{job.pickup_date?.split(' at ')[0]}</b></span>
+                                                        </div>
+
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
+                                                            </span>
+                                                            <span className="text-right">
+                                                                <b>{job.pickup_date
+                                                                    ? DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' }).toFormat("hh:mm a")
+                                                                    : ''}</b>
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
+                                                            </span>
+                                                            <span className="text-right"><b>{job.passengers}</b></span>
+                                                        </div>
+
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
+                                                            </span>
+                                                            <span className="text-right"><b>{job.luggage}</b></span>
+                                                        </div>
+
+                                                        {job.flight_no?.trim() !== '' && (
+                                                            <div className="flex justify-between">
+                                                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                    <i className="fas fa-plane text-indigo-500"></i> <b>Flight No:</b>
+                                                                </span>
+                                                                <span className="text-right"><b>{job.flight_no}</b></span>
+                                                            </div>
+                                                        )}
+
+                                                        {job.arrive_from?.trim() !== '' && (
+                                                            <div className="flex justify-between">
+                                                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                    <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
+                                                                </span>
+                                                                <span className="text-right"><b>{job.arrive_from}</b></span>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex justify-between">
+                                                            <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                <i className="fas fa-handshake text-green-500"></i> <b>Meet & Greet:</b>
+                                                            </span>
+                                                            <span className="text-right"><b>{job.meet_greet === 1 || job.meet_greet === '1' ? 'Yes' : 'No'}</b></span>
+                                                        </div>
+
+                                                        {job.driver_supplier_remarks?.trim() !== '' && (
+                                                            <div>
+                                                                <span className="flex items-center gap-2 font-medium text-gray-600">
+                                                                    <i className="fas fa-id-card text-blue-500"></i><b> Driver Instructions:</b>
+                                                                </span>
+                                                                <div className="ml-6" dangerouslySetInnerHTML={{ __html: job.driver_supplier_remarks }} />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col space-y-3">
+
+                                                {/* Bottom section pinned */}
+                                                <div className="mt-auto pt-3 flex flex-col space-y-3">
                                                     {job.car_info && (
-                                                        <div className="mt-2 text-xs text-gray-500 border-t pt-2">
+                                                        <div className="text-xs text-gray-500 border-t pt-2">
                                                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                                                                 <i className="fas fa-info-circle text-blue-500"></i> {job.car_info}
                                                             </p>
                                                         </div>
                                                     )}
-
                                                     <button
                                                         onClick={() => handleViewDetails(job)}
                                                         className="sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded w-full"
@@ -514,6 +523,7 @@ export default function AvailableJob() {
                                                     </button>
                                                 </div>
                                             </div>
+
                                         );
                                     })
                                 ) : (

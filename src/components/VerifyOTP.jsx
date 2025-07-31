@@ -45,7 +45,7 @@ export default function VerifyOTP() {
               <input
                 id="otp"
                 type="text"
-                placeholder="Enter the OTP sent to your email"
+                placeholder="Enter the OTP sent"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
