@@ -50,24 +50,24 @@ export default function Login({ setUser }) {
     }
   };
 
-  // const handleLogin = async (e) => {
-  //   e.preventDefault();
-  //   if (!captchaValue) {
-  //     setError('Please verify the captcha');
-  //     return;
-  //   }
-  //   setIsLoading(true);
-  //   setError('');
-  //   try {
-  //     const data = await loginUser(email, password);
-  //     localStorage.setItem('user', JSON.stringify(data));
-  //     navigate('/dashboard', { state: { user: data } });
-  //   } catch (err) {
-  //     setError(err.message || 'Login failed. Please try again.');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!captchaValue) {
+      setError('Please verify the captcha');
+      return;
+    }
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await loginUser(email, password);
+      localStorage.setItem('user', JSON.stringify(data));
+      navigate('/dashboard', { state: { user: data } });
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const onChange = (value) => {
     setCaptchaValue(value);
@@ -89,8 +89,8 @@ export default function Login({ setUser }) {
             {otpSent ? 'Verify OTP' : 'Login'}
           </h2>
 
-          <form onSubmit={otpSent ? handleverify_login : handleforgot_password_request} className="space-y-5">
-          {/* <form onSubmit={handleLogin} className="space-y-5"> */}
+          {/* <form onSubmit={otpSent ? handleverify_login : handleforgot_password_request} className="space-y-5"> */}
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm --medium text-gray-700 mb-1">Email Address</label>
               <input
@@ -120,7 +120,7 @@ export default function Login({ setUser }) {
               </div>
             )}
 
-            {/* <div>
+            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="password"
@@ -131,7 +131,7 @@ export default function Login({ setUser }) {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
               />
-            </div> */}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -155,7 +155,16 @@ export default function Login({ setUser }) {
                 </Link>
               </div>
             </div>
-
+            {/* Note Section */}
+            <div className="bg-yellow-100 text-yellow-800 p-3 rounded-md border-l-4 border-yellow-500">
+              <p>
+                If you don’t remember your password or didn’t set it up, click on{' '}
+                <Link to="/forgot-password" className="text-indigo-600 font-medium hover:underline">
+                  Forgot password
+                </Link>{' '}
+                and create a new password.
+              </p>
+            </div>
             <div className="flex justify-center">
               <ReCAPTCHA
                 sitekey="6LekW28rAAAAAEPx5QXzSP8HDYv_eRDik9o2zQId " // Replace with your actual site key
@@ -163,7 +172,7 @@ export default function Login({ setUser }) {
               />
             </div>
 
-            <button
+            {/* <button
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -181,10 +190,10 @@ export default function Login({ setUser }) {
               ) : (
                 'Send OTP'
               )}
-            </button>
-            {/* <button  type="submit"className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 `} >
-              Login
             </button> */}
+            <button type="submit" className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200 `} >
+              Login
+            </button>
           </form>
 
           {error && (
