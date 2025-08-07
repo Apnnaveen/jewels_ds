@@ -650,7 +650,7 @@ export async function reset_password(email, newPassword, confirmPassword) {
 
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || 'Failed to reset password');
+    throw new Error(result.error || 'Failed to reset password');
   }
 
   return result;
