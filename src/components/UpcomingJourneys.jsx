@@ -25,7 +25,6 @@ const UpcomingJobs = () => {
   const [assignedDriverId, setAssignedDriverId] = useState(null);
   const { refreshCounts } = useJobsCounts();
   const [driverSearch, setDriverSearch] = useState('');
-  const [countryCodes, setCountryCodes] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [agreed, setAgreed] = useState(false);
@@ -102,8 +101,22 @@ const UpcomingJobs = () => {
             return acc;
           }, {})
         );
-        setUpcomingJobs(uniqueJobs);
-        setFilteredJobs(uniqueJobs);
+        const jobsWithPhoneCodes = await Promise.all(
+          uniqueJobs.map(async (job) => {
+            try {
+              if (job.mobile_code) {
+                const phoneCodeData = await getcountrycode(job.mobile_code, user.token);
+                const phoneCode = phoneCodeData.phone_code; // ✅ extract string
+                return { ...job, phone_code: phoneCode };
+              }
+            } catch (err) {
+              console.error(`Failed to get phone code for ${job.mobile_code}`, err);
+            }
+            return { ...job, phone_code: '' }; // fallback
+          })
+        );
+        setUpcomingJobs(jobsWithPhoneCodes);
+        setFilteredJobs(jobsWithPhoneCodes);
         setCars(Array.isArray(carsData) ? carsData : []);
       } catch (err) {
         setError(err.message || 'Something went wrong');
@@ -113,6 +126,7 @@ const UpcomingJobs = () => {
     };
     fetchUpcomingJobs();
   }, [user]);
+
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -403,37 +417,7 @@ const UpcomingJobs = () => {
       });
     }
   };
-  useEffect(() => {
-    const preloadCountryCodes = async () => {
-      const uniqueEmails = [...new Set(upcomingJobs.map(job => job.email))];
-      for (const email of uniqueEmails) {
-        await getMobileCountryCode(email);
-      }
-    };
-    if (upcomingJobs.length > 0) preloadCountryCodes();
-  }, [upcomingJobs]);
 
-
-  const getMobileCountryCode = async (email) => {
-    if (!email || !user?.token) return '';
-
-    if (countryCodes[email]) return countryCodes[email]; // already cached
-
-    try {
-      const data = await getcountrycode(email, user.token); // call API
-      if (data?.phone_code && data?.mobile) {
-        setCountryCodes(prev => ({
-          ...prev,
-          [email]: { code: data.phone_code, mobile: data.mobile } // store both
-        }));
-        return data;
-      }
-    } catch (err) {
-      console.error("Failed to fetch country code:", err);
-    }
-
-    return '';
-  };
 
 
 
@@ -528,10 +512,10 @@ const UpcomingJobs = () => {
                         <div
                           key={jobKey}
                           className={`rounded-xl p-4 flex flex-col h-full ${isPastPickup
-                              ? 'border-2 border-orange-200 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
-                              : job.acknowledge_status == 0
-                                ? 'border-2 border-red-600 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
-                                : 'bg-white shadow-md'
+                            ? 'border-2 border-orange-200 shadow-[0_0_10px_rgba(251,146,60,0.6)]'
+                            : job.acknowledge_status == 0
+                              ? 'border-2 border-red-600 shadow-[0_0_10px_rgba(239,68,68,0.6)]'
+                              : 'bg-white shadow-md'
                             }`}
                         >
                           {/* Top - Upcoming label */}
@@ -712,10 +696,7 @@ const UpcomingJobs = () => {
                               </span>
                               <span className="text-right">
                                 <b>
-                                  {countryCodes[job.email]
-                                    ? `+${countryCodes[job.email].code} ${countryCodes[job.email].mobile}`
-                                    : `+${job.mobile_code} ${job.mobile}`
-                                  }
+                                  + ({job.phone_code?.replace('+', '')}) {job.mobile}
                                 </b>
                               </span>
                             </div>

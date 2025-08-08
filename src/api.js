@@ -686,8 +686,8 @@ export async function getJourneysOnDate(driverId, date, token) {
   if (!response.ok) throw new Error(result.error || 'Failed to fetch journeys');
   return result.data;
 }
-export async function getcountrycode(email, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/getcountrycode/${encodeURIComponent(email)}`, {
+export async function getcountrycode(mobileCode, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/getcountrycode/${mobileCode}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
