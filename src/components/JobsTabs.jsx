@@ -21,7 +21,7 @@ const JobsTabs = ({ activeTab, user }) => {
       {/* Top Scroll Message */}
       <div className="w-full bg-yellow-100 border border-yellow-300 rounded-lg mb-4 overflow-hidden shadow">
         <marquee behavior="scroll" direction="left" className="text-sm text-yellow-800 font-semibold py-2 px-4">
-          We request you to kindly reset your password using Forget Password and keep it safely as an alternative login process. We will migrate to User ID and Password login process shortly.
+          Please note that the OTP login process will be stopped shortly. Therefore, kindly set your new password through the "Forgot password" option available in the login page. Ignore this message if you have done it already.
         </marquee>
       </div>
 
