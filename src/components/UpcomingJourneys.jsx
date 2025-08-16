@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate, checkBidJobsTomorrow } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import { DateTime } from 'luxon';
@@ -36,6 +36,7 @@ const UpcomingJobs = () => {
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [disabledButton, setDisabledButton] = useState(new Set());
   const [disabledDriverIds, setDisabledDriverIds] = useState(new Set());
+  const [ackLoading, setAckLoading] = useState({});
 
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
@@ -418,6 +419,82 @@ const UpcomingJobs = () => {
     }
   };
 
+  const isWithin24Hours = (pickupStr) => {
+    console.log('pickupstr', pickupStr);
+
+    const pickup = DateTime.fromFormat(
+      pickupStr,
+      "cccc, dd LLL yyyy 'at' HH:mm",
+      { zone: 'Europe/London' }
+    );
+    if (!pickup.isValid) return false;
+    const now = DateTime.now().setZone('Europe/London');
+    const diffHours = pickup.diff(now, 'hours').hours;
+    console.log('pick', diffHours);
+
+    return diffHours <= 24 && diffHours >= 0;
+  };
+const handleAcknowledge = async (job) => {
+  setActionLoading(true);
+  setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
+
+  try {
+    // Check if the job is still available for this driver
+    const checkResult = await checkBidJobsTomorrow(
+      job.booking_journey_id,
+      user.driver_id,
+      user.token
+    );
+
+    if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+      alert('This job has already been assigned to another driver.');
+      refreshCounts();
+      return;
+    }
+
+    if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
+      alert('You have not been assigned this job yet.');
+      refreshCounts();
+      return;
+    }
+
+    // Proceed with acknowledge
+    await acknowledgeStatus({
+      driver_id: user.driver_id,
+      booking_journey_id: job.booking_journey_id,
+      acknowledge_status: 1,
+      token: user.token,
+    });
+
+    // Use current time as acknowledge_time (or get from API if available)
+    const nowTime = new Date().toISOString();
+
+    // Update UI state instantly
+    setUpcomingJobs((prev) =>
+      prev.map((j) =>
+        j.booking_journey_id === job.booking_journey_id
+          ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
+          : j
+      )
+    );
+    setFilteredJobs((prev) =>
+      prev.map((j) =>
+        j.booking_journey_id === job.booking_journey_id
+          ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
+          : j
+      )
+    );
+
+    alert('Job acknowledged successfully!');
+    refreshCounts();
+  } catch (err) {
+    alert(err.message || 'Failed to acknowledge job');
+  } finally {
+    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+    setActionLoading(false);
+  }
+};
+
 
 
 
@@ -532,7 +609,8 @@ const UpcomingJobs = () => {
                               </div>
                             )}
 
-                            {job.acknowledge_status == 1 && (
+                            {job.acknowledge_status == 1 ? (
+                              // ✅ Already acknowledged: show badge + date
                               <div className="mb-2">
                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
                                   Acknowledged
@@ -550,13 +628,28 @@ const UpcomingJobs = () => {
                                   </span>
                                 )}
                               </div>
+                            ) : (
+                              // ❌ Not acknowledged: show button
+                              <div className="mt-auto pt-3">
+                                <div className="flex justify-start">
+                                  <button
+                                    className="text-white px-2 py-1 rounded bg-blue-500 text-sm hover:bg-blue-600 hover:text-white transition-colors"
+                                    onClick={() => handleAcknowledge(job)}
+                                    disabled={!!ackLoading[job.booking_journey_id]}
+                                  >
+                                    <b>{ackLoading[job.booking_journey_id] ? 'Acknowledging...' : 'Acknowledge'}</b>
+                                  </button>
+                                </div>
+                              </div>
                             )}
 
-                            {job.acknowledge_status == 0 && (
+
+                            {job.acknowledge_status == 0 && isWithin24Hours(job.pickup_date) && (
                               <div className="mb-2 text-sm text-red-600 font-bold">
                                 <span>This journey has not been acknowledged.</span>
                               </div>
                             )}
+
 
                             <div className="mb-2">
                               <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
@@ -733,7 +826,7 @@ const UpcomingJobs = () => {
                                   ).toISODate() !== DateTime.now().setZone('Europe/London').toISODate()
                                   || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-          ${status == 1
+                                  ${status == 1
                                     ? 'bg-orange-500 text-white border-orange-600'
                                     : 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-700 hover:text-white'
                                   } ${status != 0 ||
@@ -753,7 +846,7 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 1 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-          ${status == 2
+                                  ${status == 2
                                     ? 'bg-blue-500 text-white border-blue-600'
                                     : 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-700 hover:text-white'
                                   } ${status != 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -765,7 +858,7 @@ const UpcomingJobs = () => {
                                 type="button"
                                 disabled={status != 2 || disabledButton.has(job.booking_journey_id)}
                                 className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-          ${status == 3
+                                    ${status == 3
                                     ? 'bg-green-500 text-white border-green-600'
                                     : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
                                   } ${status != 2 ? 'opacity-50 cursor-not-allowed' : ''}`}

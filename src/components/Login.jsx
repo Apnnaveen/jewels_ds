@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { loginUser } from '../api';
 import ReCAPTCHA from "react-google-recaptcha";
 import { forgot_password_request, verify_login } from '../api'; // Adjust the import path as necessary
@@ -10,10 +10,27 @@ export default function Login({ setUser }) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [password, setPassword] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const location = useLocation();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [captchaValue, setCaptchaValue] = useState(null);
   const navigate = useNavigate();
+
+ useEffect(() => {
+  if (location.state?.message) {
+    setSuccessMessage(location.state.message);
+
+    const timer = setTimeout(() => {
+      setSuccessMessage('');
+      navigate(location.pathname, { replace: true }); // clears state after timeout
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }
+}, [location.state, navigate]);
+
+
 
   const handleforgot_password_request = async (e) => {
     e.preventDefault();
@@ -38,7 +55,7 @@ export default function Login({ setUser }) {
     setIsLoading(true);
     setError('');
     try {
-      
+
       const data = await verify_login(email, otp);
       localStorage.setItem('user', JSON.stringify(data));
       setUser(data);
@@ -88,6 +105,11 @@ export default function Login({ setUser }) {
           <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
             {otpSent ? 'Verify OTP' : 'Login'}
           </h2>
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+              {successMessage}
+            </div>
+          )}
 
           {/* <form onSubmit={otpSent ? handleverify_login : handleforgot_password_request} className="space-y-5"> */}
           <form onSubmit={handleLogin} className="space-y-5">

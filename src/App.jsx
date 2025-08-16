@@ -16,6 +16,7 @@ import VerifyOTP from './components/VerifyOTP';
 import ResetPassword from './components/ResetPassword';
 import { JobsCountsProvider } from './components/JobsCountsProvider';
 import Notification from './components/Notification';
+import ChangePassword from './components/ChangePassword';
 
 
 function App() {
@@ -40,7 +41,7 @@ function App() {
           <Route path="/available-jobs" element={<AvailableJobs />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/notification" element={<Notification />} />
-
+          <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/bid-history" element={<BidHistory />} />
           <Route path="/scheduled-jobs" element={<ScheduledJobs />} />
           <Route path="/upcoming-journeys" element={<UpcomingJourneys />} />

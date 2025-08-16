@@ -29,7 +29,7 @@ export default function ForgotPassword() {
       const token = 'your_token_here';
       await forgot_password_request(email, token);
       setMessage('Password reset link has been sent to your email.');
-      navigate('/verify-otp', { state: { email } });
+      navigate('/', { state: { message: 'Password reset link sent to your registered email ID. Kindly check your email.' } });
     } catch (err) {
       setError(err.message || 'Failed to send password reset link.');
     } finally {
