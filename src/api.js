@@ -604,7 +604,6 @@ export async function checkBidForCurrentDriver(booking_journey_id, driver_id, to
 export async function forgot_password_request(email) {
   const response = await fetch('https://jat-uk.com/api/users/forgot_password_request', {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -659,7 +658,6 @@ export async function reset_password(email, newPassword, confirmPassword) {
 export async function change_password(token, password) {
   const response = await fetch('https://jat-uk.com/api/users/reset_password_portal', {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -681,7 +679,6 @@ export async function change_password(token, password) {
 export async function check_token_status(token) {
     const response = await fetch("https://jat-uk.com/api/users/check_reset_token_status", {
         method: "POST",
-        credentials: 'include',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
     });
