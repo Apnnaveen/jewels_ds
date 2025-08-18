@@ -856,12 +856,8 @@ const handleAcknowledge = async (job) => {
                               </button>
                               <button
                                 type="button"
-                                disabled={status != 2 || disabledButton.has(job.booking_journey_id)}
-                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold
-                                    ${status == 3
-                                    ? 'bg-green-500 text-white border-green-600'
-                                    : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white'
-                                  } ${status != 2 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white
+                                  `}
                                 onClick={() => handleStatusUpdate(job, 3)}
                               >
                                 Completed
