@@ -420,7 +420,6 @@ const UpcomingJobs = () => {
   };
 
   const isWithin24Hours = (pickupStr) => {
-    console.log('pickupstr', pickupStr);
 
     const pickup = DateTime.fromFormat(
       pickupStr,
@@ -430,70 +429,69 @@ const UpcomingJobs = () => {
     if (!pickup.isValid) return false;
     const now = DateTime.now().setZone('Europe/London');
     const diffHours = pickup.diff(now, 'hours').hours;
-    console.log('pick', diffHours);
 
     return diffHours <= 24 && diffHours >= 0;
   };
-const handleAcknowledge = async (job) => {
-  setActionLoading(true);
-  setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
+  const handleAcknowledge = async (job) => {
+    setActionLoading(true);
+    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
 
-  try {
-    // Check if the job is still available for this driver
-    const checkResult = await checkBidJobsTomorrow(
-      job.booking_journey_id,
-      user.driver_id,
-      user.token
-    );
+    try {
+      // Check if the job is still available for this driver
+      const checkResult = await checkBidJobsTomorrow(
+        job.booking_journey_id,
+        user.driver_id,
+        user.token
+      );
 
-    if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-      alert('This job has already been assigned to another driver.');
+      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+        alert('This job has already been assigned to another driver.');
+        refreshCounts();
+        return;
+      }
+
+      if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
+        alert('You have not been assigned this job yet.');
+        refreshCounts();
+        return;
+      }
+
+      // Proceed with acknowledge
+      await acknowledgeStatus({
+        driver_id: user.driver_id,
+        booking_journey_id: job.booking_journey_id,
+        acknowledge_status: 1,
+        token: user.token,
+      });
+
+      // Use current time as acknowledge_time (or get from API if available)
+      const nowTime = new Date().toISOString();
+
+      // Update UI state instantly
+      setUpcomingJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
+            : j
+        )
+      );
+      setFilteredJobs((prev) =>
+        prev.map((j) =>
+          j.booking_journey_id === job.booking_journey_id
+            ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
+            : j
+        )
+      );
+
+      alert('Job acknowledged successfully!');
       refreshCounts();
-      return;
+    } catch (err) {
+      alert(err.message || 'Failed to acknowledge job');
+    } finally {
+      setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
+      setActionLoading(false);
     }
-
-    if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
-      alert('You have not been assigned this job yet.');
-      refreshCounts();
-      return;
-    }
-
-    // Proceed with acknowledge
-    await acknowledgeStatus({
-      driver_id: user.driver_id,
-      booking_journey_id: job.booking_journey_id,
-      acknowledge_status: 1,
-      token: user.token,
-    });
-
-    // Use current time as acknowledge_time (or get from API if available)
-    const nowTime = new Date().toISOString();
-
-    // Update UI state instantly
-    setUpcomingJobs((prev) =>
-      prev.map((j) =>
-        j.booking_journey_id === job.booking_journey_id
-          ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
-          : j
-      )
-    );
-    setFilteredJobs((prev) =>
-      prev.map((j) =>
-        j.booking_journey_id === job.booking_journey_id
-          ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
-          : j
-      )
-    );
-
-    alert('Job acknowledged successfully!');
-    refreshCounts();
-  } catch (err) {
-    alert(err.message || 'Failed to acknowledge job');
-  } finally {
-    setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
-    setActionLoading(false);
-  }
-};
+  };
 
 
 
@@ -602,12 +600,30 @@ const handleAcknowledge = async (job) => {
 
                           {/* Middle - All journey details */}
                           <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
-                            {isPastPickup && (
-                              <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
-                                <i className="fas fa-exclamation-triangle text-orange-600"></i>
-                                The pickup time has already passed, but this journey is still not marked as completed.
-                              </div>
-                            )}
+                            {status !== 3 && (() => {
+                              const pickupDateTime = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+                              const now = DateTime.now().setZone('Europe/London');
+                              const hoursSincePickup = pickupDateTime.isValid ? now.diff(pickupDateTime, 'hours').hours : 0;
+
+                              if (hoursSincePickup >= 8) {
+                                return (
+                                  <div className="mb-2 bg-red-100 text-red-800 border border-red-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
+                                    <i className="fas fa-exclamation-triangle text-red-600"></i>
+                                    The pickup time has already passed by more than 8 hours, but this journey is still not marked as completed. Please update the status.
+                                  </div>
+                                );
+                              } else if (isPastPickup) {
+                                return (
+                                  <div className="mb-2 bg-orange-100 text-orange-800 border border-orange-300 rounded p-2 flex items-center gap-2 text-xs font-semibold">
+                                    <i className="fas fa-exclamation-triangle text-orange-600"></i>
+                                    The pickup time has already passed, but this journey is still not marked as completed.
+                                  </div>
+                                );
+                              }
+
+                              return null;
+                            })()}
+
 
                             {job.acknowledge_status == 1 ? (
                               // ✅ Already acknowledged: show badge + date
@@ -630,7 +646,7 @@ const handleAcknowledge = async (job) => {
                               </div>
                             ) : (
                               // ❌ Not acknowledged: show button
-                              <div className="mt-auto pt-3">
+                              <div className="pt-3">
                                 <div className="flex justify-start">
                                   <button
                                     className="text-white px-2 py-1 rounded bg-blue-500 text-sm hover:bg-blue-600 hover:text-white transition-colors"
