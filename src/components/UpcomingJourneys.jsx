@@ -582,7 +582,11 @@ const UpcomingJobs = () => {
                         "cccc, dd LLL yyyy 'at' HH:mm",
                         { zone: 'Europe/London' }
                       );
-                      const isPastPickup = jobPickupDateTime < DateTime.now().setZone('Europe/London');
+                      const now = DateTime.now().setZone('Europe/London');
+                      const hoursSincePickup = jobPickupDateTime.isValid ? now.diff(jobPickupDateTime, 'hours').hours : 0;
+                      const isPastPickup = jobPickupDateTime < now;
+                      console.log(job.booking_ref_id, hoursSincePickup);
+
                       return (
                         <div
                           key={jobKey}
@@ -801,12 +805,20 @@ const UpcomingJobs = () => {
 
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i className="fas fa-phone-alt text-green-500"></i> <b>Mobile:</b>
+                                <i className="fas fa-mobile text-blue-400"></i> <b>Mobile:</b>
                               </span>
                               <span className="text-right">
                                 <b>
                                   + ({job.phone_code?.replace('+', '')}) {job.mobile}
                                 </b>
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="flex items-center gap-2 font-medium text-gray-600">
+                                <i class="fas fa-phone-alt text-green-500"></i> <b>Call Office:</b>
+                              </span>
+                              <span className="text-right">
+                                <b> <a href="tel:+442033227723"> +(44)2033227723 </a></b>
                               </span>
                             </div>
                           </div>
@@ -872,12 +884,17 @@ const UpcomingJobs = () => {
                               </button>
                               <button
                                 type="button"
-                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 border rounded-full transition font-semibold bg-green-100 text-green-700 border-green-300 hover:bg-green-700 hover:text-white
-                                  `}
+                                disabled={!(status == 2 || hoursSincePickup >= 2)}
+                                className={`flex-1 min-w-[100px] h-10 flex items-center justify-center px-4 py-2 rounded-full font-semibold transition-all duration-300 
+                                ${!(status == 2 || hoursSincePickup >= 2)
+                                    ? 'bg-green-100 text-green-400 border border-gray-300 opacity-60 cursor-not-allowed'
+                                    : 'bg-green-200 text-green-700 border border-green-300 hover:bg-green-300 hover:text-green-900 hover:shadow-md hover:scale-105'}
+                                `}
                                 onClick={() => handleStatusUpdate(job, 3)}
                               >
                                 Completed
                               </button>
+
                             </div>
                           </div>
                         </div>

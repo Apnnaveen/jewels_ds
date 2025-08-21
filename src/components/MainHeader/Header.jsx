@@ -123,7 +123,6 @@ export default function Header() {
     const menuItems = [
         { key: 'dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
         { key: 'profile', icon: 'fas fa-user', label: 'Profile' },
-        // { key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' },
     ];
     if (user?.user_type === 'supplier') {
         menuItems.push({ key: 'driverlist', icon: 'fas fa-users', label: 'Driver List' });
@@ -178,6 +177,7 @@ export default function Header() {
                                 <i className={item.icon}></i> {item.label}
                             </button>
                         ))}
+                        <button className='rounded px-3 py-2 hover:bg-gray-700'><a target='_blank' href="https://jat-uk.com/instructions-and-terms">T & C</a></button>
                         <button
                             onClick={handleLogout}
                             className="flex items-center gap-2 px-3 py-2 rounded hover:bg-red-600 transition"
