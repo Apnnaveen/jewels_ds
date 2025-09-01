@@ -452,6 +452,49 @@ const BidHistory = () => {
                             <span className="text-right"><b>{bid.arrive_from}</b></span>
                           </div>
                         )}
+                        {Array.isArray(bid.subs_bids) && bid.subs_bids.length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            {/* Header with toggle button */}
+                            <div className="flex items-center justify-between font-medium text-gray-600 cursor-pointer">
+                              <span className="flex items-center gap-2">
+                                <i className="fas fa-gavel text-teal-500"></i>
+                                <b>Subs Bids:</b>
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setFilteredBids(prev =>
+                                    prev.map(b =>
+                                      b.booking_journey_id === bid.booking_journey_id
+                                        ? { ...b, showSubs: !b.showSubs }
+                                        : b
+                                    )
+                                  );
+                                }}
+                                className="text-sm text-blue-600"
+                              >
+                                {bid.showSubs ? "Hide Subs" : "Show Subs"}
+                              </button>
+                            </div>
+
+                            {/* Toggle Content */}
+                            {bid.showSubs && (
+                              <div className="flex flex-col gap-1 pl-6">
+                                {bid.subs_bids.map((sub, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex justify-between bg-gray-50 rounded-md p-2 shadow-sm"
+                                  >
+                                    <span className="text-gray-700 font-medium">{sub.driver_name}</span>
+                                    <span className="text-right font-bold text-green-700">
+                                      £{sub.biding_amount}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
 
                         {bid.driver_supplier_remarks?.trim() !== '' && (
                           <div>

@@ -34,7 +34,6 @@ export async function fetchAvailableJobs(driverId, token) {
   );
   if (!response.ok) throw new Error('Failed to fetch jobs');
   const data = await response.json();
-  console.log('Available jobs data:', data);
   return Array.isArray(data.data) ? data.data : [];
 }
 //
@@ -222,7 +221,7 @@ export async function scheduled_journey_details(driver_id, token) {
 }
 export async function upcoming_journey_details(driver_id, token) {
   let environment = 'portal';
-  const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys/${driver_id}/${environment}`, {
+  const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys_portal/${driver_id}/${environment}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -858,7 +857,21 @@ export async function getUserNotificationStates(driverId, token) {
     scheduledSeen: Array.isArray(data.scheduled_seen) ? data.scheduled_seen : [],
   };
 }
-
+export async function getSubsPermissions(driverId, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/get_subs_permissions/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  const result = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch subs permissions');
+  }
+  return result.data;
+}
 
 
 

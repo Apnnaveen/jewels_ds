@@ -18,6 +18,11 @@ const DriverList = () => {
   const token = user?.token;
   const supplierId = user?.driver_id;
   const [agreed, setAgreed] = useState(false);
+  const [loginAccess, setLoginAccess] = useState(false);
+  const [quotationProcess, setQuotationProcess] = useState(false);
+  const [assignJourneyProcess, setAssignJourneyProcess] = useState(false);
+  const [error, setError] = useState("");
+
 
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
@@ -77,21 +82,26 @@ const DriverList = () => {
   }, [token, supplierId]);
 
   const handleChange = (e) => {
-  const { name, value } = e.target;
+    const { name, value } = e.target;
 
-  // Allow only digits for country_code field
-  const newValue = name === "country_code"
-    ? value.replace(/\D/g, "") // remove non-numeric characters
-    : value;
+    // Allow only digits for country_code field
+    const newValue = name === "country_code"
+      ? value.replace(/\D/g, "") // remove non-numeric characters
+      : value;
 
-  setFormData((prev) => ({
-    ...prev,
-    [name]: newValue,
-  }));
-};
+    setFormData((prev) => ({
+      ...prev,
+      [name]: newValue,
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loginAccess && !quotationProcess && !assignJourneyProcess) {
+      setError("Please select at least one process (Quotation or Assign Journey)");
+      return;
+    }
+    setError("");
     const required = ['email', 'first_name', 'last_name', 'mobile_number', 'vehicle', 'car_reg', 'make'];
     const missing = required.find((f) => !formData[f]);
     if (missing) return alert(`Please fill in ${missing.replace('_', ' ')}`);
@@ -99,7 +109,12 @@ const DriverList = () => {
     setActionLoading(true);
 
     try {
-      const submitData = { ...formData };
+      const submitData = {
+        ...formData,
+        login_access: loginAccess ? 1 : 0,
+        quotation_process: quotationProcess ? 1 : 0,
+        assign_journey_process: assignJourneyProcess ? 1 : 0,
+      };
 
       if (isEditing && editDriverId) {
         submitData.driver_id = editDriverId;
@@ -128,6 +143,8 @@ const DriverList = () => {
       console.log('Driver edit response:', response);
 
       const driverData = response?.driver;
+      const perms = response?.subs_permissions || {};
+
       if (driverData) {
         setFormData({
           supplier_id: driverData.supplier_id || '',
@@ -142,6 +159,11 @@ const DriverList = () => {
           vehicle_colour: driverData.v_color || '',
           member_type: driverData.customer_type || 'subs',
         });
+
+        // Set checkbox states from subs_permissions table
+        setLoginAccess(!!Number(perms.login_access));
+        setQuotationProcess(!!Number(perms.quotation_process));
+        setAssignJourneyProcess(!!Number(perms.assign_journeys_process));
 
         setEditDriverId(driverId);
         setIsEditing(true);
@@ -167,7 +189,16 @@ const DriverList = () => {
       alert(error.message || 'Failed to delete driver');
     }
   };
+  const handleLoginAccess = (checked) => {
+    setLoginAccess(checked);
 
+    if (!checked) {
+      // reset processes if login access is unchecked
+      setQuotationProcess(false);
+      setAssignJourneyProcess(false);
+      setError("");
+    }
+  };
   return (
     <>
       <Header />
@@ -308,187 +339,229 @@ const DriverList = () => {
                   </label>
                 </div>
               </div>
-
-              {/* Name and Contact */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name <span className="text-red-500">*</span>
-                  </label>
+                <div className="flex items-center gap-4">
                   <input
-                    type="text"
-                    id="first_name"
-                    name="first_name"
-                    placeholder="First Name"
-                    value={formData.first_name}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
+                    id="login-access"
+                    type="checkbox"
+                    checked={loginAccess}
+                    onChange={(e) => handleLoginAccess(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded-sm"
                   />
-                </div>
-
-                <div>
-                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name <span className="text-red-500">*</span>
+                  <label htmlFor="login-access" className="text-sm font-medium text-gray-700">
+                    Login Access
                   </label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    name="last_name"
-                    placeholder="Last Name"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
-                </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                    disabled={isEditMode}
-                  />
-                </div>
-
-                <div className="flex space-x-2">
-                  {/* Country Code Field */}
-                  <div className="w-28">
-                    <label htmlFor="country_code" className="block text-sm font-medium text-gray-700 mb-1">
-                      Code
-                    </label>
-                    <div className="flex items-center border rounded px-2 py-2 bg-white">
-                      {/* + symbol box */}
-                      <span className="text-gray-700 text-sm font-semibold mr-1">+</span>
-
-                      {/* actual input field for country code */}
+                  {loginAccess && (
+                    <>
                       <input
-                        type="text"
-                        id="country_code"
-                        name="country_code"
-                        placeholder="44"
-                        value={formData.country_code}
-                        onChange={handleChange}
-                        pattern="[0-9]{1,4}"
-                        maxLength={4}
-                        title="Enter a valid country code"
-                        className="w-full border-none focus:ring-0 focus:outline-none text-sm"
-                        required
+                        id="quotation-process"
+                        type="checkbox"
+                        checked={quotationProcess}
+                        onChange={(e) => setQuotationProcess(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded-sm"
                       />
-                    </div>
-                  </div>
+                      <label htmlFor="quotation-process" className="text-sm font-medium text-gray-700">
+                        Quotation process
+                      </label>
 
+                      <input
+                        id="assign-journey-process"
+                        type="checkbox"
+                        checked={assignJourneyProcess}
+                        onChange={(e) => setAssignJourneyProcess(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded-sm"
+                      />
+                      <label
+                        htmlFor="assign-journey-process"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        Assign Journey process
+                      </label>
+                    </>
+                  )}
+                </div>
 
-                  {/* Mobile Number Field */}
-                  <div className="flex-1">
-                    <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700 mb-1">
-                      Mobile Number <span className="text-red-500">*</span>
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                {/* Name and Contact */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
                     </label>
                     <input
-                      type="tel"
-                      id="mobile_number"
-                      name="mobile_number"
-                      placeholder="Mobile Number"
-                      value={formData.mobile_number}
+                      type="text"
+                      id="first_name"
+                      name="first_name"
+                      placeholder="First Name"
+                      value={formData.first_name}
                       onChange={handleChange}
                       className="border px-3 py-2 rounded w-full"
                       required
                     />
                   </div>
-                </div>
-              </div>
 
-              {/* Vehicle Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Vehicle Type <span className="text-red-500">*</span>
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {vehicleTypes.map((v) => (
-                    <label key={v.value} className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name="vehicle"
-                        value={v.value}
-                        checked={formData.vehicle === v.value}
-                        onChange={handleChange}
-                      />
-                      <span>{v.label}</span>
+                  <div>
+                    <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name <span className="text-red-500">*</span>
                     </label>
-                  ))}
-                </div>
-              </div>
+                    <input
+                      type="text"
+                      id="last_name"
+                      name="last_name"
+                      placeholder="Last Name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                      required
+                    />
+                  </div>
 
-              {/* Car Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="car_reg" className="block text-sm font-medium text-gray-700 mb-1">
-                    Car Registration <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="car_reg"
-                    name="car_reg"
-                    placeholder="Car Registration"
-                    value={formData.car_reg}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                      required
+                      disabled={isEditMode}
+                    />
+                  </div>
+
+                  <div className="flex space-x-2">
+                    {/* Country Code Field */}
+                    <div className="w-28">
+                      <label htmlFor="country_code" className="block text-sm font-medium text-gray-700 mb-1">
+                        Code
+                      </label>
+                      <div className="flex items-center border rounded px-2 py-2 bg-white">
+                        {/* + symbol box */}
+                        <span className="text-gray-700 text-sm font-semibold mr-1">+</span>
+
+                        {/* actual input field for country code */}
+                        <input
+                          type="text"
+                          id="country_code"
+                          name="country_code"
+                          placeholder="44"
+                          value={formData.country_code}
+                          onChange={handleChange}
+                          pattern="[0-9]{1,4}"
+                          maxLength={4}
+                          title="Enter a valid country code"
+                          className="w-full border-none focus:ring-0 focus:outline-none text-sm"
+                          required
+                        />
+                      </div>
+                    </div>
+
+
+                    {/* Mobile Number Field */}
+                    <div className="flex-1">
+                      <label htmlFor="mobile_number" className="block text-sm font-medium text-gray-700 mb-1">
+                        Mobile Number <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        id="mobile_number"
+                        name="mobile_number"
+                        placeholder="Mobile Number"
+                        value={formData.mobile_number}
+                        onChange={handleChange}
+                        className="border px-3 py-2 rounded w-full"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Vehicle Type */}
                 <div>
-                  <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
-                    Make <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vehicle Type <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    id="make"
-                    name="make"
-                    placeholder="Make and Model"
-                    value={formData.make}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                    required
-                  />
+                  <div className="flex flex-wrap gap-4">
+                    {vehicleTypes.map((v) => (
+                      <label key={v.value} className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          name="vehicle"
+                          value={v.value}
+                          checked={formData.vehicle === v.value}
+                          onChange={handleChange}
+                        />
+                        <span>{v.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <label htmlFor="vehicle_colour" className="block text-sm font-medium text-gray-700 mb-1">
-                    Vehicle Colour
-                  </label>
-                  <input
-                    type="text"
-                    id="vehicle_colour"
-                    name="vehicle_colour"
-                    placeholder="Vehicle Colour"
-                    value={formData.vehicle_colour}
-                    onChange={handleChange}
-                    className="border px-3 py-2 rounded w-full"
-                  />
+                {/* Car Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="car_reg" className="block text-sm font-medium text-gray-700 mb-1">
+                      Car Registration <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="car_reg"
+                      name="car_reg"
+                      placeholder="Car Registration"
+                      value={formData.car_reg}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
+                      Make <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="make"
+                      name="make"
+                      placeholder="Make and Model"
+                      value={formData.make}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="vehicle_colour" className="block text-sm font-medium text-gray-700 mb-1">
+                      Vehicle Colour
+                    </label>
+                    <input
+                      type="text"
+                      id="vehicle_colour"
+                      name="vehicle_colour"
+                      placeholder="Vehicle Colour"
+                      value={formData.vehicle_colour}
+                      onChange={handleChange}
+                      className="border px-3 py-2 rounded w-full"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div class="flex items-center">
-                <input id="link-checkbox" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
-                <label for="link-checkbox" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-500">I agree with the <a href="https://jat-uk.com/instructions-and-terms" class="text-blue-600 dark:text-blue-500 hover:underline">terms and conditions</a>.</label>
-              </div>
-              <button
-                type="submit"
-                className={`w-full text-white py-2 rounded transition ${agreed ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                disabled={!agreed}
-              >
-                {actionLoading ? (isEditing ? 'Updating...' : 'Adding...') : isEditing ? 'Update Driver' : 'Add Driver'}
-              </button>
+                <div class="flex items-center">
+                  <input id="link-checkbox" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                  <label for="link-checkbox" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-500">I agree with the <a href="https://jat-uk.com/instructions-and-terms" class="text-blue-600 dark:text-blue-500 hover:underline">terms and conditions</a>.</label>
+                </div>
+                <button
+                  type="submit"
+                  className={`w-full text-white py-2 rounded transition ${agreed ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
+                    }`}
+                  disabled={!agreed}
+                >
+                  {actionLoading ? (isEditing ? 'Updating...' : 'Adding...') : isEditing ? 'Update Driver' : 'Add Driver'}
+                </button>
             </form>
 
           </div>

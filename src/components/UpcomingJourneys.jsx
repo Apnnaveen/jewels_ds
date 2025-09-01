@@ -133,7 +133,6 @@ const UpcomingJobs = () => {
     const fetchCars = async () => {
       try {
         const carsResponse = await getAllCars(supplierId, user.token);
-        console.log('Raw Cars API Data:', carsResponse);
 
         const formattedCars = (carsResponse || []).map((car) => {
           const rawName = car.name || car.car_name || car.vehicle_name || 'Unknown';
@@ -585,7 +584,6 @@ const UpcomingJobs = () => {
                       const now = DateTime.now().setZone('Europe/London');
                       const hoursSincePickup = jobPickupDateTime.isValid ? now.diff(jobPickupDateTime, 'hours').hours : 0;
                       const isPastPickup = jobPickupDateTime < now;
-                      console.log(job.booking_ref_id, hoursSincePickup);
 
                       return (
                         <div
@@ -630,28 +628,37 @@ const UpcomingJobs = () => {
 
 
                             {job.acknowledge_status == 1 ? (
-                              // ✅ Already acknowledged: show badge + date
-                              <div className="mb-2">
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
-                                  Acknowledged
-                                </span>
-                                {job.acknowledge_time && (
-                                  <span className="text-xs text-gray-600 block mt-1">
-                                    {new Date(job.acknowledge_time).toLocaleString('en-GB', {
-                                      day: '2-digit',
-                                      month: '2-digit',
-                                      year: 'numeric',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      hour12: true,
-                                    })}
+                              // ✅ Already acknowledged: badge + date + maybe subs name
+                              <div className="mb-2 flex items-center justify-between">
+                                <div>
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-semibold">
+                                    Acknowledged
+                                  </span>
+                                  {job.acknowledge_time && (
+                                    <span className="text-xs text-gray-600 block mt-1">
+                                      {new Date(job.acknowledge_time).toLocaleString('en-GB', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: true,
+                                      })}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* 👉 Show sub-driver name on the right */}
+                                {job.driver_customer_type === 'subs' && (
+                                  <span className="text-xs text-gray-700 font-medium ml-4 whitespace-nowrap">
+                                    {job.driver_name}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              // ❌ Not acknowledged: show button
+                              // ❌ Not acknowledged: button + subs name side by side
                               <div className="pt-3">
-                                <div className="flex justify-start">
+                                <div className="flex items-center justify-between">
                                   <button
                                     className="text-white px-2 py-1 rounded bg-blue-500 text-sm hover:bg-blue-600 hover:text-white transition-colors"
                                     onClick={() => handleAcknowledge(job)}
@@ -659,9 +666,17 @@ const UpcomingJobs = () => {
                                   >
                                     <b>{ackLoading[job.booking_journey_id] ? 'Acknowledging...' : 'Acknowledge'}</b>
                                   </button>
+
+                                  {/* 👉 Show sub-driver name on the right */}
+                                  {job.driver_customer_type === 'subs' && (
+                                    <span className="text-xs text-gray-700 font-medium ml-4 whitespace-nowrap">
+                                      <b>Sub ({job.driver_name})</b>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             )}
+
 
 
                             {job.acknowledge_status == 0 && isWithin24Hours(job.pickup_date) && (
