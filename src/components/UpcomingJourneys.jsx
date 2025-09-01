@@ -574,8 +574,7 @@ const UpcomingJobs = () => {
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => {
                       const jobKey = job.id || job.booking_journey_id || idx;
-                      const status = job.icon_status ?? job.status_code;
-
+                      const status = job.icon_status ?? job.status_code;                        
                       const jobPickupDateTime = DateTime.fromFormat(
                         job.pickup_date,
                         "cccc, dd LLL yyyy 'at' HH:mm",
@@ -647,13 +646,6 @@ const UpcomingJobs = () => {
                                     </span>
                                   )}
                                 </div>
-
-                                {/* 👉 Show sub-driver name on the right */}
-                                {job.driver_customer_type === 'subs' && (
-                                  <span className="text-xs text-gray-700 font-medium ml-4 whitespace-nowrap">
-                                    {job.driver_name}
-                                  </span>
-                                )}
                               </div>
                             ) : (
                               // ❌ Not acknowledged: button + subs name side by side
@@ -668,7 +660,7 @@ const UpcomingJobs = () => {
                                   </button>
 
                                   {/* 👉 Show sub-driver name on the right */}
-                                  {job.driver_customer_type === 'subs' && (
+                                  {job.driver_customer_type === 'subs' && user.user_type=="supplier" && (
                                     <span className="text-xs text-gray-700 font-medium ml-4 whitespace-nowrap">
                                       <b>Sub ({job.driver_name})</b>
                                     </span>
