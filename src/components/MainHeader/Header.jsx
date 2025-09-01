@@ -131,7 +131,7 @@ export default function Header() {
         setActiveItem(key);
         setMenuOpen(false);
         navigate(`/${key}`, { state: { user } });
-    };      
+    };
     return (
         <nav className="bg-gray-800 text-white shadow-md">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -157,7 +157,9 @@ export default function Header() {
                         </button>
                         {/* Profile Info */}
                         <div className="md:flex flex-col leading-tight">
-                            <h3 className="text-sm font-medium">{user?.name} {user.user_type=="subs"?"(sub)":""}</h3>
+                            <h3 className="text-sm font-medium">
+                                {user?.name} {user?.user_type === "subs" ? `(${user?.supplier_name})` : ""}
+                            </h3>
                             <p className="text-xs text-gray-300">{user?.email}</p>
                         </div>
                     </div>
