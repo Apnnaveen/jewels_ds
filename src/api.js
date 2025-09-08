@@ -294,7 +294,8 @@ export async function confirmAvailability({ driver_id, booking_journey_id, statu
 }
 // Decline job API
 export async function declineJob({ booking_journey_id, driver_id, token }) {
-  const response = await fetch(`https://jat-uk.com/api/users/declined/${booking_journey_id}/${driver_id}`,
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/declined/${booking_journey_id}/${driver_id}/${environment}`,
     {
       method: 'GET',
       headers: {

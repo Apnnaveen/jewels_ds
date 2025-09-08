@@ -91,7 +91,7 @@ const DriverList = () => {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: newValue,
+      [name]: newValue,      
     }));
   };
 
@@ -139,8 +139,8 @@ const DriverList = () => {
 
   const handleEditClick = async (driverId) => {
     try {
+      setAgreed(true);
       const response = await get_supplier_details(driverId, token);
-      console.log('Driver edit response:', response);
 
       const driverData = response?.driver;
       const perms = response?.subs_permissions || {};
@@ -225,6 +225,8 @@ const DriverList = () => {
               setEditDriverId(null);
               setIsEditMode(false);
               setModalOpen(true);
+              setAgreed(false);
+              setLoginAccess(false);
             }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
           >

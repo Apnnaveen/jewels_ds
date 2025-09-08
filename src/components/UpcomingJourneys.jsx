@@ -81,50 +81,54 @@ const UpcomingJobs = () => {
 
   // Fetch jobs
   // ...existing code...
-  useEffect(() => {
-    const fetchUpcomingJobs = async () => {
-      try {
-        if (!user?.driver_id || !user?.token) {
-          setError('User not authenticated');
-          return;
-        }
-        const [jobsData, carsData] = await Promise.all([
-          upcoming_journey_details(user.driver_id, user.token),
-          getAllCars(user.driver_id, user.token)
-        ]);
-        refreshCounts();
-        // Remove duplicates by booking_journey_id or id
-        const jobs = Array.isArray(jobsData) ? jobsData : [];
-        const uniqueJobs = Object.values(
-          jobs.reduce((acc, job) => {
-            const key = job.booking_journey_id || job.id;
-            acc[key] = job;
-            return acc;
-          }, {})
-        );
-        const jobsWithPhoneCodes = await Promise.all(
-          uniqueJobs.map(async (job) => {
-            try {
-              if (job.mobile_code) {
-                const phoneCodeData = await getcountrycode(job.mobile_code, user.token);
-                const phoneCode = phoneCodeData.phone_code; // ✅ extract string
-                return { ...job, phone_code: phoneCode };
-              }
-            } catch (err) {
-              console.error(`Failed to get phone code for ${job.mobile_code}`, err);
-            }
-            return { ...job, phone_code: '' }; // fallback
-          })
-        );
-        setUpcomingJobs(jobsWithPhoneCodes);
-        setFilteredJobs(jobsWithPhoneCodes);
-        setCars(Array.isArray(carsData) ? carsData : []);
-      } catch (err) {
-        setError(err.message || 'Something went wrong');
-      } finally {
-        setLoading(false);
+  const fetchUpcomingJobs = async () => {
+    try {
+      setLoading(true); // 🔥 important: show loading and reset jobs
+      if (!user?.driver_id || !user?.token) {
+        setError('User not authenticated');
+        return;
       }
-    };
+      const [jobsData, carsData] = await Promise.all([
+        upcoming_journey_details(user.driver_id, user.token),
+        getAllCars(user.driver_id, user.token)
+      ]);
+
+      refreshCounts();
+
+      const jobs = Array.isArray(jobsData) ? jobsData : [];
+      const uniqueJobs = Object.values(
+        jobs.reduce((acc, job) => {
+          const key = job.booking_journey_id || job.id;
+          acc[key] = job;
+          return acc;
+        }, {})
+      );
+
+      const jobsWithPhoneCodes = await Promise.all(
+        uniqueJobs.map(async (job) => {
+          try {
+            if (job.mobile_code) {
+              const phoneCodeData = await getcountrycode(job.mobile_code, user.token);
+              return { ...job, phone_code: phoneCodeData.phone_code };
+            }
+          } catch (err) {
+            console.error(`Failed to get phone code for ${job.mobile_code}`, err);
+          }
+          return { ...job, phone_code: '' };
+        })
+      );
+
+      setUpcomingJobs(jobsWithPhoneCodes);
+      setFilteredJobs(jobsWithPhoneCodes);
+      setCars(Array.isArray(carsData) ? carsData : []);
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUpcomingJobs();
   }, [user]);
 
@@ -443,44 +447,32 @@ const UpcomingJobs = () => {
         user.token
       );
 
-      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-        alert('This job has already been assigned to another driver.');
-        refreshCounts();
-        return;
-      }
+      // if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+      //   alert('This job has already been assigned to another driver.');
+      //   refreshCounts();
+      //   return;
+      // }
 
       if (checkResult?.assigned === 0 && checkResult?.message === 'Unassigned for current driver') {
         alert('You have not been assigned this job yet.');
         refreshCounts();
         return;
       }
+      console.log("akkk", job);
 
+      const driverIdToUse =
+        job.driver_customer_type === "subs"
+          ? job.subsid
+          : user.driver_id;
       // Proceed with acknowledge
       await acknowledgeStatus({
-        driver_id: user.driver_id,
+        driver_id: driverIdToUse,
         booking_journey_id: job.booking_journey_id,
         acknowledge_status: 1,
         token: user.token,
       });
+      await fetchUpcomingJobs();
 
-      // Use current time as acknowledge_time (or get from API if available)
-      const nowTime = new Date().toISOString();
-
-      // Update UI state instantly
-      setUpcomingJobs((prev) =>
-        prev.map((j) =>
-          j.booking_journey_id === job.booking_journey_id
-            ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
-            : j
-        )
-      );
-      setFilteredJobs((prev) =>
-        prev.map((j) =>
-          j.booking_journey_id === job.booking_journey_id
-            ? { ...j, acknowledge_status: 1, acknowledge_time: nowTime }
-            : j
-        )
-      );
 
       alert('Job acknowledged successfully!');
       refreshCounts();
@@ -574,7 +566,7 @@ const UpcomingJobs = () => {
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job, idx) => {
                       const jobKey = job.id || job.booking_journey_id || idx;
-                      const status = job.icon_status ?? job.status_code;                        
+                      const status = job.icon_status ?? job.status_code;
                       const jobPickupDateTime = DateTime.fromFormat(
                         job.pickup_date,
                         "cccc, dd LLL yyyy 'at' HH:mm",
@@ -660,7 +652,7 @@ const UpcomingJobs = () => {
                                   </button>
 
                                   {/* 👉 Show sub-driver name on the right */}
-                                  {job.driver_customer_type === 'subs' && user.user_type=="supplier" && (
+                                  {job.driver_customer_type === 'subs' && user.user_type == "supplier" && (
                                     <span className="text-xs text-gray-700 font-medium ml-4 whitespace-nowrap">
                                       <b>Sub ({job.driver_name})</b>
                                     </span>
@@ -798,7 +790,14 @@ const UpcomingJobs = () => {
                               <span className="flex items-center gap-2 font-medium text-gray-600">
                                 <i className="fas fa-pound-sign text-green-600"></i> <b>Fare Accepted:</b>
                               </span>
-                              <span className="text-right font-bold text-green-700"><b>£{job.biding_amount}</b></span>
+                              <span className="text-right font-bold text-green-700">
+                                <b>
+                                  £
+                                  {job.driver_customer_type === "subs"
+                                    ? job.subs_fare
+                                    : job.biding_amount}
+                                </b>
+                              </span>
                             </div>
 
                             <hr className="my-2 border-t border-gray-300" />

@@ -110,8 +110,12 @@ const ScheduledJobs = () => {
         return;
       }
       setActionLoading(true);
+      const driverIdToUse =
+        job.customer_type === "subs"
+          ? job.driver_id
+          : user.driver_id;
       await confirmAvailability({
-        driver_id: user.driver_id,
+        driver_id: driverIdToUse,
         booking_journey_id: job.booking_journey_id,
         status: 1,
         token: user.token,
@@ -141,8 +145,12 @@ const ScheduledJobs = () => {
         return;
       }
       setActionLoading(true);
+      const driverIdToUse =
+        job.customer_type === "subs"
+          ? job.driver_id
+          : user.driver_id;
       await declineJob({
-        driver_id: user.driver_id,
+        driver_id: driverIdToUse,
         booking_journey_id: job.booking_journey_id,
         token: user.token,
       });
@@ -396,14 +404,24 @@ const ScheduledJobs = () => {
 
                         {/* Main content (top & middle) */}
                         <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
-                          <div className="mb-2">
+                          <div className="mb-2 flex items-center justify-between">
+                            {/* Car Name */}
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                               <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                             </h4>
-                            <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                              <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
-                            </p>
+
+                            {/* 👉 If subs, show Sub tag */}
+                            {job.customer_type === "subs" && user.user_type === "supplier" && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-semibold ml-2">
+                                Sub
+                              </span>
+                            )}
                           </div>
+
+                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
+                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                          </p>
+
 
                           {/* Pickup */}
                           <div>

@@ -61,7 +61,6 @@ const BidHistory = () => {
   };
   const handleSubmitUpdateBid = async () => {
     setDisabledButton(prev => new Set(prev).add(selectedBid.booking_journey_id));
-    
     setActionLoading(true);
     if (!selectedBid || !quote || !isChecked) return;
     setSubmitting(true);
@@ -88,10 +87,21 @@ const BidHistory = () => {
         setSubmitting(false);
         return;
       }
+      const driverIdToUse =
+        selectedBid.customer_type === "subs"
+          ? selectedBid.driver_id
+          : user.driver_id;
+
+      const emailToUse =
+        selectedBid.customer_type === "subs"
+          ? selectedBid.email
+          : user.email;
+
+
       await bidJob({
         booking_journey_id: selectedBid.booking_journey_id,
-        driver_id: user.driver_id,
-        email: user.email,
+        driver_id: driverIdToUse,
+        email: emailToUse,
         fare: quote,
         token: user.token,
       });
@@ -121,22 +131,34 @@ const BidHistory = () => {
     setDisabledButton(prev => new Set(prev).add(bid.booking_journey_id));
 
     if (!window.confirm('Are you sure you want to withdraw this job?')) return;
+
     setActionLoading(true);
+
     try {
+      // 👇 if subs then use bid.driver_id else use logged-in user.driver_id
+      const driverIdToUse =
+        bid.customer_type === "subs" ? bid.driver_id : user.driver_id;
+
       await withdrawJob({
-        driver_id: user.driver_id,
+        driver_id: driverIdToUse,
         booking_journey_id: bid.booking_journey_id,
         token: user.token,
       });
+
       alert('Job withdrawn successfully!');
       refreshCounts();
-      // Optionally refresh bid history
-      setBidHistory((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
-      setFilteredBids((prev) => prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id));
+
+      // Remove withdrawn job from state
+      setBidHistory((prev) =>
+        prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id)
+      );
+      setFilteredBids((prev) =>
+        prev.filter((b) => b.booking_journey_id !== bid.booking_journey_id)
+      );
     } catch (err) {
       alert('Failed to withdraw job: ' + err.message);
     } finally {
-      setDisabledButton(prev => {
+      setDisabledButton((prev) => {
         const newSet = new Set(prev);
         newSet.delete(bid.booking_journey_id);
         return newSet;
@@ -144,6 +166,7 @@ const BidHistory = () => {
       setActionLoading(false);
     }
   };
+
   useEffect(() => {
     if (reaction) {
       const fetchUpdatedBids = async () => {
@@ -380,10 +403,19 @@ const BidHistory = () => {
                           <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                             <i className="fas fa-car-side"></i> <b>{getCarName(bid.car_id)}</b>
                           </h4>
-                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                            <i className="fas fa-receipt text-gray-500"></i> <b>{bid.booking_ref_id}</b>
-                          </p>
+
+                          {/* Booking Ref + Customer Type in same row */}
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-sm text-gray-700 flex items-center gap-2">
+                              <i className="fas fa-receipt text-gray-500"></i> <b>{bid.booking_ref_id}</b>
+                            </p>
+
+                            {bid.customer_type === "subs" && user.user_type === "supplier" && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-semibold ml-2">Sub</span>
+                            )}
+                          </div>
                         </div>
+
 
                         {/* Pickup */}
                         <div>
@@ -450,48 +482,6 @@ const BidHistory = () => {
                               <i className="fas fa-globe-europe text-teal-500"></i> <b>Arrive From:</b>
                             </span>
                             <span className="text-right"><b>{bid.arrive_from}</b></span>
-                          </div>
-                        )}
-                        {Array.isArray(bid.subs_bids) && bid.subs_bids.length > 0 && (
-                          <div className="flex flex-col gap-2">
-                            {/* Header with toggle button */}
-                            <div className="flex items-center justify-between font-medium text-gray-600 cursor-pointer">
-                              <span className="flex items-center gap-2">
-                                <i className="fas fa-gavel text-teal-500"></i>
-                                <b>Subs Bids:</b>
-                              </span>
-                              <button
-                                onClick={() => {
-                                  setFilteredBids(prev =>
-                                    prev.map(b =>
-                                      b.booking_journey_id === bid.booking_journey_id
-                                        ? { ...b, showSubs: !b.showSubs }
-                                        : b
-                                    )
-                                  );
-                                }}
-                                className="text-sm text-blue-600"
-                              >
-                                {bid.showSubs ? "Hide Subs" : "Show Subs"}
-                              </button>
-                            </div>
-
-                            {/* Toggle Content */}
-                            {bid.showSubs && (
-                              <div className="flex flex-col gap-1 pl-6">
-                                {bid.subs_bids.map((sub, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex justify-between bg-gray-50 rounded-md p-2 shadow-sm"
-                                  >
-                                    <span className="text-gray-700 font-medium">{sub.driver_name}</span>
-                                    <span className="text-right font-bold text-green-700">
-                                      £{sub.biding_amount}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
                         )}
 
