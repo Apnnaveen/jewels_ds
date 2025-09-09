@@ -4,6 +4,7 @@ import Header from './MainHeader/Header';
 import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJobs, updateUserSeen } from '../api';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
+import QuotationCardSkeleton from './Loading/QuotationCardSkeleton';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -343,8 +344,10 @@ export default function AvailableJob() {
                         </div>
 
                         {loading ? (
-                            <div className="col-span-full flex justify-center items-center h-64">
-                                <Loading />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <QuotationCardSkeleton key={i} />
+                                ))}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">

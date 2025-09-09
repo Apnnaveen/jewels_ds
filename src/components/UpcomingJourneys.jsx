@@ -4,6 +4,7 @@ import JobsTabs from './JobsTabs';
 import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate, checkBidJobsTomorrow } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
+import UpcomingJourneysSkeleton from './Loading/UpcomingJourneysSkeleton';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -558,8 +559,10 @@ const UpcomingJobs = () => {
 
             <div className="jobs-content">
               {loading ? (
-                <div className="col-span-full flex justify-center items-center h-64">
-                  <Loading />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {(Array.from({ length: 6 })).map((_, i) => (
+                    <UpcomingJourneysSkeleton key={i} />
+                  ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
@@ -793,7 +796,7 @@ const UpcomingJobs = () => {
                               <span className="text-right font-bold text-green-700">
                                 <b>
                                   £
-                                  {job.driver_customer_type === "subs"
+                                  {job.driver_customer_type === "subs" && user.user_type === "subs"
                                     ? job.subs_fare
                                     : job.biding_amount}
                                 </b>
@@ -821,7 +824,7 @@ const UpcomingJobs = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
-                                <i class="fas fa-phone-alt text-green-500"></i> <b>Call Office:</b>
+                                <i className="fas fa-phone-alt text-green-500"></i> <b>Call Office:</b>
                               </span>
                               <span className="text-right">
                                 <b> <a href="tel:+442033227723"> +(44)2033227723 </a></b>

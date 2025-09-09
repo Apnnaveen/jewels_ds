@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
+import ScheduledJobSkeleton from './Loading/ScheduledJobSkeleton';
 import Header from './MainHeader/Header';
 import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled } from '../api';
 import { DateTime } from 'luxon';
@@ -380,8 +381,10 @@ const ScheduledJobs = () => {
             </div>
             <div className="jobs-content">
               {loading ? (
-                <div className="col-span-full flex justify-center items-center h-64">
-                  <Loading />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {(Array.from({ length: filteredJobs?.length || 6 })).map((_, i) => (
+                    <ScheduledJobSkeleton key={i} />
+                  ))}
                 </div>
               ) : error ? (
                 <p className="error">{error}</p>

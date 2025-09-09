@@ -4,6 +4,7 @@ import JobsTabs from './JobsTabs';
 import { completed_journeys, getAllCars } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
+import CompletedJobSkeleton from './Loading/CompletedJobSkeleton';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -204,8 +205,10 @@ const CompletedJobs = () => {
             {/* Card Grid */}
             <div className="jobs-content">
               {loading ? (
-                <div className="col-span-full flex justify-center items-center h-64">
-                  <Loading />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <CompletedJobSkeleton key={i} />
+                  ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">

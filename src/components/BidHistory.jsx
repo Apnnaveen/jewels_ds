@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
 import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver } from '../api';
 import Loading from './Loading/Loading';
+import BidCardSkeleton from './Loading/BidCardSkeleton';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import Header from './MainHeader/Header';
@@ -381,9 +382,11 @@ const BidHistory = () => {
 
             {/* Card Grid */}
             {loading ? (
-              <div className="col-span-full flex justify-center items-center h-64">
-                <Loading />
-              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+                  {(Array.from({ length: 6 })).map((_, i) => (
+                    <BidCardSkeleton key={i} />
+                  ))}
+                </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 items-stretch">
                 {filteredBids.length > 0 ? (
