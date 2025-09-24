@@ -5,7 +5,7 @@ import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import ScheduledJobSkeleton from './Loading/ScheduledJobSkeleton';
 import Header from './MainHeader/Header';
-import { scheduled_journey_details, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled } from '../api';
+import { scheduled_journey_details, getAvailabilityExpiry, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled } from '../api';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -85,6 +85,29 @@ const ScheduledJobs = () => {
         setError('User not authenticated');
         return;
       }
+      
+    // Fetch expiry from backend for this driver & journey
+    let expiryTime = job.availability_expired_time;
+    if (!expiryTime) {
+      expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
+    }
+    
+    if (expiryTime) {
+      const expiredDt = DateTime.fromFormat(expiryTime, "yyyy-MM-dd HH:mm:ss", { zone: "Europe/London" });
+      const now = DateTime.now().setZone("Europe/London");
+          console.log(expiredDt);
+
+      if (expiredDt.isValid && expiredDt < now) {
+        alert("This job is expired and cannot be accepted.");
+        setDisabledButton(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(job.booking_journey_id);
+          return newSet;
+        });
+        setReaction(true);
+        return;
+      }
+    }
       // Get date in YYYY-MM-DD
       const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
 
