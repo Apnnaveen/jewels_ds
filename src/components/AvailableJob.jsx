@@ -9,7 +9,6 @@ import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
 
-const PAGE_SIZE = 6;
 
 export default function AvailableJob() {
     const location = useLocation();
@@ -25,15 +24,12 @@ export default function AvailableJob() {
         booking_ref_id: '',
         from_address: '',
         to_address: '',
-        waypoint: '',
         pickup_date: '',
-        passengers: '',
-        luggage: '',
-        distance: '',
         car_id: [],
-        bid_expiry: '',
     });
-    const [currentPage, setCurrentPage] = useState(1);
+    const [page, setPage] = useState(1);
+    const [perPage] = useState(5);
+    const [pagination, setPagination] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedJob, setSelectedJob] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
@@ -63,66 +59,45 @@ export default function AvailableJob() {
     const tabCounts = {
         available: filteredJobs.length, // Quotation tab
     };
-    useEffect(() => {
-        if (user?.driver_id && user?.token) {
-            const getJobs = async () => {
-                try {
-                    const jobsArray = await fetchAvailableJobs(user.driver_id, user.token);
-                    setJobs(jobsArray);
-                    setFilteredJobs(jobsArray);
-
-                    // Mark unseen as seen
-                    const seen = JSON.parse(user.user_seen || '[]');
-                    const newRefs = jobsArray.map(job => job.booking_journey_id);
-                    const updatedSeen = [...new Set([...seen, ...newRefs])];
-
-                    if (newRefs.length > 0) {
-                        await updateUserSeen(user.driver_id, updatedSeen, user.token);
-
-                        const updatedUser = { ...user, user_seen: JSON.stringify(updatedSeen) };
-                        localStorage.setItem('user', JSON.stringify(updatedUser));
-                        window.dispatchEvent(new Event('userSeenUpdated'));
-
-                    }
-                } catch (error) {
-                    console.error('Error loading jobs or updating seen:', error);
-                }
+    const fetchJobs = async () => {
+        if (!user?.driver_id || !user?.token) return;
+        setLoading(true);
+        try {
+            const params = {
+                page,
+                per_page: perPage,
+                ref_filter: filters.booking_ref_id,
+                date: filters.pickup_date,
+                vehicle: filters.car_id,
+                from_address: filters.from_address,
+                to_address: filters.to_address
             };
 
-            getJobs();
+            const response = await fetchAvailableJobs(user.driver_id, user.token, params);
+            console.log('res', response);
+
+
+            if (response?.data) {
+                setJobs(response.data.data || []);
+                setFilteredJobs(response.data.data || []);
+                setPagination(response.data.pagination || null);
+            }
+
+
+            const carsList = await getAllCars(user.driver_id, user.token);
+            setCars(carsList || []);
+        } catch (err) {
+            console.error("Error fetching available jobs:", err);
+        } finally {
+            setLoading(false);
         }
-    }, [user]);
+    };
 
-
-
+    // Trigger fetch on filters/page change
     useEffect(() => {
-        if (user?.driver_id && user?.token) {
-            const getJobsAndCars = async () => {
-                setLoading(true);
-                try {
-                    const [jobsArray, carsArray] = await Promise.all([
-                        fetchAvailableJobs(user.driver_id, user.token),
-                        getAllCars(user.driver_id, user.token)
-                    ]);
-                    refreshCounts();
-                    setJobs(jobsArray);
-                    setFilteredJobs(jobsArray);
-                    setCars(Array.isArray(carsArray) ? carsArray : []);
-                    setReaction(false);
-                } catch (error) {
-                    setJobs([]);
-                    setFilteredJobs([]);
-                    setCars([]);
-                    setLoading(false);
-                    setReaction(false);
-                } finally {
-                    setLoading(false);
-                    setReaction(false);
-                }
-            };
-            getJobsAndCars();
-        }
-    }, [user, reaction]);
+        fetchJobs();
+    }, [page, filters]);
+
     const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
     const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
     const vehicleOptions = filteredCars.map(car => ({
@@ -172,22 +147,19 @@ export default function AvailableJob() {
         });
 
         setFilteredJobs(filtered);
-        setCurrentPage(1);
     }, [filters, jobs]);
 
-    const paginatedJobs = filteredJobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-    const totalPages = Math.ceil(filteredJobs.length / PAGE_SIZE);
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
+        setFilters((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+        setPage(1); // Reset to first page on filter change
     };
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-        }
-    };
+
 
     const handleViewDetails = async (job) => {
         setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
@@ -237,6 +209,7 @@ export default function AvailableJob() {
                 fare: quote,
                 token: user.token,
             });
+            await fetchJobs();
             alert('Bid submitted successfully!');
             refreshCounts();
             setShowModal(false);
@@ -351,8 +324,8 @@ export default function AvailableJob() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                                {paginatedJobs.length > 0 ? (
-                                    paginatedJobs.map((job, idx) => {
+                                {filteredJobs.length > 0 ? (
+                                    filteredJobs.map((job, idx) => {
                                         // Danger logic: 2 hours or less and no sub assigned
                                         let isDanger = false;
                                         let noSubAssigned = false;
@@ -537,35 +510,26 @@ export default function AvailableJob() {
                             </div>
                         )}
 
-                        {totalPages > 1 && (
-                            <div className="pagination flex justify-center mt-4">
-                                <button
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
-                                >
-                                    Prev
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => handlePageChange(i + 1)}
-                                        className={`px-4 py-2 mx-1 rounded ${currentPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="px-4 py-2 mx-1 bg-gray-200 rounded disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
                     </div>
-
+                    {pagination && (
+                        <div className="flex justify-center gap-4 my-4">
+                            <button
+                                disabled={pagination.current_page === 1}
+                                onClick={() => setPage(p => p - 1)}
+                                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+                            <button
+                                disabled={pagination.current_page === pagination.total_pages}
+                                onClick={() => setPage(p => p + 1)}
+                                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                     {showModal && selectedJob && (
                         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                             <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">

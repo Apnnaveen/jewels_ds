@@ -22,20 +22,30 @@ export async function loginUser(email, password) {
 }
 
 // Available jobs API
-export async function fetchAvailableJobs(driverId, token) {
-  let environment = 'portal';
-  const response = await fetch(
-    `https://jat-uk.com/api/users/available_jobs/${driverId}/${environment}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+export const fetchAvailableJobs = async (driverId, token, params = {}) => {
+  try {
+    const queryString = new URLSearchParams(params).toString();
+    console.log('Fetching available jobs with params:', params);
+    
+
+    const response = await fetch(`https://jat-uk.com/api/users/available_jobs/${driverId}/portal?${queryString}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch available jobs");
     }
-  );
-  if (!response.ok) throw new Error('Failed to fetch jobs');
-  const data = await response.json();
-  return Array.isArray(data.data) ? data.data : [];
-}
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error in fetchAvailableJobs:", error);
+    return null;
+  }
+};
+
 //
 // user_profile
 export async function getUserProfile(driverId, token) {
@@ -182,10 +192,31 @@ export async function changePasswordByForceStatus(email, newPassword, confirmPas
 
   return result.data;
 }
-export async function bid_history(driver_id, token) {
-  // NO proxy setup? Then use full API URL
+export async function bid_history(driver_id, token, filters = {}) {
+    const params = new URLSearchParams(filters).toString();
+    const environment = 'portal';
+
+    const response = await fetch(
+        `https://jat-uk.com/api/users/bid_history/${driver_id}/${environment}?${params}`,
+        {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+        }
+    );
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Failed to fetch bid history');
+
+    return result.data;
+}
+
+export async function scheduled_journey_details(driver_id, token, params = {}) {
   let environment = 'portal';
-  const response = await fetch(`https://jat-uk.com/api/users/bid_history/${driver_id}/${environment}`, {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`https://jat-uk.com/api/users/scheduled_journey_details/${driver_id}/${environment}?${query}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -201,68 +232,82 @@ export async function bid_history(driver_id, token) {
 
   return result.data;
 }
-export async function scheduled_journey_details(driver_id, token) {
+export async function upcoming_journey_details(driver_id, token, params = {}) {
   let environment = 'portal';
-  const response = await fetch(`https://jat-uk.com/api/users/scheduled_journey_details/${driver_id}/${environment}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(
+    `https://jat-uk.com/api/users/upcoming_journeys_portal/${driver_id}/${environment}?${query}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
+  const result = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to fetch upcoming journeys');
+  }
+
+  return result.data; // { data: [...], pagination: {...} }
+}
+export async function tomorrow_journeys(driver_id, token, params = {}) {
+  const query = new URLSearchParams(params).toString();
+  console.log('Query params for tomorrow journeys:', query);
+  
+  let environment = 'portal';
+  const response = await fetch(
+    `https://jat-uk.com/api/users/tomorrow_journeys/${driver_id}/${environment}?${query}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   const result = await response.json();
   if (!response.ok) {
-    throw new Error(result.message || 'Failed to fetch bid history');
+    throw new Error(result.message || 'Failed to fetch tomorrow journeys');
   }
 
-  return result.data;
+  return result.data; // Should be { data: [...], pagination: {...} }
 }
-export async function upcoming_journey_details(driver_id, token) {
-  let environment = 'portal';
-  const response = await fetch(`https://jat-uk.com/api/users/upcoming_journeys_portal/${driver_id}/${environment}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+// export async function completed_journeys(driver_id, token) {
+//   const response = await fetch(`https://jat-uk.com/api/users/completed_journey_details/${driver_id}`, {
+//     method: 'GET',
+//     headers: {
+//       'Authorization': `Bearer ${token}`,
+//       'Content-Type': 'application/json',
+//     },
+//   });
 
+//   const result = await response.json();
 
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.message || 'Failed to fetch bid history');
-  }
+//   if (!response.ok) {
+//     throw new Error(result.message || 'Failed to fetch data');
+//   }
 
-  return result.data;
-}
-export async function tomorrow_journeys(driver_id, token) {
-  let environment = 'portal';
-  const response = await fetch(`https://jat-uk.com/api/users/tomorrow_journeys/${driver_id}/${environment}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+//   return Array.isArray(result.data) ? result.data : []; // return empty array if not valid
+// }
+export async function completed_journeys(driver_id, token, params = {}) {
+  const query = new URLSearchParams(params).toString();
+  console.log('Query params for completed journeys:', query);
 
-
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.message || 'Failed to fetch bid history');
-  }
-
-  return result.data;
-}
-export async function completed_journeys(driver_id, token) {
-  const response = await fetch(`https://jat-uk.com/api/users/completed_journey_details/${driver_id}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(
+    `https://jat-uk.com/api/users/completed_journey_details/${driver_id}?${query}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 
   const result = await response.json();
 
@@ -270,8 +315,9 @@ export async function completed_journeys(driver_id, token) {
     throw new Error(result.message || 'Failed to fetch data');
   }
 
-  return Array.isArray(result.data) ? result.data : []; // return empty array if not valid
+  return result.data; // <-- now includes { data: [...], pagination: {...} }
 }
+
 export async function confirmAvailability({ driver_id, booking_journey_id, status, token }) {
   const response = await fetch('https://jat-uk.com/api/users/confirm_availability', {
     method: 'POST',

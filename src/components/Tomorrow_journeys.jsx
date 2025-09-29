@@ -1,3 +1,4 @@
+// ...existing imports...
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
@@ -9,12 +10,13 @@ import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
 
-
 const TomorrowJourneys = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
-
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tomorrowJobs, setTomorrowJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -26,38 +28,26 @@ const TomorrowJourneys = () => {
   const [reaction, setReaction] = useState(false);
   const { refreshCounts } = useJobsCounts();
 
-  // Only 4 filters: refid, from, to, date
-
+  // Only 5 filters: ref, from, to, date, vehicle
   const [filters, setFilters] = useState({
     booking_sub_id: '',
     from_address: '',
     to_address: '',
-    waypoint: '',
     pickup_date: '',
-    passengers: '',
-    luggage: '',
-    distance: '',
     car_id: [],
-    bid_expiry: '',
   });
+
   const clearFilters = () => {
     setFilters({
       booking_sub_id: '',
       from_address: '',
       to_address: '',
-      waypoint: '',
       pickup_date: '',
-      passengers: '',
-      luggage: '',
-      distance: '',
       car_id: [],
-      bid_expiry: '',
     });
+    setPage(1);
   };
-  const tabCounts = {
-    tomorrow: filteredJobs.length, // Quotation tab
 
-  };
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -66,30 +56,38 @@ const TomorrowJourneys = () => {
           setError('User not authenticated');
           return;
         }
-        const [response, carsArray] = await Promise.all([
-          tomorrow_journeys(user.driver_id, user.token),
-          getAllCars(user.driver_id, user.token)
-        ]);
-        console.log('Tomorrow Journeys Response:', response);
-        const jobs = Array.isArray(response)
-          ? response
-          : Array.isArray(response?.data)
-            ? response.data
-            : [];
-        refreshCounts();
-        setTomorrowJobs(jobs);
-        setFilteredJobs(jobs);
+        // Fetch paginated jobs with filters
+        const response = await tomorrow_journeys(user.driver_id, user.token, {
+          page,
+          per_page: perPage,
+          ref_filter: filters.booking_sub_id,
+          date: filters.pickup_date,
+          vehicle: filters.car_id[0] || '',
+          from_address: filters.from_address,
+          to_address: filters.to_address,
+        });
+        console.log('tomor',response);
+        
+        setTomorrowJobs(response.data || []);
+        setFilteredJobs(response.data || []);
+        setPagination(response.pagination || null);
+
+        // Fetch cars
+        const carsArray = await getAllCars(user.driver_id, user.token);
         setCars(Array.isArray(carsArray) ? carsArray : []);
+
+        refreshCounts();
       } catch (err) {
         setError(err.message || 'Something went wrong');
         refreshCounts();
-        setLoading(false);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [user, reaction]);
+    // eslint-disable-next-line
+  }, [user, page, filters, reaction]);
+
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
   const vehicleOptions = filteredCars.map(car => ({
@@ -100,8 +98,9 @@ const TomorrowJourneys = () => {
     const car = cars.find((c) => c.car_id === car_id);
     return car ? car.car_name : car_id;
   };
+
   const handleAcknowledge = async (job) => {
-    setActionLoading(true); // Global spinner
+    setActionLoading(true);
     setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
 
     try {
@@ -125,7 +124,6 @@ const TomorrowJourneys = () => {
         return;
       }
 
-      // Proceed with acknowledge
       await acknowledgeStatus({
         driver_id: user.driver_id,
         booking_journey_id: job.booking_journey_id,
@@ -133,7 +131,6 @@ const TomorrowJourneys = () => {
         token: user.token,
       });
 
-      // Update job state in UI
       setTomorrowJobs((prev) =>
         prev.map((j) =>
           j.booking_journey_id === job.booking_journey_id
@@ -148,88 +145,23 @@ const TomorrowJourneys = () => {
             : j
         )
       );
-      // Show success alert
       alert('Job acknowledged successfully!');
       refreshCounts();
-
-      // Force re-render by updating a state variable
       setReaction(true);
     } catch (err) {
       alert(err.message || 'Failed to acknowledge job');
     } finally {
-      // Always stop loading, even after alerts
       setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: false }));
       setActionLoading(false);
     }
   };
 
-
-  useEffect(() => {
-    const filtered = tomorrowJobs.filter((job) => {
-      const matchText = (key) =>
-        job[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
-
-      const matchPostcode = (key) => {
-        const input = filters[key]?.toLowerCase().trim();
-        if (!input) return true;
-
-        const value = job[key]?.toString().toLowerCase();
-        const postcodeMatch = value.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}/i);
-
-        if (postcodeMatch) {
-          const fullPostcode = postcodeMatch[0].replace(/\s+/g, '').toLowerCase();
-          const prefix = fullPostcode.slice(0, input.length);
-          return prefix === input;
-        }
-
-        return false;
-      };
-
-      // Convert pickup_date to 'YYYY-MM-DD'
-      let jobDateISO = '';
-      if (job.pickup_date) {
-        const dt = DateTime.fromFormat(job.pickup_date, "yyyy-MM-dd HH:mm:ss", { zone: 'Europe/London' });
-        jobDateISO = dt.isValid ? dt.toISODate() : '';
-      }
-
-      const dateMatch = !filters.pickup_date || jobDateISO === filters.pickup_date;
-      const carMatch = !filters.car_id || filters.car_id.length === 0 || filters.car_id.includes(job.car_id);
-
-      const fromPostcodeMatch = matchPostcode('from_address');
-      const toPostcodeMatch = matchPostcode('to_address');
-
-      return (
-        (!filters.booking_sub_id || matchText('booking_sub_id')) &&
-        fromPostcodeMatch &&
-        toPostcodeMatch &&
-        (!filters.waypoint || matchText('waypoint')) &&
-        (!filters.passengers || matchText('passengers')) &&
-        (!filters.luggage || matchText('luggage')) &&
-        (!filters.distance || matchText('distance')) &&
-        (!filters.bid_expiry || matchText('bid_expiry')) &&
-        dateMatch &&
-        carMatch &&
-        job.acknowledge_status !== 1 &&
-        job.acknowledge_status !== '1'
-      );
-    });
-
-    setFilteredJobs(filtered);
-  }, [filters, tomorrowJobs]);
-
+  // No client-side filtering needed, as server does it
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      booking_sub_id: '',
-      from_address: '',
-      to_address: '',
-      pickup_date: '',
-    });
+    setPage(1);
   };
 
   return (
@@ -248,7 +180,7 @@ const TomorrowJourneys = () => {
           <div className="w-full">
             <JobsTabs activeTab="tomorrow" user={user} />
 
-            {/* 4 Filters */}
+            {/* 5 Filters */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 px-5 mb-2">
               <input
                 type="text"
@@ -291,6 +223,7 @@ const TomorrowJourneys = () => {
                 onChange={selectedOptions => {
                   const selectedValues = selectedOptions.map(option => option.value);
                   setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                  setPage(1);
                 }}
                 className="w-full"
                 placeholder="Select Vehicle(s)"
@@ -319,32 +252,28 @@ const TomorrowJourneys = () => {
                         key={job.id || idx}
                         className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full"
                       >
+                        {/* ...existing job card code... */}
                         {/* Header */}
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-blue-600 font-medium ml-auto"><b>Tomorrow</b></span>
                         </div>
-
-                        {/* Content block with flex-grow */}
+                        {/* ...rest of the card as before... */}
                         <div className="flex-1 flex flex-col space-y-1 text-sm text-gray-700">
+                          {/* ...all job details as before... */}
                           <div className="mb-2">
                             <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                               <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                             </h4>
-
                             <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
                               <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_sub_id}</b>
                             </p>
                           </div>
-
-                          {/* Pickup */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-map-marker-alt text-blue-500"></i> <b>Pickup:</b>
                             </span>
                             <span className="block ml-6"><b>{job.from_address}</b></span>
                           </div>
-
-                          {/* Waypoints */}
                           {job.waypoint?.trim() !== '' &&
                             job.waypoint.split('|').map((wp, i) =>
                               wp.trim() && (
@@ -357,22 +286,18 @@ const TomorrowJourneys = () => {
                                 </div>
                               )
                             )}
-
-                          {/* DropOff */}
                           <div>
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-map-pin text-red-500"></i> <b>DropOff:</b>
                             </span>
                             <span className="block ml-6"><b>{job.to_address}</b></span>
                           </div>
-
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-road text-yellow-500"></i> <b>Distance:</b>
                             </span>
                             <span className="text-right"><b>{job.distance} miles Approx</b></span>
                           </div>
-
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-calendar-alt text-blue-400"></i> <b>Journey Date:</b>
@@ -387,7 +312,6 @@ const TomorrowJourneys = () => {
                               </b>
                             </span>
                           </div>
-
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-clock text-purple-500"></i> <b>Journey Time:</b>
@@ -402,21 +326,18 @@ const TomorrowJourneys = () => {
                               </b>
                             </span>
                           </div>
-
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-users text-purple-500"></i> <b>Passengers:</b>
                             </span>
                             <span className="text-right"><b>{job.passengers}</b></span>
                           </div>
-
                           <div className="flex justify-between">
                             <span className="flex items-center gap-2 font-medium text-gray-600">
                               <i className="fas fa-suitcase text-pink-500"></i> <b>Luggage:</b>
                             </span>
                             <span className="text-right"><b>{job.luggage}</b></span>
                           </div>
-
                           {job.flight_no?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -425,7 +346,6 @@ const TomorrowJourneys = () => {
                               <span className="text-right"><b>{job.flight_no}</b></span>
                             </div>
                           )}
-
                           {job.arrive_from?.trim() !== '' && (
                             <div className="flex justify-between">
                               <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -434,7 +354,6 @@ const TomorrowJourneys = () => {
                               <span className="text-right"><b>{job.arrive_from}</b></span>
                             </div>
                           )}
-
                           {job.driver_supplier_remarks?.trim() !== '' && (
                             <div>
                               <span className="flex items-center gap-2 font-medium text-gray-600">
@@ -444,7 +363,6 @@ const TomorrowJourneys = () => {
                             </div>
                           )}
                         </div>
-
                         {/* Bottom pinned button/status */}
                         <div className="mt-auto pt-3">
                           <div className="flex justify-end">
@@ -464,7 +382,6 @@ const TomorrowJourneys = () => {
                           </div>
                         </div>
                       </div>
-
                     ))
                   ) : (
                     <div className="col-span-full text-center text-gray-600 p-4 border rounded-md">
@@ -474,7 +391,25 @@ const TomorrowJourneys = () => {
                 </div>
               )}
             </div>
-
+            {pagination && (
+              <div className="flex justify-center gap-4 my-4">
+                <button
+                  disabled={pagination.current_page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+                <button
+                  disabled={pagination.current_page === pagination.total_pages}
+                  onClick={() => setPage(p => p + 1)}
+                  className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

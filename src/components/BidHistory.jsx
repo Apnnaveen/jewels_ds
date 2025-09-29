@@ -27,10 +27,13 @@ const BidHistory = () => {
   const [reaction, setReaction] = useState(false);
   const { refreshCounts } = useJobsCounts();
   const [disabledButton, setDisabledButton] = useState(new Set());
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(5); // can adjust
+  const [pagination, setPagination] = useState(null);
+
 
   const [filters, setFilters] = useState({
     booking_ref_id: '',
-    biding_amount: '',
     from_address: '',
     to_address: '',
     pickup_date: '',
@@ -168,74 +171,65 @@ const BidHistory = () => {
     }
   };
 
-  useEffect(() => {
-    if (reaction) {
-      const fetchUpdatedBids = async () => {
-        setActionLoading(true);
-        try {
-          const updatedBids = await bid_history(user.driver_id, user.token);
-          const sortedData = [...updatedBids].sort((a, b) => {
-            const dateA = DateTime.fromFormat(a.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-            const dateB = DateTime.fromFormat(b.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+  const fetchBidHistoryData = async ({ isReaction = false } = {}) => {
+  if (!user?.driver_id || !user?.token) return;
 
-            if (!dateA.isValid) return 1;
-            if (!dateB.isValid) return -1;
+  if (isReaction) setActionLoading(true);
+  else setLoading(true);
 
-            return dateA.toMillis() - dateB.toMillis();
-          });
-          refreshCounts();
-          setBidHistory(sortedData);
-          setFilteredBids(sortedData);
-        } catch (error) {
-          console.error("Error refreshing bid history after update:", error);
-        } finally {
-          setActionLoading(false);
-          setReaction(false); // reset the flag
-        }
-      };
+  try {
+   const params = {
+    page,
+    per_page: perPage,
+    booking_ref_id: filters.booking_ref_id, // NOT ref_filter
+    pickup_date: filters.pickup_date,       // NOT date
+    car_id: filters.car_id,                 // array supported
+    from_address: filters.from_address,
+    to_address: filters.to_address,
+  };
 
-      fetchUpdatedBids();
-    }
-  }, [reaction, user]);
-  useEffect(() => {
-    if (!user?.driver_id || !user?.token) {
-      navigate('/login');
-      return;
-    }
 
-    const fetchBidHistory = async () => {
-      try {
-        const [response, carsArray] = await Promise.all([
-          bid_history(user.driver_id, user.token),
-          getAllCars(user.driver_id, user.token)
-        ]);
-        console.log('Bid History Response:', response);
-        refreshCounts();
-        const data = Array.isArray(response) ? response : [];
+    const [response, carsArray] = await Promise.all([
+      bid_history(user.driver_id, user.token, params),
+      getAllCars(user.driver_id, user.token)
+    ]);
 
-        // Sort by pickup_date
-        const sortedData = [...data].sort((a, b) => {
-          const dateA = DateTime.fromFormat(a.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-          const dateB = DateTime.fromFormat(b.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+    // Backend should now return { data: [...], pagination: {...} }
+    const data = response.data || [];
+    const sortedData = [...data].sort((a, b) => {
+      const dateA = DateTime.fromFormat(a.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+      const dateB = DateTime.fromFormat(b.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+      if (!dateA.isValid) return 1;
+      if (!dateB.isValid) return -1;
+      return dateA.toMillis() - dateB.toMillis();
+    });
 
-          if (!dateA.isValid) return 1;
-          if (!dateB.isValid) return -1;
+    setBidHistory(sortedData);
+    setFilteredBids(sortedData);
+    setPagination(response.pagination || null);
+    setCars(Array.isArray(carsArray) ? carsArray : []);
+    refreshCounts();
+  } catch (error) {
+    console.error('Error fetching bid history:', error);
+  } finally {
+    if (isReaction) setActionLoading(false);
+    else setLoading(false);
+  }
+};
+useEffect(() => {
+  if (!user?.driver_id || !user?.token) {
+    navigate('/login');
+    return;
+  }
+  fetchBidHistoryData();
+}, [user, navigate, page, filters]);
+useEffect(() => {
+  if (reaction) {
+    fetchBidHistoryData({ isReaction: true });
+    setReaction(false);
+  }
+}, [reaction]);
 
-          return dateA.toMillis() - dateB.toMillis();
-        });
-
-        setBidHistory(sortedData);
-        setFilteredBids(sortedData);
-        setCars(Array.isArray(carsArray) ? carsArray : []);
-      } catch (error) {
-        console.error('Error fetching bid history:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBidHistory();
-  }, [user, navigate]);
 
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
@@ -297,9 +291,11 @@ const BidHistory = () => {
 
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  const { name, value } = e.target;
+  setFilters(prev => ({ ...prev, [name]: value }));
+  setPage(1); // RESET PAGE whenever filter changes
+};
+
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -533,6 +529,25 @@ const BidHistory = () => {
               </div>
             )}
           </div>
+          {pagination && (
+            <div className="flex justify-center gap-4 my-4">
+              <button
+                disabled={pagination.current_page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+              <button
+                disabled={pagination.current_page === pagination.total_pages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
           {showModal && selectedBid && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
               <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full relative">

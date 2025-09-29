@@ -43,14 +43,16 @@ export const JobsCountsProvider = ({ user, children }) => {
                 completed_journeys(user.driver_id, user.token)
             ]);
             setCounts({
-                available: Array.isArray(available) ? available.length : 0,
-                bid: Array.isArray(bid) ? bid.length : 0,
-                scheduled: Array.isArray(scheduled) ? scheduled.length : 0,
+                available: Array.isArray(available?.data?.data) ? available.data.data.length : 0,
+                bid: Array.isArray(bid?.data) ? bid.data.length : 0,
+                scheduled: Array.isArray(scheduled?.data) ? scheduled.data.length : 0,
                 tomorrow: Array.isArray(tomorrow) ? tomorrow.length : 0,
-                upcoming: Array.isArray(upcoming) ? upcoming.length : 0,
+                upcoming: Array.isArray(upcoming?.data) ? upcoming.data.length : 0,
                 completed: Array.isArray(completed) ? completed.length : 0,
             });
-
+            
+            console.log('sche',scheduled);
+            
         } catch {
             setCounts({
                 available: 0, bid: 0, scheduled: 0, tomorrow: 0, upcoming: 0, completed: 0

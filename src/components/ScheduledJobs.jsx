@@ -14,6 +14,10 @@ const ScheduledJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(5); 
+  const [pagination, setPagination] = useState(null);
+  const [pageLoading, setPageLoading] = useState(false);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('scheduled');
@@ -31,13 +35,9 @@ const ScheduledJobs = () => {
   const [disabledButton, setDisabledButton] = useState(new Set());
 
   const [filters, setFilters] = useState({
-    vehicle_type: '',
     booking_ref_id: '',
     from_address: '',
     to_address: '',
-    meet_and_greet: '',
-    distance: '',
-    quoted_price: '',
     pickup_date: '',
     car_id: [],
   });
@@ -63,6 +63,7 @@ const ScheduledJobs = () => {
       if (user?.driver_id && user?.token) {
         try {
           const carsArray = await getAllCars(user.driver_id, user.token);
+
           setCars(Array.isArray(carsArray) ? carsArray : []);
         } catch {
           setCars([]);
@@ -74,6 +75,7 @@ const ScheduledJobs = () => {
 
   const getCarName = (car_id) => {
     const car = cars.find((c) => c.car_id === car_id);
+
     return car ? car.car_name : car_id;
   };
 
@@ -85,29 +87,29 @@ const ScheduledJobs = () => {
         setError('User not authenticated');
         return;
       }
-      
-    // Fetch expiry from backend for this driver & journey
-    let expiryTime = job.availability_expired_time;
-    if (!expiryTime) {
-      expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
-    }
-    
-    if (expiryTime) {
-      const expiredDt = DateTime.fromFormat(expiryTime, "yyyy-MM-dd HH:mm:ss", { zone: "Europe/London" });
-      const now = DateTime.now().setZone("Europe/London");
-          console.log(expiredDt);
 
-      if (expiredDt.isValid && expiredDt < now) {
-        alert("This job is expired and cannot be accepted.");
-        setDisabledButton(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(job.booking_journey_id);
-          return newSet;
-        });
-        setReaction(true);
-        return;
+      // Fetch expiry from backend for this driver & journey
+      let expiryTime = job.availability_expired_time;
+      if (!expiryTime) {
+        expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
       }
-    }
+
+      if (expiryTime) {
+        const expiredDt = DateTime.fromFormat(expiryTime, "yyyy-MM-dd HH:mm:ss", { zone: "Europe/London" });
+        const now = DateTime.now().setZone("Europe/London");
+        console.log(expiredDt);
+
+        if (expiredDt.isValid && expiredDt < now) {
+          alert("This job is expired and cannot be accepted.");
+          setDisabledButton(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(job.booking_journey_id);
+            return newSet;
+          });
+          setReaction(true);
+          return;
+        }
+      }
       // Get date in YYYY-MM-DD
       const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
 
@@ -196,77 +198,65 @@ const ScheduledJobs = () => {
 
   useEffect(() => {
     const fetchScheduledJobs = async () => {
+      if (!user?.driver_id || !user?.token) {
+        setError('User not authenticated');
+        setLoading(false);
+        return;
+      }
+
       try {
-        if (!user?.driver_id || !user?.token) {
-          setError('User not authenticated');
-          setLoading(false);
-          return;
-        }
-        const response = await scheduled_journey_details(user.driver_id, user.token);
+         setPageLoading(true);
+        // Prepare params only if not a reaction refresh
+        const params = !reaction
+          ? {
+            page,
+            per_page: perPage,
+            ref_filter: filters.booking_ref_id,
+            date: filters.pickup_date,
+            vehicle: filters.car_id[0] || '',
+            from_address: filters.from_address,
+            to_address: filters.to_address,
+          }
+          : undefined;
+
+        const response = await scheduled_journey_details(user.driver_id, user.token, params);
+
         const jobs = Array.isArray(response)
           ? response
           : Array.isArray(response?.data)
             ? response.data
             : [];
-        if (!Array.isArray(jobs)) {
-          throw new Error('Invalid job data received.');
-        }
+
+        if (!Array.isArray(jobs)) throw new Error('Invalid job data received.');
+
+        setPagination(response.pagination || null);
         refreshCounts();
         setScheduledJobs(jobs);
         setFilteredJobs(jobs);
-        // Mark unseen as seen
-        const seen = JSON.parse(user.user_seen || '[]');
-        const newRefs = jobs.map(job => job.booking_journey_id);
-        const updatedSeen = [...new Set([...seen, ...newRefs])];
 
-        if (newRefs.length > 0) {
-          await updateUserSeenScheduled(user.driver_id, updatedSeen, user.token);
+        // Only update unseen if not a reaction refresh
+        if (!reaction) {
+          const seen = JSON.parse(user.user_seen || '[]');
+          const newRefs = jobs.map(job => job.booking_journey_id);
+          const updatedSeen = [...new Set([...seen, ...newRefs])];
 
-          window.dispatchEvent(new Event('userScheduledSeenUpdated'));
-
-
+          if (newRefs.length > 0) {
+            await updateUserSeenScheduled(user.driver_id, updatedSeen, user.token);
+            window.dispatchEvent(new Event('userScheduledSeenUpdated'));
+          }
         }
       } catch (err) {
         setError(err.message || 'Something went wrong');
       } finally {
+        setPageLoading(false);
         setLoading(false);
+        if (reaction) setReaction(false);
       }
     };
+
     fetchScheduledJobs();
-  }, [user]);
+  }, [user, page, filters, reaction]);
 
-
-  // Refresh jobs after accept/decline
-  useEffect(() => {
-    if (reaction) {
-      const fetchScheduledJobs = async () => {
-        try {
-          if (!user?.driver_id || !user?.token) {
-            setError('User not authenticated');
-            return;
-          }
-          const response = await scheduled_journey_details(user.driver_id, user.token);
-          const jobs = Array.isArray(response)
-            ? response
-            : Array.isArray(response?.data)
-              ? response.data
-              : [];
-          if (!Array.isArray(jobs)) {
-            throw new Error('Invalid job data received.');
-          }
-          refreshCounts();
-          setScheduledJobs(jobs);
-          setFilteredJobs(jobs);
-        } catch (err) {
-          setError(err.message || 'Something went wrong');
-        } finally {
-          setLoading(false);
-          setReaction(false);
-        }
-      };
-      fetchScheduledJobs();
-    }
-  }, [reaction, user]);
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
   const vehicleOptions = filteredCars.map(car => ({
@@ -324,8 +314,10 @@ const ScheduledJobs = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // reset page whenever filter changes
   };
+
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -391,7 +383,9 @@ const ScheduledJobs = () => {
                 onChange={selectedOptions => {
                   const selectedValues = selectedOptions.map(option => option.value);
                   setFilters(prev => ({ ...prev, car_id: selectedValues }));
+                  setPage(1); // reset page whenever vehicle filter changes
                 }}
+
                 className="w-full"
                 placeholder="Select Vehicle(s)"
               />
@@ -403,7 +397,7 @@ const ScheduledJobs = () => {
               />
             </div>
             <div className="jobs-content">
-              {loading ? (
+              {loading || pageLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {(Array.from({ length: filteredJobs?.length || 6 })).map((_, i) => (
                     <ScheduledJobSkeleton key={i} />
@@ -423,6 +417,7 @@ const ScheduledJobs = () => {
                         key={job.id || index}
                         className="bg-white rounded-xl shadow-md p-4 flex flex-col h-full"
                       >
+
                         {/* Top section */}
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-blue-600 font-medium ml-auto"><b>Scheduled</b></span>
@@ -574,6 +569,25 @@ const ScheduledJobs = () => {
               )}
             </div>
           </div>
+          {pagination && (
+            <div className="flex justify-center gap-4 my-4">
+              <button
+                disabled={pagination.current_page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+              <button
+                disabled={pagination.current_page === pagination.total_pages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
           {showConflictModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
               <div className="bg-white w-full max-w-6xl p-6 rounded-lg shadow-lg relative">

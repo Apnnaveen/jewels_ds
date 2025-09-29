@@ -13,7 +13,9 @@ const CompletedJobs = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
-
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(5);
+  const [pagination, setPagination] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [completedJobs, setCompletedJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -54,33 +56,39 @@ const CompletedJobs = () => {
 
   };
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!user?.driver_id || !user?.token) {
-          setError('User not authenticated');
-          return;
-        }
-        const [response, carsArray] = await Promise.all([
-          completed_journeys(user.driver_id, user.token),
-          getAllCars(user.driver_id, user.token)
-        ]);
-        const jobs = Array.isArray(response)
-          ? response
-          : Array.isArray(response?.data)
-            ? response.data
-            : [];
-        refreshCounts();
-        setCompletedJobs(jobs);
-        setFilteredJobs(jobs);
-        setCars(Array.isArray(carsArray) ? carsArray : []);
-      } catch (err) {
-        setError(err.message || 'Something went wrong');
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      if (!user?.driver_id || !user?.token) {
+        setError('User not authenticated');
+        return;
       }
-    };
-    fetchData();
-  }, [user]);
+
+      // ✅ fetch bookings with pagination + filters
+      const response = await completed_journeys(user.driver_id, user.token, {
+        page,
+        per_page: perPage,
+        ref_filter: filters.booking_ref_id,
+        date: filters.pickup_date,
+        vehicle: filters.car_id[0] || ''
+      });
+      console.log("com",response);
+      
+      setCompletedJobs(response.data);
+      setPagination(response.pagination);
+
+      // ✅ fetch cars (same as before)
+      const carsArray = await getAllCars(user.driver_id, user.token);
+      setCars(Array.isArray(carsArray) ? carsArray : []);
+
+      refreshCounts();
+    } catch (err) {
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, [user, page, filters]);
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
   const filteredCars = cars.filter(car => userVehicleIds.includes(car.car_id));
   const vehicleOptions = filteredCars.map(car => ({
@@ -270,6 +278,26 @@ const CompletedJobs = () => {
               )}
             </div>
           </div>
+          {pagination && (
+            <div className="flex justify-center gap-4 my-4">
+              <button
+                disabled={pagination.current_page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+              <button
+                disabled={pagination.current_page === pagination.total_pages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
     </>

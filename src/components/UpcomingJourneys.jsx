@@ -29,7 +29,9 @@ const UpcomingJobs = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [vehicleTypes, setVehicleTypes] = useState([]);
   const [agreed, setAgreed] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const [perPage] = useState(5); // or 4, as you wish
+  const [pagination, setPagination] = useState(null);
   const supplierId = user?.driver_id;
   const [conflictDriverId, setConflictDriverId] = useState(null);
   const [conflictJobs, setConflictJobs] = useState([]);
@@ -84,19 +86,34 @@ const UpcomingJobs = () => {
   // ...existing code...
   const fetchUpcomingJobs = async () => {
     try {
-      setLoading(true); // 🔥 important: show loading and reset jobs
+      setLoading(true);
       if (!user?.driver_id || !user?.token) {
         setError('User not authenticated');
         return;
       }
-      const [jobsData, carsData] = await Promise.all([
-        upcoming_journey_details(user.driver_id, user.token),
+      // Prepare params for API
+      const params = {
+        page,
+        per_page: perPage,
+        ref_filter: filters.booking_ref_id,
+        date: filters.pickup_date,
+        vehicle: filters.car_id[0] || '', // only first car_id for now
+        from_address: filters.from_address,
+        to_address: filters.to_address,
+      };
+
+      const [response, carsData] = await Promise.all([
+        upcoming_journey_details(user.driver_id, user.token, params),
         getAllCars(user.driver_id, user.token)
       ]);
 
       refreshCounts();
+      console.log('sbhs',response);
+      
+      // response: { data: [...], pagination: {...} }
+      const jobs = Array.isArray(response.data) ? response.data : [];
+      setPagination(response.pagination || null);
 
-      const jobs = Array.isArray(jobsData) ? jobsData : [];
       const uniqueJobs = Object.values(
         jobs.reduce((acc, job) => {
           const key = job.booking_journey_id || job.id;
@@ -129,9 +146,11 @@ const UpcomingJobs = () => {
     }
   };
 
+  // Fetch jobs when filters or page changes
   useEffect(() => {
     fetchUpcomingJobs();
-  }, [user]);
+    // eslint-disable-next-line
+  }, [user, page, filters]);
 
 
   useEffect(() => {
@@ -243,9 +262,10 @@ const UpcomingJobs = () => {
 
 
   const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters((prev) => ({ ...prev, [name]: value }));
-  };
+  const { name, value } = e.target;
+  setFilters(prev => ({ ...prev, [name]: value }));
+  setPage(1);
+};
 
   const handleStatusUpdate = async (job, status_code) => {
     setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
@@ -1051,6 +1071,25 @@ const UpcomingJobs = () => {
               )}
             </div>
           </div>
+          {pagination && (
+            <div className="flex justify-center gap-4 my-4">
+              <button
+                disabled={pagination.current_page === 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span>Page {pagination.current_page} of {pagination.total_pages}</span>
+              <button
+                disabled={pagination.current_page === pagination.total_pages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
       {modalOpen && (
