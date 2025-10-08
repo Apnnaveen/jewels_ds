@@ -66,7 +66,6 @@ const TomorrowJourneys = () => {
           from_address: filters.from_address,
           to_address: filters.to_address,
         });
-        console.log('tomor',response);
         
         setTomorrowJobs(response.data || []);
         setFilteredJobs(response.data || []);

@@ -106,9 +106,9 @@ const UpcomingJobs = () => {
         upcoming_journey_details(user.driver_id, user.token, params),
         getAllCars(user.driver_id, user.token)
       ]);
-
+      console.log("up",response);
+      
       refreshCounts();
-      console.log('sbhs',response);
       
       // response: { data: [...], pagination: {...} }
       const jobs = Array.isArray(response.data) ? response.data : [];
@@ -479,7 +479,6 @@ const UpcomingJobs = () => {
         refreshCounts();
         return;
       }
-      console.log("akkk", job);
 
       const driverIdToUse =
         job.driver_customer_type === "subs"

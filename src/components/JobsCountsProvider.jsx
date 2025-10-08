@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-    fetchAvailableJobs,
+    fetchCountForAvailableJobs,
     bid_history,
     scheduled_journey_details,
     tomorrow_journeys,
@@ -35,7 +35,7 @@ export const JobsCountsProvider = ({ user, children }) => {
                 upcoming,
                 completed
             ] = await Promise.all([
-                fetchAvailableJobs(user.driver_id, user.token),
+                fetchCountForAvailableJobs(user.driver_id, user.token),
                 bid_history(user.driver_id, user.token),
                 scheduled_journey_details(user.driver_id, user.token),
                 tomorrow_journeys(user.driver_id, user.token),
@@ -43,7 +43,7 @@ export const JobsCountsProvider = ({ user, children }) => {
                 completed_journeys(user.driver_id, user.token)
             ]);
             setCounts({
-                available: Array.isArray(available?.data?.data) ? available.data.data.length : 0,
+                available: Array.isArray(available?.data) ? available.data.length : 0,
                 bid: Array.isArray(bid?.data) ? bid.data.length : 0,
                 scheduled: Array.isArray(scheduled?.data) ? scheduled.data.length : 0,
                 tomorrow: Array.isArray(tomorrow) ? tomorrow.length : 0,
@@ -51,7 +51,6 @@ export const JobsCountsProvider = ({ user, children }) => {
                 completed: Array.isArray(completed) ? completed.length : 0,
             });
             
-            console.log('sche',scheduled);
             
         } catch {
             setCounts({

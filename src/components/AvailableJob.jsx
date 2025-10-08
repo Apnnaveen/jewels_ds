@@ -74,7 +74,6 @@ export default function AvailableJob() {
             };
 
             const response = await fetchAvailableJobs(user.driver_id, user.token, params);
-            console.log('res', response);
 
 
             if (response?.data) {
@@ -188,47 +187,61 @@ export default function AvailableJob() {
     };
 
     const handleSubmitBid = async () => {
-        setDisabledButton(prev => new Set(prev).add(selectedJob.booking_journey_id));
+    if (!selectedJob || !quote || !isChecked) return;
 
-        if (!selectedJob || !quote || !isChecked) return;
-        try {
-            const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
-            if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-                alert('This job has already been assigned to another driver.');
-                setShowModal(false);
-                setQuote('');
-                setIsChecked(false);
-                setReaction(true);
-                return;
-            }
+    setSubmitting(true);
+    setDisabledButton(prev => new Set(prev).add(selectedJob.booking_journey_id));
 
-            await bidJob({
-                booking_journey_id: selectedJob.booking_journey_id,
-                driver_id: user.driver_id,
-                email: user.email,
-                fare: quote,
-                token: user.token,
-            });
-            await fetchJobs();
-            alert('Bid submitted successfully!');
-            refreshCounts();
+    try {
+        // Check if job is already assigned
+        const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
+        if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+            alert('This job has already been assigned to another driver.');
             setShowModal(false);
             setQuote('');
             setIsChecked(false);
             setReaction(true);
-
-        } catch (err) {
-            setLoading(false);
-            alert('Failed to submit bid: ' + err.message);
-        } finally {
-            setDisabledButton(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(selectedJob.booking_journey_id);
-                return newSet;
-            });
+            return;
         }
+
+        // Submit bid
+        await bidJob({
+            booking_journey_id: selectedJob.booking_journey_id,
+            driver_id: user.driver_id,
+            email: user.email,
+            fare: quote,
+            token: user.token,
+        });
+
+        // ✅ Optimistic UI update: remove the job instantly from list
+        setJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
+        setFilteredJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
+
+        // ✅ Refresh counts and fetch latest jobs from backend
+        refreshCounts();
+        await fetchJobs();
+
+        alert('Bid submitted successfully!');
+
+        // Reset states & close modal
+        setShowModal(false);
+        setQuote('');
+        setIsChecked(false);
+        setReaction(true);
+
+    } catch (err) {
+        alert('Failed to submit bid: ' + err.message);
+    } finally {
         setSubmitting(false);
-    };
+        setDisabledButton(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(selectedJob.booking_journey_id);
+            return newSet;
+        });
+    }
+};
+
+
 
     const handleCloseModal = () => {
         setShowModal(false);

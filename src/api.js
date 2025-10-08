@@ -25,7 +25,6 @@ export async function loginUser(email, password) {
 export const fetchAvailableJobs = async (driverId, token, params = {}) => {
   try {
     const queryString = new URLSearchParams(params).toString();
-    console.log('Fetching available jobs with params:', params);
     
 
     const response = await fetch(`https://jat-uk.com/api/users/available_jobs/${driverId}/portal?${queryString}`,
@@ -45,7 +44,26 @@ export const fetchAvailableJobs = async (driverId, token, params = {}) => {
     return null;
   }
 };
+export const fetchCountForAvailableJobs = async (driverId, token) => {
+  try {
+    
+    const response = await fetch(`https://jat-uk.com/api/users/available_jobs/${driverId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch available jobs");
+    }
 
+    return await response.json();
+  } catch (error) {
+    console.error("Error in fetchAvailableJobs:", error);
+    return null;
+  }
+};
 //
 // user_profile
 export async function getUserProfile(driverId, token) {
@@ -124,7 +142,6 @@ export async function getScheduledJobs(driverId, token) {
   return result.data;
 }
 export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
-  console.log('Fetching journey details for bookingId:', booking_journey_id, 'and driverId:', driverId);
   const response = await fetch(
     `https://jat-uk.com/api/users/journeyDetails`,
     {
@@ -150,7 +167,6 @@ export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
 // ...existing code...
 
 export async function bidJob({ booking_journey_id, driver_id, email, fare, token }) {
-  console.log('Submitting bid for booking_journey_id:', booking_journey_id, 'driver_id:', driver_id, 'email:', email, 'fare:', fare);
   const response = await fetch('https://jat-uk.com/api/users/bid_job', {
     method: 'POST',
     headers: {
@@ -247,7 +263,6 @@ export async function upcoming_journey_details(driver_id, token, params = {}) {
   );
 
   const result = await response.json();
-  
   if (!response.ok) {
     throw new Error(result.message || 'Failed to fetch upcoming journeys');
   }
@@ -256,7 +271,6 @@ export async function upcoming_journey_details(driver_id, token, params = {}) {
 }
 export async function tomorrow_journeys(driver_id, token, params = {}) {
   const query = new URLSearchParams(params).toString();
-  console.log('Query params for tomorrow journeys:', query);
   
   let environment = 'portal';
   const response = await fetch(
@@ -296,7 +310,6 @@ export async function tomorrow_journeys(driver_id, token, params = {}) {
 // }
 export async function completed_journeys(driver_id, token, params = {}) {
   const query = new URLSearchParams(params).toString();
-  console.log('Query params for completed journeys:', query);
 
   const response = await fetch(
     `https://jat-uk.com/api/users/completed_journey_details/${driver_id}?${query}`,
@@ -575,7 +588,6 @@ export async function save_supplier_driver(data, token) {
 }
 
 export async function delete_driver(driverId, token) {
-  console.log("Sending token:", token);
 
   const response = await fetch(
     `https://jat-uk.com/api/users/api_delete_supplier_driver/${driverId}`,
@@ -714,7 +726,6 @@ export async function change_password(token, password) {
   });
 
   const result = await response.json();
-  console.log('dd',result.error);
   
   if (!response.ok) {
     throw new Error(result.error || 'Failed to reset password');

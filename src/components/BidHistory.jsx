@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver } from '../api';
+import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver, fetchJourneyDetails } from '../api';
 import Loading from './Loading/Loading';
 import BidCardSkeleton from './Loading/BidCardSkeleton';
 import { DateTime } from 'luxon';
@@ -19,6 +19,8 @@ const BidHistory = () => {
   const [loading, setLoading] = useState(true);
   const [cars, setCars] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedBid, setSelectedBid] = useState(null);
   const [quote, setQuote] = useState('');
@@ -57,11 +59,32 @@ const BidHistory = () => {
     bid: filteredBids.length, // Quotation tab
 
   };
-  const handleUpdateBid = (bid) => {
-    setSelectedBid(bid);
-    setQuote(bid.biding_amount || '');
+ 
+  const handleUpdateBid = async (bid) => {
+    setDisabledButton(prev => new Set(prev).add(bid.booking_journey_id));
+    setDetailsError('');
     setShowModal(true);
+    setSelectedBid(bid);
     setIsChecked(true);
+    setLoadingDetails(true);
+    ;
+
+    try {
+      const details = await fetchJourneyDetails(bid.booking_journey_id, user.driver_id, user.token);
+
+      setSelectedBid(prev => ({ ...prev, ...details[0] }));
+      refreshCounts();
+    } catch (err) {
+      setDetailsError('Failed to load details.');
+    } finally {
+      setDisabledButton(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(bid.booking_journey_id);
+        return newSet;
+      });
+    }
+    setLoadingDetails(false);
+
   };
   const handleSubmitUpdateBid = async () => {
     setDisabledButton(prev => new Set(prev).add(selectedBid.booking_journey_id));
@@ -70,15 +93,36 @@ const BidHistory = () => {
     setSubmitting(true);
     try {
       const checkResult = await checkBidJobs(selectedBid.booking_journey_id, user.token);
-      if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-        alert('This job has already been assigned to another driver.');
-        refreshCounts();
-        setShowModal(false);
-        setQuote('');
-        setIsChecked(false);
-        setReaction(true); // refresh jobs
-        setSubmitting(false);
-        return;
+      
+
+      if (checkResult) {
+        const { assigned, bid_timer } = checkResult;
+
+        // 1. Check if job is already assigned
+        if (assigned === true || assigned === 1) {
+          alert('This job has already been assigned to another driver.');
+          refreshCounts();
+          setShowModal(false);
+          setQuote('');
+          setIsChecked(false);
+          setReaction(true); // refresh jobs
+          setSubmitting(false);
+          return;
+        }
+
+        // 2. Check if bid has expired
+        if (bid_timer && bid_timer.time_left === "bid_expired") {
+          alert("You can't quote this booking. The bid has expired.");
+          refreshCounts();
+          setShowModal(false);
+          setQuote('');
+          setIsChecked(false);
+          setReaction(true); // refresh jobs
+          setSubmitting(false);
+          return;
+        }
+
+
       }
       const checkCurrentResult = await checkBidForCurrentDriver(selectedBid.booking_journey_id, user.driver_id, user.token);
       if (checkCurrentResult?.assigned === 1) {
@@ -172,63 +216,63 @@ const BidHistory = () => {
   };
 
   const fetchBidHistoryData = async ({ isReaction = false } = {}) => {
-  if (!user?.driver_id || !user?.token) return;
+    if (!user?.driver_id || !user?.token) return;
 
-  if (isReaction) setActionLoading(true);
-  else setLoading(true);
+    if (isReaction) setActionLoading(true);
+    else setLoading(true);
 
-  try {
-   const params = {
-    page,
-    per_page: perPage,
-    booking_ref_id: filters.booking_ref_id, // NOT ref_filter
-    pickup_date: filters.pickup_date,       // NOT date
-    car_id: filters.car_id,                 // array supported
-    from_address: filters.from_address,
-    to_address: filters.to_address,
+    try {
+      const params = {
+        page,
+        per_page: perPage,
+        booking_ref_id: filters.booking_ref_id, // NOT ref_filter
+        pickup_date: filters.pickup_date,       // NOT date
+        car_id: filters.car_id,                 // array supported
+        from_address: filters.from_address,
+        to_address: filters.to_address,
+      };
+
+
+      const [response, carsArray] = await Promise.all([
+        bid_history(user.driver_id, user.token, params),
+        getAllCars(user.driver_id, user.token)
+      ]);
+      
+      // Backend should now return { data: [...], pagination: {...} }
+      const data = response.data || [];
+      const sortedData = [...data].sort((a, b) => {
+        const dateA = DateTime.fromFormat(a.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+        const dateB = DateTime.fromFormat(b.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
+        if (!dateA.isValid) return 1;
+        if (!dateB.isValid) return -1;
+        return dateA.toMillis() - dateB.toMillis();
+      });
+
+      setBidHistory(sortedData);
+      setFilteredBids(sortedData);
+      setPagination(response.pagination || null);
+      setCars(Array.isArray(carsArray) ? carsArray : []);
+      refreshCounts();
+    } catch (error) {
+      console.error('Error fetching bid history:', error);
+    } finally {
+      if (isReaction) setActionLoading(false);
+      else setLoading(false);
+    }
   };
-
-
-    const [response, carsArray] = await Promise.all([
-      bid_history(user.driver_id, user.token, params),
-      getAllCars(user.driver_id, user.token)
-    ]);
-
-    // Backend should now return { data: [...], pagination: {...} }
-    const data = response.data || [];
-    const sortedData = [...data].sort((a, b) => {
-      const dateA = DateTime.fromFormat(a.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-      const dateB = DateTime.fromFormat(b.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
-      if (!dateA.isValid) return 1;
-      if (!dateB.isValid) return -1;
-      return dateA.toMillis() - dateB.toMillis();
-    });
-
-    setBidHistory(sortedData);
-    setFilteredBids(sortedData);
-    setPagination(response.pagination || null);
-    setCars(Array.isArray(carsArray) ? carsArray : []);
-    refreshCounts();
-  } catch (error) {
-    console.error('Error fetching bid history:', error);
-  } finally {
-    if (isReaction) setActionLoading(false);
-    else setLoading(false);
-  }
-};
-useEffect(() => {
-  if (!user?.driver_id || !user?.token) {
-    navigate('/login');
-    return;
-  }
-  fetchBidHistoryData();
-}, [user, navigate, page, filters]);
-useEffect(() => {
-  if (reaction) {
-    fetchBidHistoryData({ isReaction: true });
-    setReaction(false);
-  }
-}, [reaction]);
+  useEffect(() => {
+    if (!user?.driver_id || !user?.token) {
+      navigate('/login');
+      return;
+    }
+    fetchBidHistoryData();
+  }, [user, navigate, page, filters]);
+  useEffect(() => {
+    if (reaction) {
+      fetchBidHistoryData({ isReaction: true });
+      setReaction(false);
+    }
+  }, [reaction]);
 
 
   const userVehicleIds = user.vehicle_id.split(',').map(id => id.trim());
@@ -291,10 +335,10 @@ useEffect(() => {
 
 
   const handleFilterChange = (e) => {
-  const { name, value } = e.target;
-  setFilters(prev => ({ ...prev, [name]: value }));
-  setPage(1); // RESET PAGE whenever filter changes
-};
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(1); // RESET PAGE whenever filter changes
+  };
 
 
   const handleLogout = () => {
@@ -379,10 +423,10 @@ useEffect(() => {
             {/* Card Grid */}
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                  {(Array.from({ length: 6 })).map((_, i) => (
-                    <BidCardSkeleton key={i} />
-                  ))}
-                </div>
+                {(Array.from({ length: 6 })).map((_, i) => (
+                  <BidCardSkeleton key={i} />
+                ))}
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 items-stretch">
                 {filteredBids.length > 0 ? (
@@ -512,11 +556,16 @@ useEffect(() => {
                           Cancel Bid
                         </button>
                         <button
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded"
+                          className={`flex-1 text-sm font-medium py-2 px-4 rounded 
+                          ${bid.bid_timer?.time_left === "bid_expired"
+                              ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              : "bg-blue-600 hover:bg-blue-700 text-white"}`}
                           onClick={() => handleUpdateBid(bid)}
+                          disabled={bid.bid_timer?.time_left === "bid_expired"}
                         >
                           Re-quote
                         </button>
+
                       </div>
                     </div>
 
@@ -558,53 +607,88 @@ useEffect(() => {
                 >
                   &times;
                 </button>
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-800">Update Your Bid</h2>
-                  <span className="text-green-600 font-bold">Guide Price: £{selectedBid.guided_price ?? 'N/A'}</span>
-                </div>
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
-                    <span className="font-medium text-gray-700">Journey Date: {selectedBid.pickup_date?.split(' at ')[0]}</span>
+
+                {loadingDetails ? (
+                  <div className="flex flex-col items-center justify-center h-40">
+                    <Loading />
+                    <span className="mt-4 text-gray-600">Loading details...</span>
                   </div>
-                  <div className="flex items-center">
-                    <i className="fas fa-clock mr-2 text-blue-600"></i>
-                    <span className="font-medium text-gray-700">Journey Time: {selectedBid.pickup_date?.split(' at ')[1]}</span>
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <input
-                    type="number"
-                    placeholder="£ New Quote"
-                    value={quote}
-                    onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
-                    className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="mt-4 mb-2 flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={(e) => setIsChecked(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span className="text-gray-700">
-                    By updating your bid, you accept the Jewels Airport Transfers{' '}
-                    <a href="https://jat-uk.com/instructions-and-terms" target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                      terms and conditions
-                    </a>
-                  </span>
-                </div>
-                <button
-                  className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  disabled={!isChecked || !quote || disabledButton.has(selectedBid.booking_journey_id)}
-                  onClick={handleSubmitUpdateBid}
-                >
-                  {submitting ? 'Updating...' : 'Update Bid'}
-                </button>
+                ) : detailsError ? (
+                  <div className="text-red-600 text-center">{detailsError}</div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-bold text-gray-800">Update Your Bid</h2>
+                      <span className="text-green-600 font-bold">
+                        Guide Price: £{selectedBid.guidedprice ?? 'N/A'}
+                      </span>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex items-center mb-2">
+                        <i className="fas fa-calendar-alt mr-2 text-blue-600"></i>
+                        <span className="font-medium text-gray-700">
+                          Journey Date: {selectedBid.pickup_date?.split(' at ')[0]}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <i className="fas fa-clock mr-2 text-blue-600"></i>
+                        <span className="font-medium text-gray-700">
+                          Journey Time: {selectedBid.pickup_date?.split(' at ')[1]}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <input
+                        type="number"
+                        placeholder="£ New Quote"
+                        value={quote}
+                        onChange={(e) => setQuote(e.target.value.replace(/[^0-9.]/g, ''))}
+                        className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="mt-4 mb-2 flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => setIsChecked(e.target.checked)}
+                        className="mr-2"
+                      />
+                      <span className="text-gray-700">
+                        By updating your bid, you accept the Jewels Airport Transfers{' '}
+                        <a
+                          href="https://jat-uk.com/instructions-and-terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500"
+                        >
+                          terms and conditions
+                        </a>
+                      </span>
+                    </div>
+
+                    <button
+                      className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote
+                          ? 'bg-gray-400'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      disabled={
+                        !isChecked ||
+                        !quote ||
+                        disabledButton.has(selectedBid.booking_journey_id)
+                      }
+                      onClick={handleSubmitUpdateBid}
+                    >
+                      {submitting ? 'Updating...' : 'Update Bid'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
+
         </div>
       </div>
     </>

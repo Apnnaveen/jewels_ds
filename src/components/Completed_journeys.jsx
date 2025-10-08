@@ -71,7 +71,6 @@ const CompletedJobs = () => {
         date: filters.pickup_date,
         vehicle: filters.car_id[0] || ''
       });
-      console.log("com",response);
       
       setCompletedJobs(response.data);
       setPagination(response.pagination);
