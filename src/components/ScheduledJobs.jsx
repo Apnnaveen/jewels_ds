@@ -90,11 +90,10 @@ const ScheduledJobs = () => {
 
       // Fetch expiry from backend for this driver & journey
       if (Number(job.booking_journey_id) >= 60895 && Number(job.booking_journey_id) <= 70000){
-        let expiryTime = job.availability_expired_time;
-        if (!expiryTime) {
-          expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
-        }
 
+       
+          let expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
+        
         if (expiryTime) {
           const expiredDt = DateTime.fromFormat(expiryTime, "yyyy-MM-dd HH:mm:ss", { zone: "Europe/London" });
           const now = DateTime.now().setZone("Europe/London");
@@ -111,6 +110,8 @@ const ScheduledJobs = () => {
           }
         }
     }
+   
+    
       // Get date in YYYY-MM-DD
       const dt = DateTime.fromFormat(job.pickup_date, "cccc, dd LLL yyyy 'at' HH:mm", { zone: 'Europe/London' });
 

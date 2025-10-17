@@ -932,22 +932,24 @@ export async function getSubsPermissions(driverId, token) {
 }
 
 export async function getAvailabilityExpiry(booking_journey_id, driver_id, token) {
-  const response = await fetch('https://jat-uk.com/api/users/get_availability_expiry', {
-    method: 'POST',
+  const formData = new FormData();
+  formData.append("booking_journey_id", booking_journey_id);
+  formData.append("driver_id", driver_id);
+
+  const response = await fetch("https://jat-uk.com/api/users/get_availability_expiry", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      booking_journey_id,
-      driver_id,
-    }),
+    body: formData,
   });
+
   const result = await response.json();
   if (!response.ok || !result.data) {
-    throw new Error(result.error || 'Failed to fetch expiry');
+    throw new Error(result.error || "Failed to fetch expiry");
   }
   return result.data.availability_expired_time;
 }
+
 
 
