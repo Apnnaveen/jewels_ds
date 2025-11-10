@@ -951,5 +951,26 @@ export async function getAvailabilityExpiry(booking_journey_id, driver_id, token
   return result.data.availability_expired_time;
 }
 
+// Check the token stored in users_tokens table for a driver
+// Backend endpoint expected: GET /api/users/check_user_token/{driver_id}
+// Returns { status: 200, data: { token: '...' } } or status 404/200 with empty token
+export async function checkUserToken(driverId, token) {
+  const response = await fetch(`https://jat-uk.com/api/users/check_user_token/${driverId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Failed to check user token');
+  }
+
+  return result.data || {};
+}
+
 
 

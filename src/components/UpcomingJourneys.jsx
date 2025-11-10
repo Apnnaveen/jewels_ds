@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import JobsTabs from './JobsTabs';
-import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate, checkBidJobsTomorrow } from '../api';
+import { upcoming_journey_details, updateJobData, getAllCars, assignDriverToJourney, unassignDriverFromJourney, getSupplierMappedDrivers, getcountrycode, add_driver, acknowledgeStatus, getAssignsOnDate, checkBidJobsTomorrow, checkUserToken } from '../api';
 import Header from './MainHeader/Header';
 import Loading from './Loading/Loading';
 import UpcomingJourneysSkeleton from './Loading/UpcomingJourneysSkeleton';
@@ -40,7 +40,40 @@ const UpcomingJobs = () => {
   const [disabledButton, setDisabledButton] = useState(new Set());
   const [disabledDriverIds, setDisabledDriverIds] = useState(new Set());
   const [ackLoading, setAckLoading] = useState({});
+const validateUserToken = async () => {
+    if (!user?.driver_id || !user?.token) {
+        // No user info in localStorage/session
+        return;
+    }
 
+    try {
+        const result = await checkUserToken(user.driver_id, user.token);
+
+        // Check if token is missing in database
+        if (!result?.token) {
+            alert('Your session has expired. Please log in again.');
+            localStorage.removeItem('user');
+            navigate('/');
+        }
+        // Optional: match check (only if DB token is not empty)
+        else if (result.token !== user.token) {
+            alert('Your session has expired. Please log in again.');
+            localStorage.removeItem('user');
+            navigate('/');
+        }
+    } catch (error) {
+        // Only show alert if this is a real API/network failure, not on first load
+        console.error('Token validation failed:', error);
+    }
+};
+
+useEffect(() => {
+    const timer = setTimeout(() => {
+        validateUserToken();  // 🔒 run after slight delay
+    }, 2000); // wait 2 seconds after mount
+
+    return () => clearTimeout(timer);
+}, []);
   const [formData, setFormData] = useState({
     supplier_id: supplierId || '',
     email: '',

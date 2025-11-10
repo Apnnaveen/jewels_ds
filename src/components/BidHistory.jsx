@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import JobsTabs from './JobsTabs';
-import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver, fetchJourneyDetails } from '../api';
+import { bid_history, getAllCars, bidJob, withdrawJob, checkBidJobs, checkBidForCurrentDriver, fetchJourneyDetails, checkUserToken } from '../api';
 import Loading from './Loading/Loading';
 import BidCardSkeleton from './Loading/BidCardSkeleton';
 import { DateTime } from 'luxon';
@@ -12,6 +12,40 @@ import { useJobsCounts } from './JobsCountsProvider';
 
 
 const BidHistory = () => {
+  const validateUserToken = async () => {
+      if (!user?.driver_id || !user?.token) {
+          // No user info in localStorage/session
+          return;
+      }
+  
+      try {
+          const result = await checkUserToken(user.driver_id, user.token);
+  
+          // Check if token is missing in database
+          if (!result?.token) {
+              alert('Your session has expired. Please log in again.');
+              localStorage.removeItem('user');
+              navigate('/');
+          }
+          // Optional: match check (only if DB token is not empty)
+          else if (result.token !== user.token) {
+              alert('Your session has expired. Please log in again.');
+              localStorage.removeItem('user');
+              navigate('/');
+          }
+      } catch (error) {
+          // Only show alert if this is a real API/network failure, not on first load
+          console.error('Token validation failed:', error);
+      }
+  };
+  
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          validateUserToken();  // 🔒 run after slight delay
+      }, 2000); // wait 2 seconds after mount
+  
+      return () => clearTimeout(timer);
+  }, []);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeItem, setActiveItem] = useState('bid');
   const [bidHistory, setBidHistory] = useState([]);

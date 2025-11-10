@@ -5,7 +5,7 @@ import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import ScheduledJobSkeleton from './Loading/ScheduledJobSkeleton';
 import Header from './MainHeader/Header';
-import { scheduled_journey_details, getAvailabilityExpiry, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled } from '../api';
+import { scheduled_journey_details, getAvailabilityExpiry, confirmAvailability, declineJob, getAllCars, checkBidJobs, getJourneysOnDate, updateUserSeenScheduled, checkUserToken } from '../api';
 import { DateTime } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
@@ -33,7 +33,40 @@ const ScheduledJobs = () => {
   const [sameDayJobs, setSameDayJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [disabledButton, setDisabledButton] = useState(new Set());
+const validateUserToken = async () => {
+    if (!user?.driver_id || !user?.token) {
+        // No user info in localStorage/session
+        return;
+    }
 
+    try {
+        const result = await checkUserToken(user.driver_id, user.token);
+
+        // Check if token is missing in database
+        if (!result?.token) {
+            alert('Your session has expired. Please log in again.');
+            localStorage.removeItem('user');
+            navigate('/');
+        }
+        // Optional: match check (only if DB token is not empty)
+        else if (result.token !== user.token) {
+            alert('Your session has expired. Please log in again.');
+            localStorage.removeItem('user');
+            navigate('/');
+        }
+    } catch (error) {
+        // Only show alert if this is a real API/network failure, not on first load
+        console.error('Token validation failed:', error);
+    }
+};
+
+useEffect(() => {
+    const timer = setTimeout(() => {
+        validateUserToken();  // 🔒 run after slight delay
+    }, 2000); // wait 2 seconds after mount
+
+    return () => clearTimeout(timer);
+}, []);
   const [filters, setFilters] = useState({
     booking_ref_id: '',
     from_address: '',
@@ -89,7 +122,7 @@ const ScheduledJobs = () => {
       }
 
       // Fetch expiry from backend for this driver & journey
-      if (Number(job.booking_journey_id) >= 60895 && Number(job.booking_journey_id) <= 70000){
+      if (Number(job.booking_journey_id) >= 60940 && Number(job.booking_journey_id) <= 60945){
 
        
           let expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
@@ -324,7 +357,33 @@ const ScheduledJobs = () => {
     localStorage.removeItem('user');
     navigate('/');
   };
+const [now, setNow] = useState(DateTime.now());
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(DateTime.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+ const getAvailabilityExpiredTime = (availability_expired_time) => {
+    const targetTime = DateTime.fromFormat(availability_expired_time, "yyyy-MM-dd HH:mm:ss", {
+      zone: "Europe/London",
+    });
+    // const now = DateTime.now().setZone("Europe/London");
+    const diff = targetTime.diff(now, ["hours", "minutes", "seconds"]).toObject();
+
+    if (diff.hours < 0 || diff.minutes < 0 || diff.seconds < 0) {
+      return { text: "Expired", color: "text-red-500" };
+    }
+
+    const hours = Math.floor(diff.hours).toString().padStart(2, "0");
+    const minutes = Math.floor(diff.minutes).toString().padStart(2, "0");
+    const seconds = Math.floor(diff.seconds).toString().padStart(2, "0");
+
+    return <span className="text-green-500">{`${hours}:${minutes}:${seconds}`}</span>;
+
+  };
   return (
     <>
       <Header />
@@ -440,9 +499,26 @@ const ScheduledJobs = () => {
                             )}
                           </div>
 
-                          <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
-                          </p>
+                              <p className="text-sm text-gray-700 mt-1 flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                  <i className="fas fa-receipt text-gray-500"></i>
+                                  <b>{job.booking_ref_id}</b>
+                                </span>
+
+                                <span className="flex items-center gap-2">
+                                  {Number(job.booking_journey_id) >= 60940 && Number(job.booking_journey_id) <= 60945 ? (
+                                    <>
+                                      <i className="fas fa-clock text-gray-500"></i>
+                                      <b>
+                                        {job.availability_expired_time
+                                          ? getAvailabilityExpiredTime(job.availability_expired_time, job.booking_journey_id)
+                                          : "N/A"}
+                                      </b>
+                                    </>
+                                  ) : null}
+                                </span>
+                              </p>
+
 
 
                           {/* Pickup */}
