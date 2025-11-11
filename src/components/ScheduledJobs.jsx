@@ -122,7 +122,7 @@ useEffect(() => {
       }
 
       // Fetch expiry from backend for this driver & journey
-      if (Number(job.booking_journey_id) >= 69476 && Number(job.booking_journey_id) <= 69486){
+      if (Number(job.booking_journey_id) >= 69545 && Number(job.booking_journey_id) <= 69585){
 
        
           let expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
@@ -374,7 +374,7 @@ const [now, setNow] = useState(DateTime.now());
     const diff = targetTime.diff(now, ["hours", "minutes", "seconds"]).toObject();
 
     if (diff.hours < 0 || diff.minutes < 0 || diff.seconds < 0) {
-      return { text: "Expired", color: "text-red-500" };
+      return <span className="text-red-500">Expired</span>;
     }
 
     const hours = Math.floor(diff.hours).toString().padStart(2, "0");
@@ -506,7 +506,7 @@ const [now, setNow] = useState(DateTime.now());
                                 </span>
 
                                 <span className="flex items-center gap-2">
-                                  {Number(job.booking_journey_id) >= 69476 && Number(job.booking_journey_id) <= 69486 ? (
+                                  {Number(job.booking_journey_id) >= 69545 && Number(job.booking_journey_id) <= 69585 ? (
                                     <>
                                       <i className="fas fa-clock text-gray-500"></i>
                                       <b>

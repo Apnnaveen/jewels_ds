@@ -5,7 +5,7 @@ import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJo
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import QuotationCardSkeleton from './Loading/QuotationCardSkeleton';
-import { DateTime } from 'luxon';
+import { DateTime,Duration } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
 
@@ -288,7 +288,54 @@ useEffect(() => {
         localStorage.removeItem('user');
         navigate('/');
     };
+const [now, setNow] = useState(DateTime.now().setZone("Europe/London"));
+    const [startTime] = useState(DateTime.now().setZone("Europe/London"));
 
+ // this part stays as you already have
+useEffect(() => {
+  const interval = setInterval(() => {
+    setNow(DateTime.now().setZone("Europe/London"));
+  }, 1000);
+  return () => clearInterval(interval);
+}, []);
+
+// this part (function) — only corrected logic
+const bidExpireTime = (bid_expiry_time) => { 
+  if (!bid_expiry_time) return <span className="text-gray-500">N/A</span>;
+
+  // allow optional spaces and case-insensitive units like "1h 2m 30s"
+  const match = bid_expiry_time.match(/(\d+)\s*h\s*(\d+)\s*m\s*(\d+)\s*s/i);
+  if (!match) return <span className="text-gray-500">Invalid format</span>;
+
+  const [, hStr, mStr, sStr] = match;
+  const hours = Number(hStr);
+  const minutes = Number(mStr);
+  const seconds = Number(sStr);
+
+  // each render recalculates based on current now
+  const duration = Duration.fromObject({ hours, minutes, seconds });
+  const targetTime = startTime.plus(duration); // startTime should be stored once when the timer begins
+  const diff = targetTime.diff(now, ["hours", "minutes", "seconds"]).toObject();
+
+  // guard for expired or negative
+  if (
+    (diff.hours ?? 0) <= 0 &&
+    (diff.minutes ?? 0) <= 0 &&
+    (diff.seconds ?? 0) <= 0
+  ) {
+    return <span className="text-red-500">Expired</span>;
+  }
+
+  const hoursLeft = String(Math.floor(diff.hours ?? 0)).padStart(2, "0");
+  const minutesLeft = String(Math.floor(diff.minutes ?? 0)).padStart(2, "0");
+  const secondsLeft = String(Math.floor(diff.seconds ?? 0)).padStart(2, "0");
+
+  return (
+    <span className="text-green-500 font-mono">
+      {`${hoursLeft}:${minutesLeft}:${secondsLeft}`}
+    </span>
+  );
+};
     return (
         <>
             <Header />
@@ -415,8 +462,18 @@ useEffect(() => {
                                                         <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                                                             <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                                                         </h4>
-                                                        <p className="text-sm text-gray-700 mt-1 flex items-center gap-2">
-                                                            <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                                                        <p className="text-sm text-gray-700 mt-1 flex items-center justify-between">
+                                                            <span className="flex items-center gap-2">
+                                                                <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
+                                                            </span>
+                                                            <span className="flex items-center gap-2">
+                                                                <i className="fas fa-clock text-gray-500"></i>
+                                                                <b>
+                                                                    {job.manual_message
+                                                                    ? job.manual_message
+                                                                    : bidExpireTime(job.bid_expiry_time)}
+                                                                </b>
+                                                             </span>
                                                         </p>
                                                     </div>
 
@@ -609,11 +666,15 @@ useEffect(() => {
                                                 </span>
                                             </div>
                                             <div className="flex items-center">
-                                                <i className="fas fa-clock mr-2 text-blue-600"></i>
-                                                <span className="font-medium text-gray-700">
-                                                    Bid Expire Time: {selectedJob.bid_expiry_time ?? 'N/A'}
-                                                </span>
-                                            </div>
+                                            <i className={`mr-2 ${ selectedJob.manual_message ? "fas fa-exclamation-circle text-red-600" : "fas fa-clock text-blue-600" }`}></i>
+
+                                            <span className="font-medium text-gray-700">
+                                                Bid Expire Time:{' '}
+                                                {selectedJob.manual_message
+                                                ? selectedJob.manual_message 
+                                                : selectedJob.bid_expiry_time ?? 'N/A'} 
+                                            </span>
+                                        </div>
                                         </div>
                                         <div className="mb-4">
                                             <input
