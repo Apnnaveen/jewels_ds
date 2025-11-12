@@ -5,7 +5,7 @@ import { bidJob, fetchAvailableJobs, fetchJourneyDetails, getAllCars, checkBidJo
 import JobsTabs from './JobsTabs';
 import Loading from './Loading/Loading';
 import QuotationCardSkeleton from './Loading/QuotationCardSkeleton';
-import { DateTime,Duration } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import Select from 'react-select';
 import { useJobsCounts } from './JobsCountsProvider';
 
@@ -39,6 +39,7 @@ export default function AvailableJob() {
     const [quote, setQuote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [reaction, setReaction] = useState(false);
+    const [isExpired, setIsExpired] = useState(false);
     const [disabledButton, setDisabledButton] = useState(new Set());
 const validateUserToken = async () => {
     if (!user?.driver_id || !user?.token) {
@@ -66,6 +67,64 @@ const validateUserToken = async () => {
         console.error('Token validation failed:', error);
     }
 };
+
+useEffect(() => {
+  // Recompute isExpired every second for the selected job using any supported formats.
+  if (!selectedJob) {
+    setIsExpired(false);
+    return;
+  }
+
+  const raw = selectedJob.bidExpiryAt || selectedJob.bid_expiry_time || '';
+  
+  const parseExpiry = () => {
+    // Try ISO first
+    let dt = DateTime.fromISO(String(raw), { zone: 'Europe/London' });
+    if (dt.isValid) return dt;
+
+    // Try common DB format: 2025-11-12 14:00:00
+    dt = DateTime.fromFormat(String(raw), 'yyyy-MM-dd HH:mm:ss', { zone: 'Europe/London' });
+    if (dt.isValid) return dt;
+
+    // Try RFC-like (no T) fallback
+    dt = DateTime.fromSQL(String(raw), { zone: 'Europe/London' });
+    if (dt.isValid) return dt;
+
+    // Try relative "1h 2m 3s"
+    const rel = String(raw).match(/(\d+)\s*h\s*(\d+)\s*m\s*(\d+)\s*s/i);
+    if (rel) {
+      const [, h, m, s] = rel;
+      return DateTime.now().setZone('Europe/London').plus(Duration.fromObject({
+        hours: Number(h), minutes: Number(m), seconds: Number(s)
+      }));
+    }
+
+    // Try plain time "HH:mm:ss" (assume today)
+    const timeOnly = String(raw).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (timeOnly) {
+      const [, hh, mm, ss] = timeOnly;
+      const today = DateTime.now().setZone('Europe/London').toFormat('yyyy-MM-dd');
+      return DateTime.fromFormat(`${today} ${hh}:${mm}:${ss ?? '00'}`, 'yyyy-MM-dd HH:mm:ss', { zone: 'Europe/London' });
+    }
+
+    return null;
+  };
+
+  const expiryDt = parseExpiry();
+
+  if (!expiryDt || !expiryDt.isValid) {
+    // Can't parse — treat as not expired (button enabled) and stop
+    setIsExpired(false);
+    return;
+  }
+
+  const check = () => setIsExpired(DateTime.now().setZone('Europe/London') >= expiryDt);
+
+  // initial check + interval
+  check();
+  const interval = setInterval(check, 1000);
+  return () => clearInterval(interval);
+}, [selectedJob?.bidExpiryAt, selectedJob?.bid_expiry_time]);
 
 useEffect(() => {
     const timer = setTimeout(() => {
@@ -108,13 +167,18 @@ useEffect(() => {
 
             const response = await fetchAvailableJobs(user.driver_id, user.token, params);
 
-
             if (response?.data) {
-                setJobs(response.data.data || []);
-                setFilteredJobs(response.data.data || []);
+                // compute a fixed expiry timestamp for each job so countdown can decrement
+                const jobsWithExpiry = (response.data.data || []).map(job => {
+                  const raw = job.bid_expiry_time ?? job.bidExpiryAt ?? '';
+                  const bidExpiryAt = toExpiryISO(raw);
+                  return { ...job, bidExpiryAt };
+                });
+
+                setJobs(jobsWithExpiry);
+                setFilteredJobs(jobsWithExpiry);
                 setPagination(response.data.pagination || null);
             }
-
 
             const carsList = await getAllCars(user.driver_id, user.token);
             setCars(carsList || []);
@@ -204,7 +268,13 @@ useEffect(() => {
 
         try {
             const details = await fetchJourneyDetails(job.booking_journey_id, user.driver_id, user.token);
-            setSelectedJob(prev => ({ ...prev, ...details[0] }));
+            const detailObj = details[0] || {};
+
+            // compute a normalized ISO expiry for details (prefer detail -> parent job)
+            const raw = detailObj.bid_expiry_time ?? detailObj.bidExpiryAt ?? job.bid_expiry_time ?? job.bidExpiryAt ?? '';
+            const bidExpiryAt = toExpiryISO(raw);
+
+            setSelectedJob(prev => ({ ...prev, ...detailObj, bidExpiryAt }));
             refreshCounts();
         } catch (err) {
             setDetailsError('Failed to load details.');
@@ -220,58 +290,63 @@ useEffect(() => {
     };
 
     const handleSubmitBid = async () => {
-    if (!selectedJob || !quote || !isChecked) return;
+  if (!selectedJob || !quote || !isChecked) return;
 
-    setSubmitting(true);
-    setDisabledButton(prev => new Set(prev).add(selectedJob.booking_journey_id));
+  setSubmitting(true);
+  setDisabledButton(prev => new Set(prev).add(selectedJob.booking_journey_id));
 
-    try {
-        // Check if job is already assigned
-        const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
-        if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
-            alert('This job has already been assigned to another driver.');
-            setShowModal(false);
-            setQuote('');
-            setIsChecked(false);
-            setReaction(true);
-            return;
-        }
-
-        // Submit bid
-        await bidJob({
-            booking_journey_id: selectedJob.booking_journey_id,
-            driver_id: user.driver_id,
-            email: user.email,
-            fare: quote,
-            token: user.token,
-        });
-
-        // ✅ Optimistic UI update: remove the job instantly from list
-        setJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
-        setFilteredJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
-
-        // ✅ Refresh counts and fetch latest jobs from backend
-        refreshCounts();
-        await fetchJobs();
-
-        alert('Bid submitted successfully!');
-
-        // Reset states & close modal
-        setShowModal(false);
-        setQuote('');
-        setIsChecked(false);
-        setReaction(true);
-
-    } catch (err) {
-        alert('Failed to submit bid: ' + err.message);
-    } finally {
-        setSubmitting(false);
-        setDisabledButton(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(selectedJob.booking_journey_id);
-            return newSet;
-        });
+  try {
+    if (!user?.driver_id || !user?.token) {
+      alert("User not authenticated.");
+      return;
     }
+
+    // ✅ Step 1: Fetch expiry time from backend
+    
+
+    // ✅ Step 2: Check if job already assigned
+    const checkResult = await checkBidJobs(selectedJob.booking_journey_id, user.token);
+    if (checkResult && (checkResult.assigned === true || checkResult.assigned === 1)) {
+      alert("This job has already been assigned to another driver.");
+      setShowModal(false);
+      setQuote('');
+      setIsChecked(false);
+      setReaction(true);
+      return;
+    }
+
+    // ✅ Step 3: Submit the bid
+    await bidJob({
+      booking_journey_id: selectedJob.booking_journey_id,
+      driver_id: user.driver_id,
+      email: user.email,
+      fare: quote,
+      token: user.token,
+    });
+
+    // ✅ Optimistic UI update
+    setJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
+    setFilteredJobs(prev => prev.filter(j => j.booking_journey_id !== selectedJob.booking_journey_id));
+
+    refreshCounts();
+    await fetchJobs();
+
+    alert("Bid submitted successfully!");
+    setShowModal(false);
+    setQuote('');
+    setIsChecked(false);
+    setReaction(true);
+
+  } catch (err) {
+    alert("Failed to submit bid: " + err.message);
+  } finally {
+    setSubmitting(false);
+    setDisabledButton(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(selectedJob.booking_journey_id);
+      return newSet;
+    });
+  }
 };
 
 
@@ -288,54 +363,123 @@ useEffect(() => {
         localStorage.removeItem('user');
         navigate('/');
     };
-const [now, setNow] = useState(DateTime.now().setZone("Europe/London"));
-    const [startTime] = useState(DateTime.now().setZone("Europe/London"));
 
- // this part stays as you already have
-useEffect(() => {
-  const interval = setInterval(() => {
-    setNow(DateTime.now().setZone("Europe/London"));
-  }, 1000);
-  return () => clearInterval(interval);
-}, []);
+    const [now, setNow] = useState(DateTime.now().setZone("Europe/London"));
 
-// this part (function) — only corrected logic
-const bidExpireTime = (bid_expiry_time) => { 
-  if (!bid_expiry_time) return <span className="text-gray-500">N/A</span>;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(DateTime.now().setZone("Europe/London"));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // allow optional spaces and case-insensitive units like "1h 2m 30s"
-  const match = bid_expiry_time.match(/(\d+)\s*h\s*(\d+)\s*m\s*(\d+)\s*s/i);
-  if (!match) return <span className="text-gray-500">Invalid format</span>;
+const ZONE = 'Europe/London';
 
-  const [, hStr, mStr, sStr] = match;
-  const hours = Number(hStr);
-  const minutes = Number(mStr);
-  const seconds = Number(sStr);
+  // normalize any incoming expiry value into an ISO timestamp (or null)
+  const toExpiryISO = (raw) => {
+    if (!raw && raw !== 0) return null;
 
-  // each render recalculates based on current now
-  const duration = Duration.fromObject({ hours, minutes, seconds });
-  const targetTime = startTime.plus(duration); // startTime should be stored once when the timer begins
-  const diff = targetTime.diff(now, ["hours", "minutes", "seconds"]).toObject();
+    // Handle "BID EXPIRED" string — return a timestamp in the past
+    if (String(raw).trim().toUpperCase() === 'BID EXPIRED') {
+      return DateTime.now().setZone(ZONE).minus({ days: 1 }).toISO();
+    }
 
-  // guard for expired or negative
-  if (
-    (diff.hours ?? 0) <= 0 &&
-    (diff.minutes ?? 0) <= 0 &&
-    (diff.seconds ?? 0) <= 0
-  ) {
-    return <span className="text-red-500">Expired</span>;
-  }
+    // already an ISO-like string
+    if (typeof raw === 'string' && /\d{4}-\d{2}-\d{2}T/.test(raw)) {
+      const dt = DateTime.fromISO(raw, { zone: ZONE });
+      return dt.isValid ? dt.toISO() : null;
+    }
 
-  const hoursLeft = String(Math.floor(diff.hours ?? 0)).padStart(2, "0");
-  const minutesLeft = String(Math.floor(diff.minutes ?? 0)).padStart(2, "0");
-  const secondsLeft = String(Math.floor(diff.seconds ?? 0)).padStart(2, "0");
+    // DB style yyyy-MM-dd HH:mm:ss
+    if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(raw)) {
+      const dt = DateTime.fromFormat(raw, 'yyyy-MM-dd HH:mm:ss', { zone: ZONE });
+      return dt.isValid ? dt.toISO() : null;
+    }
 
-  return (
-    <span className="text-green-500 font-mono">
-      {`${hoursLeft}:${minutesLeft}:${secondsLeft}`}
-    </span>
-  );
-};
+    // plain SQL / RFC
+    if (typeof raw === 'string') {
+      const dtSql = DateTime.fromSQL(raw, { zone: ZONE });
+      if (dtSql.isValid) return dtSql.toISO();
+    }
+
+    // relative like "1h 2m 3s" (allow missing parts)
+    const rel = String(raw).match(/(?:(\d+)\s*h)?\s*(?:(\d+)\s*m)?\s*(?:(\d+)\s*s)?/i);
+    if (rel) {
+      const h = Number(rel[1] || 0);
+      const m = Number(rel[2] || 0);
+      const s = Number(rel[3] || 0);
+      if (h + m + s > 0) {
+        return DateTime.now().setZone(ZONE).plus({ hours: h, minutes: m, seconds: s }).toISO();
+      }
+    }
+
+    // time-only "HH:mm" or "HH:mm:ss" (assume today)
+    const timeOnly = String(raw).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if (timeOnly) {
+      const [, hh, mm, ss] = timeOnly;
+      const today = DateTime.now().setZone(ZONE).toFormat('yyyy-MM-dd');
+      const dt = DateTime.fromFormat(`${today} ${hh}:${mm}:${ss || '00'}`, 'yyyy-MM-dd HH:mm:ss', { zone: ZONE });
+      if (dt.isValid) return dt.toISO();
+    }
+
+    // numeric seconds (e.g. "600")
+    if (/^\d+$/.test(String(raw).trim())) {
+      return DateTime.now().setZone(ZONE).plus({ seconds: Number(String(raw).trim()) }).toISO();
+    }
+
+    return null;
+  };
+
+  // use centralized parsing for display — expect an ISO (preferred) or try to normalize
+  const bidExpireTime = (bidExpiryAtOrRaw) => {
+    if (!bidExpiryAtOrRaw) return <span className="text-gray-500">N/A</span>;
+
+    // if not ISO, try to convert
+    let iso = bidExpiryAtOrRaw;
+    if (typeof iso !== 'string' || !/\d{4}-\d{2}-\d{2}T/.test(iso)) {
+      iso = toExpiryISO(bidExpiryAtOrRaw);
+    }
+    if (!iso) return <span className="text-gray-500">Invalid format</span>;
+
+    const expiryDt = DateTime.fromISO(iso, { zone: ZONE });
+    if (!expiryDt.isValid) return <span className="text-gray-500">Invalid format</span>;
+
+    const diff = expiryDt.diff(now, ['hours', 'minutes', 'seconds']).toObject();
+
+    if ((diff.hours ?? 0) < 0 || (diff.minutes ?? 0) < 0 || (diff.seconds ?? 0) < 0) {
+      return <span className="text-red-500">Expired</span>;
+    }
+
+    const hoursLeft = String(Math.floor(diff.hours ?? 0)).padStart(2, '0');
+    const minutesLeft = String(Math.floor(diff.minutes ?? 0)).padStart(2, '0');
+    const secondsLeft = String(Math.floor(diff.seconds ?? 0)).padStart(2, '0');
+
+    return <span className="text-green-500 font-bold">{`${hoursLeft}:${minutesLeft}:${secondsLeft}`}</span>;
+  };
+
+  // Recompute isExpired for modal using normalized ISO
+  useEffect(() => {
+    if (!selectedJob) {
+      setIsExpired(false);
+      return;
+    }
+    const iso = toExpiryISO(selectedJob.bidExpiryAt ?? selectedJob.bid_expiry_time ?? '');
+    if (!iso) {
+      setIsExpired(false);
+      return;
+    }
+    const expiryDt = DateTime.fromISO(iso, { zone: ZONE });
+    if (!expiryDt.isValid) {
+      setIsExpired(false);
+      return;
+    }
+
+    const check = () => setIsExpired(DateTime.now().setZone(ZONE) >= expiryDt);
+    check();
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [selectedJob?.bidExpiryAt, selectedJob?.bid_expiry_time]);
+
     return (
         <>
             <Header />
@@ -468,12 +612,10 @@ const bidExpireTime = (bid_expiry_time) => {
                                                             </span>
                                                             <span className="flex items-center gap-2">
                                                                 <i className="fas fa-clock text-gray-500"></i>
-                                                                <b>
-                                                                    {job.manual_message
-                                                                    ? job.manual_message
-                                                                    : bidExpireTime(job.bid_expiry_time)}
+                                                                <b className={job.manual_message ? "text-red-500" : ""}>
+                                                                    {job.manual_message ? job.manual_message : bidExpireTime(job.bidExpiryAt || job.bid_expiry_time)}
                                                                 </b>
-                                                             </span>
+                                                            </span>
                                                         </p>
                                                     </div>
 
@@ -666,15 +808,16 @@ const bidExpireTime = (bid_expiry_time) => {
                                                 </span>
                                             </div>
                                             <div className="flex items-center">
-                                            <i className={`mr-2 ${ selectedJob.manual_message ? "fas fa-exclamation-circle text-red-600" : "fas fa-clock text-blue-600" }`}></i>
-
-                                            <span className="font-medium text-gray-700">
+                                                <i className="fas fa-clock mr-2 text-blue-600"></i>
+                                                <span className="font-medium text-gray-700">
                                                 Bid Expire Time:{' '}
-                                                {selectedJob.manual_message
-                                                ? selectedJob.manual_message 
-                                                : selectedJob.bid_expiry_time ?? 'N/A'} 
-                                            </span>
-                                        </div>
+                                                <span className={selectedJob.manual_message ? 'text-red-500' : 'text-gray-700'}>
+                                                    {selectedJob.manual_message
+                                                    ? selectedJob.manual_message
+                                                    : bidExpireTime(selectedJob.bidExpiryAt || selectedJob.bid_expiry_time) ?? 'N/A'}
+                                                </span>
+                                                </span>
+                                            </div>
                                         </div>
                                         <div className="mb-4">
                                             <input
@@ -700,12 +843,20 @@ const bidExpireTime = (bid_expiry_time) => {
                                             </span>
                                         </div>
                                         <button
-                                            className={`w-full p-3 rounded text-white font-medium ${!isChecked || !quote ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-                                            disabled={!isChecked || !quote || disabledButton.has(selectedJob.booking_journey_id)}
+                                            className={`w-full p-3 rounded text-white font-medium ${
+                                                !isChecked || !quote || disabledButton.has(selectedJob.booking_journey_id) || isExpired
+                                                ? 'bg-gray-400 cursor-not-allowed'
+                                                : 'bg-blue-600 hover:bg-blue-700'
+                                            }`}
+                                            disabled={!isChecked || !quote || disabledButton.has(selectedJob.booking_journey_id) || isExpired}
                                             onClick={handleSubmitBid}
-                                        >
-                                            {submitting ? 'Submitting...' : 'Submit'}
-                                        </button>
+                                            >
+                                            {isExpired
+                                                ? 'Expired'
+                                                : submitting
+                                                ? 'Submitting...'
+                                                : 'Submit'}
+                                            </button>
                                     </>
                                 )}
                             </div>
