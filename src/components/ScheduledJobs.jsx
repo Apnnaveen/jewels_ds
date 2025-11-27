@@ -122,7 +122,7 @@ useEffect(() => {
       }
 
       // Fetch expiry from backend for this driver & journey
-      if (Number(job.booking_journey_id) >= 69545 && Number(job.booking_journey_id) <= 69585){
+      if (Number(job.booking_journey_id) > 69722){
 
        
           let expiryTime = await getAvailabilityExpiry(job.booking_journey_id, user.driver_id, user.token);
@@ -255,12 +255,12 @@ useEffect(() => {
 
         const response = await scheduled_journey_details(user.driver_id, user.token, params);
 
-        const jobs = Array.isArray(response)
-          ? response
-          : Array.isArray(response?.data)
-            ? response.data
-            : [];
-
+        const jobs = Array.isArray(response?.data)
+                  ? response.data
+                  : typeof response?.data === "object"
+                    ? Object.values(response.data)
+                    : [];
+          
         if (!Array.isArray(jobs)) throw new Error('Invalid job data received.');
 
         setPagination(response.pagination || null);
@@ -367,6 +367,7 @@ const [now, setNow] = useState(DateTime.now());
   }, []);
 
  const getAvailabilityExpiredTime = (availability_expired_time) => {
+
     const targetTime = DateTime.fromFormat(availability_expired_time, "yyyy-MM-dd HH:mm:ss", {
       zone: "Europe/London",
     });
@@ -506,7 +507,7 @@ const [now, setNow] = useState(DateTime.now());
                                 </span>
 
                                 <span className="flex items-center gap-2">
-                                  {Number(job.booking_journey_id) >= 69545 && Number(job.booking_journey_id) <= 69585 ? (
+                                  {Number(job.booking_journey_id) > 69722 ? (
                                     <>
                                       <i className="fas fa-clock text-gray-500"></i>
                                       <b>

@@ -222,6 +222,7 @@ const BidHistory = () => {
         bid.customer_type === "subs" ? bid.driver_id : user.driver_id;
 
       await withdrawJob({
+        biding_amount: bid.biding_amount,
         driver_id: driverIdToUse,
         booking_journey_id: bid.booking_journey_id,
         token: user.token,

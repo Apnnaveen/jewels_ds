@@ -606,7 +606,7 @@ const ZONE = 'Europe/London';
                                                         <h4 className="text-base font-medium text-blue-600 flex items-center gap-2">
                                                             <i className="fas fa-car-side"></i> <b>{getCarName(job.car_id)}</b>
                                                         </h4>
-                                                        <p className="text-sm text-gray-700 mt-1 flex items-center justify-between">
+                                                        <p className="text-sm text-gray-700 mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                                                             <span className="flex items-center gap-2">
                                                                 <i className="fas fa-receipt text-gray-500"></i> <b>{job.booking_ref_id}</b>
                                                             </span>

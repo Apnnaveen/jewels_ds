@@ -167,6 +167,7 @@ export async function fetchJourneyDetails(booking_journey_id, driverId, token) {
 // ...existing code...
 
 export async function bidJob({ booking_journey_id, driver_id, email, fare, token }) {
+  const environment = 'portal'
   const response = await fetch('https://jat-uk.com/api/users/bid_job', {
     method: 'POST',
     headers: {
@@ -174,6 +175,7 @@ export async function bidJob({ booking_journey_id, driver_id, email, fare, token
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
+      environment,
       driver_id,
       booking_journey_id,
       bid_amount: fare,
@@ -332,6 +334,7 @@ export async function completed_journeys(driver_id, token, params = {}) {
 }
 
 export async function confirmAvailability({ driver_id, booking_journey_id, status, token }) {
+  let environment = 'portal';
   const response = await fetch('https://jat-uk.com/api/users/confirm_availability', {
     method: 'POST',
     headers: {
@@ -339,6 +342,7 @@ export async function confirmAvailability({ driver_id, booking_journey_id, statu
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
+      environment,
       driver_id,
       booking_journey_id,
       status,
@@ -371,7 +375,8 @@ export async function declineJob({ booking_journey_id, driver_id, token }) {
   return result.data;
 }
 export async function updateJobData({ driver_id, booking_journey_id, status_code, token }) {
-  const response = await fetch(`https://jat-uk.com/api/users/update_icon_data/${driver_id}/${booking_journey_id}/${status_code}`,
+  let environment = 'portal';
+  const response = await fetch(`https://jat-uk.com/api/users/update_icon_data/${driver_id}/${booking_journey_id}/${status_code}/${environment}`,
     {
       method: 'GET',
       headers: {
@@ -405,6 +410,7 @@ export async function getAllCars(driverId, token) {
 }
 // acknowledge_status API
 export async function acknowledgeStatus({ driver_id, booking_journey_id, acknowledge_status, token }) {
+  let environment = 'portal';
   const response = await fetch('https://jat-uk.com/api/users/acknowledge_status', {
     method: 'POST',
     headers: {
@@ -412,6 +418,7 @@ export async function acknowledgeStatus({ driver_id, booking_journey_id, acknowl
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
+      environment,
       driver_id,
       booking_journey_id,
       acknowledge_status,
@@ -424,9 +431,10 @@ export async function acknowledgeStatus({ driver_id, booking_journey_id, acknowl
   }
   return result.data;
 }
-export async function withdrawJob({ driver_id, booking_journey_id, token }) {
+export async function withdrawJob({ biding_amount, driver_id, booking_journey_id, token }) {
+  let environment = 'portal';
   const response = await fetch(
-    `https://jat-uk.com/api/users/withdraw_job/${driver_id}/${booking_journey_id}`,
+    `https://jat-uk.com/api/users/withdraw_job/${biding_amount}/${driver_id}/${booking_journey_id}/${environment}`,
     {
       method: 'GET',
       headers: {
