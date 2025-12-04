@@ -307,6 +307,24 @@ useEffect(() => {
 };
 
   const handleStatusUpdate = async (job, status_code) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
 
     setActionLoading(true);
@@ -332,6 +350,24 @@ useEffect(() => {
   };
 
   const handleShowDriverList = async (job) => {
+        try {
+            const checkToken = await checkUserToken(user.driver_id);
+    
+            if (user.token !== checkToken.token) {
+                alert('Please use the recently logged-in browser/tab.');
+                localStorage.removeItem('user');
+                localStorage.removeItem('lastActivity');
+                navigate('/');
+                return;
+            }
+    
+        } catch (error) {
+                alert('Session expired. Please login again.');
+                localStorage.removeItem('user');
+                localStorage.removeItem('lastActivity');
+                navigate('/');
+                return;
+            }
     setSelectedJob(job);
     setShowDriverModal(true);
     await fetchMappedDrivers(job);
@@ -496,6 +532,24 @@ useEffect(() => {
     return diffHours <= 24 && diffHours >= 0;
   };
   const handleAcknowledge = async (job) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setActionLoading(true);
     setAckLoading((prev) => ({ ...prev, [job.booking_journey_id]: true }));
 

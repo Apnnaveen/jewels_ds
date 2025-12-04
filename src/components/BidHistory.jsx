@@ -102,6 +102,24 @@ const BidHistory = () => {
   };
  
   const handleUpdateBid = async (bid) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledButton(prev => new Set(prev).add(bid.booking_journey_id));
     setDetailsError('');
     setShowModal(true);
@@ -217,6 +235,24 @@ const BidHistory = () => {
   const navigate = useNavigate();
   const user = location.state?.user || JSON.parse(localStorage.getItem('user'));
   const handleWithdrawJob = async (bid) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledButton(prev => new Set(prev).add(bid.booking_journey_id));
 
     if (!window.confirm('Are you sure you want to withdraw this job?')) return;

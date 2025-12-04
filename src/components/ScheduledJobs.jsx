@@ -120,6 +120,24 @@ useEffect(() => {
   };
 
   const handleAccept = async (job, skipConflictCheck = false) => {
+        try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
 
     try {
@@ -204,6 +222,24 @@ useEffect(() => {
   };
 
   const handleDecline = async (job) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledButton(prev => new Set(prev).add(job.booking_journey_id));
 
     try {
