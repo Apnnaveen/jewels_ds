@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import AvailableJobs from './components/AvailableJob';
@@ -29,9 +29,10 @@ function useInactivityLogout() {
   const navigate = useNavigate();
 
   const MAX_INACTIVE_TIME = 2 * 60 * 60 * 1000; // 2 hours
-  // const MAX_INACTIVE_TIME = 1 * 60 * 1000; // for testing
+  // const MAX_INACTIVE_TIME = 2 * 60 * 1000; // 2 minutes
 
-  let timer;
+
+  const timer = useRef(null);
 
   const handleAutoLogout = async () => {
     try {
@@ -51,8 +52,12 @@ function useInactivityLogout() {
 
   const resetTimer = () => {
     localStorage.setItem('lastActivity', Date.now().toString());
-    clearTimeout(timer);
-    timer = setTimeout(() => {
+
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+
+    timer.current = setTimeout(() => {
       handleAutoLogout();
     }, MAX_INACTIVE_TIME);
   };
@@ -81,7 +86,10 @@ function useInactivityLogout() {
     return () => {
       events.forEach(event => window.removeEventListener(event, resetTimer));
       window.removeEventListener('storage', handleStorageChange);
-      clearTimeout(timer);
+      if (timer.current){
+        clearTimeout(timer.current);
+      }
+      
     };
   }, []);
 }
@@ -121,13 +129,7 @@ function App() {
     return stored ? JSON.parse(stored) : null;
   });
 
-  // Optional: auto-refresh app every 30 mins
-  useEffect(() => {
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 1800000); // 30 mins
-    return () => clearInterval(interval);
-  }, []);
+
 
   return (
     <JobsCountsProvider user={user}>

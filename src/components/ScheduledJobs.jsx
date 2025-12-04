@@ -59,6 +59,13 @@ const validateUserToken = async () => {
         console.error('Token validation failed:', error);
     }
 };
+// auto-refresh  every 30 mins
+  useEffect(() => {
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 1800000); // 30 mins
+    return () => clearInterval(interval);
+  }, []);
 
 useEffect(() => {
     const timer = setTimeout(() => {
@@ -532,12 +539,12 @@ const [now, setNow] = useState(DateTime.now());
 
                           {/* Waypoints */}
                           {job.waypoint?.trim() !== '' &&
-                            job.waypoint.split('|').map((wp, i) =>
+                            job.waypoint?.split('|').map((wp, i) =>
                               wp.trim() && (
                                 <div key={i}>
                                   <span className="flex items-center gap-2 font-medium text-gray-600">
                                     <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                    <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
+                                    <b>Waypoint{job.waypoint?.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
                                   </span>
                                   <span className="block ml-6"><b>{wp.trim()}</b></span>
                                 </div>

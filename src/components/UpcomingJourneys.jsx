@@ -66,7 +66,13 @@ const validateUserToken = async () => {
         console.error('Token validation failed:', error);
     }
 };
-
+ // auto-refresh  every 30 mins
+ useEffect(() => {
+   const interval = setInterval(() => {
+     window.location.reload();
+   }, 1800000); // 30 mins
+   return () => clearInterval(interval);
+ }, []);
 useEffect(() => {
     const timer = setTimeout(() => {
         validateUserToken();  // 🔒 run after slight delay

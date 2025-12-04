@@ -68,6 +68,15 @@ const validateUserToken = async () => {
     }
 };
 
+  // auto-refresh  every 30 mins
+  useEffect(() => {
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 1800000); // 30 mins
+    return () => clearInterval(interval);
+  }, []);
+
+
 useEffect(() => {
   // Recompute isExpired every second for the selected job using any supported formats.
   if (!selectedJob) {
@@ -272,7 +281,7 @@ useEffect(() => {
 
             // compute a normalized ISO expiry for details (prefer detail -> parent job)
             const raw = detailObj.bid_expiry_time ?? detailObj.bidExpiryAt ?? job.bid_expiry_time ?? job.bidExpiryAt ?? '';
-            const bidExpiryAt = toExpiryISO(raw);
+            const bidExpiryAt = toExpiryISO(raw);            
 
             setSelectedJob(prev => ({ ...prev, ...detailObj, bidExpiryAt }));
             refreshCounts();
@@ -630,12 +639,12 @@ const ZONE = 'Europe/London';
 
                                                         {/* Waypoints */}
                                                         {job.waypoint?.trim() !== '' &&
-                                                            job.waypoint.split('|').map((wp, i) =>
+                                                            job.waypoint?.split('|').map((wp, i) =>
                                                                 wp.trim() && (
                                                                     <div key={i}>
                                                                         <span className="flex items-center gap-2 font-medium text-gray-600">
                                                                             <i className="fas fa-map-marker-alt text-blue-500"></i>
-                                                                            <b>Waypoint{job.waypoint.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
+                                                                            <b>Waypoint{job.waypoint?.split('|').length > 1 ? ` ${i + 1}` : ''}:</b>
                                                                         </span>
                                                                         <span className="block ml-6"><b>{wp.trim()}</b></span>
                                                                     </div>
