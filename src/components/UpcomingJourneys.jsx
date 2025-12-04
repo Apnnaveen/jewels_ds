@@ -412,6 +412,24 @@ useEffect(() => {
 
 
   const handleAssign = async (driver_id, skipConflictCheck = false) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledDriverIds(prev => new Set(prev).add(driver_id));
     const booking_journey_id = selectedJob?.booking_journey_id;
     const token = user?.token;
@@ -486,6 +504,24 @@ useEffect(() => {
 
 
   const handleUnassign = async (driver_id) => {
+    try {
+        const checkToken = await checkUserToken(user.driver_id);
+
+        if (user.token !== checkToken.token) {
+            alert('Please use the recently logged-in browser/tab.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
+
+    } catch (error) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('user');
+            localStorage.removeItem('lastActivity');
+            navigate('/');
+            return;
+        }
     setDisabledDriverIds(prev => new Set(prev).add(driver_id));
 
     try {
